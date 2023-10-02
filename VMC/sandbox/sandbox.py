@@ -1,4 +1,4 @@
-import json, base64, cv2
+import json, base64, cv2, time
 import numpy as np
 from threading import Thread
 from scipy import ndimage
@@ -22,8 +22,11 @@ class Sandbox(MQTTModule):
         self.status_loop: bool = False
         
         self.is_armed: bool = False
-        self.building_drops: dict  = {'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
+        self.building_drops: dict  = {'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False, 'Building 6': False}
         self.thermal_pixel_matrix = [[0]*8]*8
+        
+        self.water_servo_pin = 5
+        self.building_loc = {'Building 1': (404, 120), 'Building 2': (404, 45), 'Building 3': (356, 177), 'Building 4': (356, 53), 'Building 5': (310, 125), 'Building 6': (310, 50)}
 
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
         data = json.loads(payload)['data']
@@ -54,6 +57,12 @@ class Sandbox(MQTTModule):
         
         
     def targeting(self) -> None:
+        turret_angles = [275, 275]
+        for i, id in enumerate(range(3, 5)):
+            self.send_message(
+                        "avr/pcm/set_servo_open_abs",
+                        AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
+                    )
         while self.auto_target:
             thermal_image = np.asarray(self.thermal_pixel_matrix, dtype=np.uint8)
             
@@ -72,7 +81,29 @@ class Sandbox(MQTTModule):
             print(heat_center)
             
             if heat_center[0] > frame.shape[0]/2:
-                pass
+                turret_angles[0] += 5
+                self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[0])
+                )
+            elif heat_center[0] < frame.shape[0]/2:
+                turret_angles[0] -= 5
+                self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[0])
+                )
+            if heat_center[1] > frame.shape[1]/2:
+                turret_angles[1] += 5
+                self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo= 4, absolute= turret_angles[1])
+                )
+            elif heat_center[1] < frame.shape[1]/2:
+                turret_angles[1] -= 5
+                self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo= 4, absolute= turret_angles[1])
+                )
             
     
     def status(self) -> None:
@@ -81,7 +112,25 @@ class Sandbox(MQTTModule):
     
     def Autonomous(self):
         while self.autonomous:
-            pass
+            if max(self.building_drops):
+                building = self.building_drops[list(self.building_drops.values()).index(True)]
+                logger.debug(f'Moveing to building: {building}')
+                if self.move(self.building_loc[building]):
+                    self.send_message(
+                        "avr/pcm/set_servo_open_close",
+                        AvrPcmSetServoOpenClosePayload()
+                    )
+                    time.sleep(3)
+                    self.send_message(
+                        "avr/pcm/set_servo_open_close",
+                        AvrPcmSetServoOpenClosePayload()
+                    )
+                
+                
+    
+    def move(self, pos: tuple) -> bool:
+        """ Moves to postion on field. Returns True when at location. """
+        pass
         
 
 
