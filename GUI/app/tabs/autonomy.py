@@ -47,6 +47,28 @@ class AutonomyWidget(BaseTabWidget):
         autonomous_layout.addWidget(self.autonomous_label)
 
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
+        
+        # ==========================
+        # Custom Box
+        custom_groupbox = QtWidgets.QGroupBox('Custom')
+        custom_layout = QtWidgets.QHBoxLayout()
+        custom_groupbox.setLayout(custom_layout)
+        
+        custom_recon_go_button = QtWidgets.QPushButton('Go')
+        custom_recon_go_button.clicked.connect(lambda: self.AVR_recon(True))
+        custom_layout.addWidget(custom_recon_go_button)
+        
+        custom_recon_stop_button = QtWidgets.QPushButton('Stop')
+        custom_recon_stop_button.clicked.connect(lambda: self.AVR_recon(False))
+        custom_layout.addWidget(custom_recon_stop_button)
+        
+        self.custom_label = QtWidgets.QLabel()
+        self.custom_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        custom_layout.addWidget(self.custom_label)
+        
+        layout.addWidget(custom_groupbox, 2, 0, 2, 1)
 
         # ==========================
         # Buildings
@@ -136,3 +158,9 @@ class AutonomyWidget(BaseTabWidget):
             color = "red"
 
         self.autonomous_label.setText(wrap_text(text, color))
+        
+    def AVR_recon(self, state: bool) -> None:
+        """ Starts AVR Recon. """
+        self.send_message(
+            '/avr/autonomous/recon', {state}
+        )

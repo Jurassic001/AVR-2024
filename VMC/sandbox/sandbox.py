@@ -6,7 +6,6 @@ from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from loguru import logger
 
-
 class Sandbox(MQTTModule):
     def __init__(self) -> None:
         super().__init__()
@@ -115,16 +114,16 @@ class Sandbox(MQTTModule):
             if max(self.building_drops):
                 building = self.building_drops[list(self.building_drops.values()).index(True)]
                 logger.debug(f'Moveing to building: {building}')
-                if self.move(self.building_loc[building]):
-                    self.send_message(
-                        "avr/pcm/set_servo_open_close",
-                        AvrPcmSetServoOpenClosePayload()
-                    )
-                    time.sleep(3)
-                    self.send_message(
-                        "avr/pcm/set_servo_open_close",
-                        AvrPcmSetServoOpenClosePayload()
-                    )
+                while not self.move(self.building_loc[building]): pass
+                self.send_message(
+                    "avr/pcm/set_servo_open_close",
+                    AvrPcmSetServoOpenClosePayload()
+                )
+                time.sleep(3)
+                self.send_message(
+                    "avr/pcm/set_servo_open_close",
+                    AvrPcmSetServoOpenClosePayload()
+                )
                 
                 
     
