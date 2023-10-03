@@ -55,11 +55,11 @@ class AutonomyWidget(BaseTabWidget):
         custom_groupbox.setLayout(custom_layout)
         
         custom_recon_go_button = QtWidgets.QPushButton('Go')
-        custom_recon_go_button.clicked.connect(lambda: self.AVR_recon(True))
+        custom_recon_go_button.clicked.connect(lambda: self.set_recon(True))
         custom_layout.addWidget(custom_recon_go_button)
         
         custom_recon_stop_button = QtWidgets.QPushButton('Stop')
-        custom_recon_stop_button.clicked.connect(lambda: self.AVR_recon(False))
+        custom_recon_stop_button.clicked.connect(lambda: self.set_recon(False))
         custom_layout.addWidget(custom_recon_stop_button)
         
         self.custom_label = QtWidgets.QLabel()
@@ -159,8 +159,15 @@ class AutonomyWidget(BaseTabWidget):
 
         self.autonomous_label.setText(wrap_text(text, color))
         
-    def AVR_recon(self, state: bool) -> None:
+    def set_recon(self, state: bool) -> None:
         """ Starts AVR Recon. """
         self.send_message(
-            '/avr/autonomous/recon', {state}
+            '/avr/autonomous/recon', {'enabled': state}
         )
+        
+        if state:
+            text = 'Recon Enabled'
+            color = 'green'
+        else:
+            test = 'Recon Disabled'
+            color = 'red'
