@@ -10,7 +10,7 @@ class collision_dectector():
         self.hazards = hazards
         self.field_rec = self.geo3D_rect(self.field_length, self.field_width, self.field_height)
         
-    def check_path(self, start_pos: tuple, end_pos: tuple) -> bool:
+    def path_check(self, start_pos: tuple, end_pos: tuple) -> bool:
         """ Checks path for hazards and field out.\n\nReturns True if path clear. False if not. """
         path_clear = True
         flight_path = Geometry3D.Cylinder(Geometry3D.Point(list(start_pos)), self.AVR_rad, Geometry3D.Vector(np.subtract(end_pos, start_pos)))
@@ -25,7 +25,7 @@ class collision_dectector():
         return path_clear
     
     def path_find(self, start_pos: tuple, end_pos: tuple) -> list:
-        """  Finds list of positions to reach position with out hitting a hazard.\n\nReutrns a list of tuples. Ex: [(x, y, z), (x2, y2, z2)]"""
+        """  Finds list of positions to reach position with out hitting a hazard.\n\nReturns a list of tuples. Ex: [(x, y, z), (x2, y2, z2), ...]"""
         pass
         
     def data_for_cylinder_along_z(self, center_x,center_y,radius,height_z, start_z = 0):

@@ -35,7 +35,7 @@ class Sandbox(MQTTModule):
         self.water_servo_pin = 5
         self.building_loc = {'Building 1': (404, 120, 55), 'Building 2': (404, 45, 55), 'Building 3': (356, 177, 69), 'Building 4': (356, 53, 69), 'Building 5': (310, 125, 121), 'Building 6': (310, 50, 121)}
         
-        self.position = [0, 0, 0]
+        self.position = [0]*3
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622, HAZARD_LIST)
@@ -101,28 +101,16 @@ class Sandbox(MQTTModule):
             
             if heat_center[0] > frame.shape[0]/2:
                 turret_angles[0] += 5
-                self.send_message(
-                    "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[0])
-                )
+                self.move_servo(3, turret_angles[0])
             elif heat_center[0] < frame.shape[0]/2:
                 turret_angles[0] -= 5
-                self.send_message(
-                    "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[0])
-                )
+                self.move_servo(3, turret_angles[0])
             if heat_center[1] > frame.shape[1]/2:
                 turret_angles[1] += 5
-                self.send_message(
-                    "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo= 4, absolute= turret_angles[1])
-                )
+                self.move_servo(4, turret_angles[1])
             elif heat_center[1] < frame.shape[1]/2:
                 turret_angles[1] -= 5
-                self.send_message(
-                    "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo= 4, absolute= turret_angles[1])
-                )
+                self.move_servo(4, turret_angles[1])
             
     def status(self) -> None:
         while not self.pause and self.status_loop:
@@ -161,12 +149,9 @@ class Sandbox(MQTTModule):
     # Drone Movment Comands
     def move(self, pos: tuple) -> None:
         """ Moves AVR to postion on field.\n\npos: (x, y, z)"""
-        if self.col_test.check_path(self.position, pos):
+        if self.col_test.path_check(self.position, pos):
             # Path clear. Free to move.
-            self.send_message(
-                'avr/fcm/actions',
-                {'action': 'goto_location_ned', 'payload': {'n': pos[0], 'e': pos[1], 'd': pos[2]}} 
-            )
+            self.send_action('goto_location_ned', {'n': pos[0], 'e': pos[1], 'd': pos[2]})
         else: 
             # Path obstructed. Pathfinding.
             pathed_positions = self.col_test.path_find(self.position, pos)
@@ -174,19 +159,24 @@ class Sandbox(MQTTModule):
                 self.move(self.position, p_pos)
     def takeoff(self) -> None:
         """ AVR Takeoff. """
-        self.send_message(
-            'avr/fcm/actions',
-            {'action': 'takeoff'}
-        )
+        self.send_action('takeoff')
     def land(self, pad: str) -> None:
         """ Move to specified landing pad then land.\n\npad = ground or buidling"""
         self.move(self.landing_pads[pad])
+        self.send_action('land')
+    # ===============
+    # Send Message Commands
+    def move_servo(self, id, angle) -> None:
+        self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
+                )
+    def send_action(self, action, payload = ''):
         self.send_message(
             'avr/fcm/actions',
-            {'action': 'land'}
+            {'action': action, 'payload': payload}
         )
     # ===============
-
 
 if __name__ == '__main__':
     box = Sandbox()
