@@ -5,6 +5,8 @@ from scipy import ndimage
 from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from loguru import logger
+from collision_avoidance import collision_dectector
+from data import *
 
 class Sandbox(MQTTModule):
     def __init__(self) -> None:
@@ -19,6 +21,7 @@ class Sandbox(MQTTModule):
             'avr/vio/position/ned': self.handle_vio_position,
             }
         
+        self.pause: bool = False
         self.autonomous: bool = False
         self.auto_target: bool = False
         self.status_loop: bool = False
@@ -34,6 +37,8 @@ class Sandbox(MQTTModule):
         
         self.position = [0, 0, 0]
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
+        
+        self.col_test = collision_dectector((472, 170, 200), 17.3622, HAZARD_LIST)
 
     # ===============
     # Topic Handlers
@@ -69,7 +74,7 @@ class Sandbox(MQTTModule):
                          payload['e'], # Y
                          payload['d']] # Z
     # ===============
-    
+    # Threads
     def targeting(self) -> None:
         turret_angles = [275, 275]
         for i, id in enumerate(range(3, 5)):
@@ -77,7 +82,7 @@ class Sandbox(MQTTModule):
                         "avr/pcm/set_servo_open_abs",
                         AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
                     )
-        while self.auto_target:
+        while not self.pause and self.auto_target:
             thermal_image = np.asarray(self.thermal_pixel_matrix, dtype=np.uint8)
             
             lowerb = np.array([0, 0, 150], np.uint8)
@@ -120,15 +125,17 @@ class Sandbox(MQTTModule):
                 )
             
     def status(self) -> None:
-        while self.status_loop:
+        while not self.pause and self.status_loop:
             pass
     
     def Autonomous(self):
         current_building = 1
         found_recon_apriltag = False
-        while self.autonomous:
+        while not self.pause and self.autonomous:
             if not found_recon_apriltag and current_building != 6 and self.recon and not max(self.building_drops):
-                if tuple(np.add(self.april_tags['pos_rel'], self.position)) == self.building_loc['Building 1']:
+                apriltag_loc = tuple(np.add(self.april_tags['pos_rel'], self.position))
+                building1_loc = self.building_loc['Building 1']
+                if math.isclose(apriltag_loc[0], building1_loc[0]) and math.isclose(apriltag_loc[1], building1_loc[1]) and math.isclose(apriltag_loc[2], building1_loc[2]):
                     logger.debug(f'Found Building 1 April Tag. Id: {self.april_tags["id"]}')
                     self.move(self.building_loc['Building 1'])
                     time.sleep(1)
@@ -150,16 +157,21 @@ class Sandbox(MQTTModule):
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload()
                 )
-                
-                
-    
+    # ===============
+    # Drone Movment Comands
     def move(self, pos: tuple) -> None:
         """ Moves AVR to postion on field.\n\npos: (x, y, z)"""
-        self.send_message(
-            'avr/fcm/actions',
-            {'action': 'goto_location_ned', 'payload': {'n': pos[0], 'e': pos[1], 'd': pos[2]}} 
-        )
-    
+        if self.col_test.check_path(self.position, pos):
+            # Path clear. Free to move.
+            self.send_message(
+                'avr/fcm/actions',
+                {'action': 'goto_location_ned', 'payload': {'n': pos[0], 'e': pos[1], 'd': pos[2]}} 
+            )
+        else: 
+            # Path obstructed. Pathfinding.
+            pathed_positions = self.col_test.path_find(self.position, pos)
+            for p_pos in pathed_positions:
+                self.move(self.position, p_pos)
     def takeoff(self) -> None:
         """ AVR Takeoff. """
         self.send_message(
@@ -167,13 +179,13 @@ class Sandbox(MQTTModule):
             {'action': 'takeoff'}
         )
     def land(self, pad: str) -> None:
-        """ Move to specified landing pad then land. """
+        """ Move to specified landing pad then land.\n\npad = ground or buidling"""
         self.move(self.landing_pads[pad])
         self.send_message(
             'avr/fcm/actions',
             {'action': 'land'}
         )
-        
+    # ===============
 
 
 if __name__ == '__main__':
@@ -196,12 +208,8 @@ if __name__ == '__main__':
     
     if keyboard.is_pressed('tab'):
         while not keyboard.is_pressed('space'):
-            box.autonomous = False
-            box.status_loop = False
-            box.auto_target = False
+            box.pause = True
         else:
-            box.autonomous = True
-            box.status_loop = True
-            box.auto_target = True
+            box.pause = False
     if keyboard.is_pressed('q'):
         exit()
