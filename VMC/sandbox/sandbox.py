@@ -1,4 +1,4 @@
-import json, base64, cv2, time, math, keyboard
+import json, base64, cv2, time, math, keyboard, sys
 import numpy as np
 from threading import Thread
 from scipy import ndimage
@@ -6,6 +6,8 @@ from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from loguru import logger
 from collision_avoidance import collision_dectector
+sys.path.insert(1, 'Common_Data/')
+HAZARD_LIST = None
 from data import *
 
 class Sandbox(MQTTModule):
@@ -20,6 +22,7 @@ class Sandbox(MQTTModule):
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/vio/position/ned': self.handle_vio_position,
             }
+        height_is_75_scale = True
         
         self.pause: bool = False
         self.autonomous: bool = False
@@ -34,6 +37,9 @@ class Sandbox(MQTTModule):
         
         self.water_servo_pin = 5
         self.building_loc = {'Building 1': (404, 120, 55), 'Building 2': (404, 45, 55), 'Building 3': (356, 177, 69), 'Building 4': (356, 53, 69), 'Building 5': (310, 125, 121), 'Building 6': (310, 50, 121)}
+        if height_is_75_scale:
+            for i in range(len(self.building_loc)):
+                self.building_loc[f'Building {i}'] = (self.building_loc[f'Building {i}'][0], self.building_loc[f'Building {i}'][1], self.building_loc[f'Building {i}'][2]*0.75)
         
         self.position = [0]*3
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}

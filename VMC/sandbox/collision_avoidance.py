@@ -19,7 +19,7 @@ class collision_dectector():
             logging.warning(f'({start_pos} -> {end_pos}) Results in AVR moving out of bounds, comand canceled.')
         if self.hazards:
             for hazard in self.hazards:
-                if hazard[0] == 'c' and Geometry3D.intersection(flight_path, Geometry3D.Cylinder(Geometry3D.Point(list(hazard[1])), hazard[2], Geometry3D.Vector(0, 0, hazard[3]))):
+                if Geometry3D.intersection(flight_path, Geometry3D.Cylinder(Geometry3D.Point(list(hazard[0])), hazard[1], Geometry3D.Vector(list(hazard[2])))):
                     path_clear = False
                     logging.warning(f'({start_pos} -> {end_pos}) Results in AVR hitting hazard, path rerouting.')
         return path_clear
