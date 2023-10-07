@@ -36,7 +36,7 @@ class Sandbox(MQTTModule):
         self.water_servo_pin = 5
         self.building_loc = {'Building 1': (404, 120, 55), 'Building 2': (404, 45, 55), 'Building 3': (356, 177, 69), 'Building 4': (356, 53, 69), 'Building 5': (310, 125, 121), 'Building 6': (310, 50, 121)}
         if height_is_75_scale:
-            for i in range(len(self.building_loc)):
+            for i in range(1, len(self.building_loc)):
                 self.building_loc[f'Building {i}'] = (self.building_loc[f'Building {i}'][0], self.building_loc[f'Building {i}'][1], self.building_loc[f'Building {i}'][2]*0.75)
         
         self.position = [0]*3
