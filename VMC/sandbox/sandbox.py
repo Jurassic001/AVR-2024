@@ -6,8 +6,6 @@ from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from loguru import logger
 from collision_avoidance import collision_dectector
-sys.path.insert(1, 'Common_Data/')
-HAZARD_LIST = None
 from data import *
 
 class Sandbox(MQTTModule):
