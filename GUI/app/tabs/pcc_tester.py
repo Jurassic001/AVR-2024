@@ -14,6 +14,7 @@ class PCCTesterWidget(BaseTabWidget):
         super().__init__(parent)
 
         self.setWindowTitle("PCC Tester")
+        self.setFixedSize(400, 600)
 
         self.client = PeripheralControlComputer(client.client)
 

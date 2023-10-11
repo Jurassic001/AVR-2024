@@ -20,13 +20,14 @@ class Sandbox(MQTTModule):
             'avr/autonomous/recon': self.handle_recon,
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/vio/position/ned': self.handle_vio_position,
+            'avr/sandbox/user_in': self.handle_user_in,
             }
         height_is_75_scale = True
         
         self.pause: bool = False
         self.autonomous: bool = False
         self.auto_target: bool = False
-        self.status_loop: bool = False
+        self.status_loop: bool = True
         self.recon: bool = False
         self.april_tags: list = []
         
@@ -79,6 +80,13 @@ class Sandbox(MQTTModule):
         self.position = [payload['n'], # X
                          payload['e'], # Y
                          payload['d']] # Z
+        
+    def handle_user_in(self, payload) -> None:
+        try:
+            self.pause = payload['pause']
+        except:
+            pass
+        
     # ===============
     # Threads
     def targeting(self) -> None:
@@ -205,11 +213,3 @@ if __name__ == '__main__':
     autonomous_thread.start()
     
     box.run()
-    
-    if keyboard.is_pressed('tab'):
-        while not keyboard.is_pressed('space'):
-            box.pause = True
-        else:
-            box.pause = False
-    if keyboard.is_pressed('q'):
-        exit()
