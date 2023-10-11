@@ -48,7 +48,7 @@ class Sandbox(MQTTModule):
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
-        data = json.loads(payload['data'])
+        """ data = json.loads(payload)['data']
         base64_decoded = data.encode('utf-8')
         as_bytes = base64.b64decode(base64_decoded)
         thermal_pixel_ints = list(bytearray(as_bytes))
@@ -56,7 +56,7 @@ class Sandbox(MQTTModule):
         for row in range(len(self.thermal_pixel_matrix[0])):
             for col in range(len(self.thermal_pixel_matrix)):
                 self.thermal_pixel_matrix[row][col] = thermal_pixel_ints[i]
-                i += 1
+                i += 1 """ pass
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         armed = payload['armed']
