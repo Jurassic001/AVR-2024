@@ -4,6 +4,7 @@ from threading import Thread
 from scipy import ndimage
 from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
+from bell.avr.utils import decorators
 from loguru import logger
 from collision_avoidance import collision_dectector
 from data import *
@@ -30,13 +31,13 @@ class Sandbox(MQTTModule):
         self.april_tags: list = []
         
         self.is_armed: bool = False
-        self.building_drops: dict  = {'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False, 'Building 6': False}
+        self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
         self.thermal_pixel_matrix = [[0]*8]*8
         
         self.water_servo_pin = 5
-        self.building_loc = {'Building 1': (404, 120, 55), 'Building 2': (404, 45, 55), 'Building 3': (356, 177, 69), 'Building 4': (356, 53, 69), 'Building 5': (310, 125, 121), 'Building 6': (310, 50, 121)}
+        self.building_loc = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
         if height_is_75_scale:
-            for i in range(1, len(self.building_loc)):
+            for i in range(len(self.building_loc)):
                 self.building_loc[f'Building {i}'] = (self.building_loc[f'Building {i}'][0], self.building_loc[f'Building {i}'][1], self.building_loc[f'Building {i}'][2]*0.75)
         
         self.position = [0]*3
@@ -62,7 +63,7 @@ class Sandbox(MQTTModule):
         self.is_armed = armed
         
     def handle_drop(self, payload: AvrAutonomousBuildingDropPayload) -> None:
-        self.building_drops[self.building_drops.keys()[payload['id']]] = payload['enabled']
+        self.building_drops[list(self.building_drops.keys())[payload['id']]] = payload['enabled']
     
     def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
         self.autonomous = payload['enabled']
@@ -115,10 +116,14 @@ class Sandbox(MQTTModule):
             elif heat_center[1] < frame.shape[1]/2:
                 turret_angles[1] -= 5
                 self.move_servo(4, turret_angles[1])
-            
+    
     def status(self) -> None:
         while not self.pause and self.status_loop:
-            pass
+           time.sleep(0.5)
+           self.send_message(
+               'avr/sandbox/status',
+               {'Autonomous': self.autonomous, 'Recon': self.recon, 'Sanity': 'Gone'}
+           )
     
     def Autonomous(self):
         current_building = 1
@@ -153,7 +158,7 @@ class Sandbox(MQTTModule):
     # Drone Movment Comands
     def move(self, pos: tuple) -> None:
         """ Moves AVR to postion on field.\n\npos: (x, y, z)"""
-        if self.col_test.path_check(self.position, pos):
+        if not self.col_test.path_check(self.position, pos):
             # Path clear. Free to move.
             self.send_action('goto_location_ned', {'n': pos[0], 'e': pos[1], 'd': pos[2]})
         else: 
