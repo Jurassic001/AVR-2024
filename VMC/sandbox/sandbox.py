@@ -56,7 +56,8 @@ class Sandbox(MQTTModule):
         for row in range(len(self.thermal_pixel_matrix[0])):
             for col in range(len(self.thermal_pixel_matrix)):
                 self.thermal_pixel_matrix[row][col] = thermal_pixel_ints[i]
-                i += 1 """ pass
+                i += 1 """
+        pass
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         armed = payload['armed']
