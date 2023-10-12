@@ -134,18 +134,18 @@ class Sandbox(MQTTModule):
     
     def CIC(self) -> None:
         logger.debug('CIC Thread: Online')
-        def status(self):
-            while self.show_status:
-                time.sleep(0.5)
-                self.send_message(
-                    'avr/sandbox/CIC',
-                    {'Autonomous': self.autonomous, 'Recon': self.recon, 'Thermal Auto Target': self.auto_target, 'Sanity': self.sanity}
-                )
         status_thread = Thread(target=self.status)
         status_thread.setDaemon(True)
         status_thread.start()
         while not self.pause and self.CIC_loop:
             pass
+    def status(self):
+        while self.show_status:
+            time.sleep(0.5)
+            self.send_message(
+                'avr/sandbox/CIC',
+                {'Autonomous': self.autonomous, 'Recon': self.recon, 'Thermal Auto Target': self.auto_target, 'Sanity': self.sanity}
+            )
            
     def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
