@@ -93,11 +93,11 @@ class Sandbox(MQTTModule):
         self.auto_target = payload['enabled']
         turret_angles = [1450, 1450]
         self.send_message(
-                    "avr/pcm/set_servo_open_abs",
+                    "avr/pcm/set_servo_abs",
                     AvrPcmSetServoAbsPayload(servo= 2, absolute= turret_angles[0])
                 )
         self.send_message(
-                    "avr/pcm/set_servo_open_abs",
+                    "avr/pcm/set_servo_abs",
                     AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
                 )
         
