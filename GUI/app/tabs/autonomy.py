@@ -50,25 +50,80 @@ class AutonomyWidget(BaseTabWidget):
         
         # ==========================
         # Custom Box
-        custom_groupbox = QtWidgets.QGroupBox('Custom')
+        custom_main_groupbox = QtWidgets.QGroupBox('Custom')
         custom_layout = QtWidgets.QHBoxLayout()
-        custom_groupbox.setLayout(custom_layout)
+        custom_main_groupbox.setLayout(custom_layout)
+        
+            # ==========================
+            # Recon Box
+        recon_groupbox = QtWidgets.QGroupBox('Recon')
+        recon_layout = QtWidgets.QVBoxLayout()
+        recon_groupbox.setLayout(recon_layout)
         
         custom_recon_go_button = QtWidgets.QPushButton('Go')
         custom_recon_go_button.clicked.connect(lambda: self.set_recon(True))
-        custom_layout.addWidget(custom_recon_go_button)
+        recon_layout.addWidget(custom_recon_go_button)
         
-        custom_recon_stop_button = QtWidgets.QPushButton('Stop')
+        custom_recon_stop_button = QtWidgets.QPushButton('Pause')
         custom_recon_stop_button.clicked.connect(lambda: self.set_recon(False))
-        custom_layout.addWidget(custom_recon_stop_button)
+        recon_layout.addWidget(custom_recon_stop_button)
+        
+        self.recon_label = QtWidgets.QLabel()
+        self.recon_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignRight
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        recon_layout.addWidget(recon_groupbox)
+        custom_layout.addWidget(recon_groupbox)
+            # ==========================
+            # Thermal Target Box
+        thermal_groupbox = QtWidgets.QGroupBox('Thermal Tracking')
+        thermal_layout = QtWidgets.QVBoxLayout()
+        thermal_groupbox.setLayout(thermal_layout)
+        
+        thermal_go_button = QtWidgets.QPushButton('Start')
+        thermal_go_button.clicked.connect(lambda: self.set_thermal_auto(True))
+        thermal_layout.addWidget(thermal_go_button)
+        
+        thermal_stop_button = QtWidgets.QPushButton('Stop')
+        thermal_stop_button.clicked.connect(lambda: self.set_thermal_auto(False))
+        thermal_layout.addWidget(thermal_stop_button)
+        
+        self.thermal_label = QtWidgets.QLabel()
+        self.thermal_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignLeft
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        thermal_layout.addWidget(thermal_groupbox)
+        custom_layout.addWidget(thermal_groupbox)
+            # ==========================
+            # Placeholder Box
+        _groupbox = QtWidgets.QGroupBox('Placeholder')
+        _layout = QtWidgets.QVBoxLayout()
+        _groupbox.setLayout(_layout)
+        
+        _go_button = QtWidgets.QPushButton('_')
+        _go_button.clicked.connect(lambda: self.set_(True))
+        _layout.addWidget(_go_button)
+        
+        _stop_button = QtWidgets.QPushButton('_')
+        _stop_button.clicked.connect(lambda: self.set_(False))
+        _layout.addWidget(_stop_button)
+        
+        self._label = QtWidgets.QLabel()
+        self._label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignLeft
+            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        _layout.addWidget(_groupbox)
+        custom_layout.addWidget(_groupbox)
         
         self.custom_label = QtWidgets.QLabel()
         self.custom_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
         custom_layout.addWidget(self.custom_label)
-        
-        layout.addWidget(custom_groupbox, 2, 0, 2, 1)
+        layout.addWidget(custom_main_groupbox, 1, 0, 1, 1)
 
         # ==========================
         # Buildings
@@ -114,7 +169,7 @@ class AutonomyWidget(BaseTabWidget):
 
             buildings_layout.addWidget(building_groupbox)
 
-        layout.addWidget(buildings_groupbox, 1, 0, 4, 1)
+        layout.addWidget(buildings_groupbox, 2, 0, 4, 1)
 
     def set_building(self, number: int, state: bool) -> None:
         # sourcery skip: assign-if-exp
@@ -162,12 +217,35 @@ class AutonomyWidget(BaseTabWidget):
     def set_recon(self, state: bool) -> None:
         """ Starts AVR Recon. """
         self.send_message(
-            '/avr/autonomous/recon', {'enabled': state}
+            'avr/autonomous/recon', {'enabled': state}
         )
         
         if state:
             text = 'Recon Enabled'
             color = 'green'
         else:
-            test = 'Recon Disabled'
+            text = 'Recon Disabled'
             color = 'red'
+            
+        self.recon_label.setText(wrap_text(text, color))
+            
+    def set_thermal_auto(self, state: bool) -> None:
+        """ Starts autonomous thermal targeting. """
+        self.send_message(
+            'avr/autonomous/thermal_targeting', {'enabled': state}
+        )
+        
+        if state:
+            text = 'Thermal Tracking Enabled'
+            color = 'green'
+        else:
+            test = 'Thermal Tracking Disabled'
+            color = 'red'
+            
+        self.thermal_label.setText(wrap_text(text, color))
+    
+    def set_(self, state: bool) -> None:
+        """ [Place Holder] """
+        self.send_message(
+            'avr/autonomous/placeholder', {'enabled': state}
+        )

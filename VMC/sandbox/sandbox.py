@@ -18,6 +18,7 @@ class Sandbox(MQTTModule):
             'avr/autonomous/building/drop': self.handle_drop,
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/recon': self.handle_recon,
+            'avr/autonomous/thermal_targeting': self.handle_thermal_tracker,
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
@@ -27,13 +28,15 @@ class Sandbox(MQTTModule):
         self.pause: bool = False
         self.autonomous: bool = False
         self.auto_target: bool = False
-        self.status_loop: bool = True
+        self.CIC_loop: bool = True
+        self.show_status: bool = True
         self.recon: bool = False
         self.april_tags: list = []
         
         self.is_armed: bool = False
         self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
         self.thermal_pixel_matrix = [[0]*8]*8
+        self.sanity = 'Gone'
         
         self.water_servo_pin = 5
         self.building_loc = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
@@ -49,7 +52,7 @@ class Sandbox(MQTTModule):
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
-        """ data = json.loads(payload)['data']
+        data = payload['data']
         base64_decoded = data.encode('utf-8')
         as_bytes = base64.b64decode(base64_decoded)
         thermal_pixel_ints = list(bytearray(as_bytes))
@@ -57,8 +60,7 @@ class Sandbox(MQTTModule):
         for row in range(len(self.thermal_pixel_matrix[0])):
             for col in range(len(self.thermal_pixel_matrix)):
                 self.thermal_pixel_matrix[row][col] = thermal_pixel_ints[i]
-                i += 1 """
-        pass
+                i += 1
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         armed = payload['armed']
@@ -87,9 +89,13 @@ class Sandbox(MQTTModule):
         except:
             pass
         
+    def handle_thermal_tracker(self, payload) -> None:
+        self.auto_target = payload['enabled']
+        
     # ===============
     # Threads
     def targeting(self) -> None:
+        logger.debug('Tracking Thread: Online')
         turret_angles = [275, 275]
         for i, id in enumerate(range(3, 5)):
             self.send_message(
@@ -126,15 +132,23 @@ class Sandbox(MQTTModule):
                 turret_angles[1] -= 5
                 self.move_servo(4, turret_angles[1])
     
-    def status(self) -> None:
-        while not self.pause and self.status_loop:
-           time.sleep(0.5)
-           self.send_message(
-               'avr/sandbox/status',
-               {'Autonomous': self.autonomous, 'Recon': self.recon, 'Sanity': 'Gone'}
-           )
-    
+    def CIC(self) -> None:
+        logger.debug('CIC Thread: Online')
+        def status(self):
+            while self.show_status:
+                time.sleep(0.5)
+                self.send_message(
+                    'avr/sandbox/CIC',
+                    {'Autonomous': self.autonomous, 'Recon': self.recon, 'Thermal Auto Target': self.auto_target, 'Sanity': self.sanity}
+                )
+        status_thread = Thread(target=self.status)
+        status_thread.setDaemon(True)
+        status_thread.start()
+        while not self.pause and self.CIC_loop:
+            pass
+           
     def Autonomous(self):
+        logger.debug('Autonomous Thread: Online')
         current_building = 1
         found_recon_apriltag = False
         while not self.pause and self.autonomous:
@@ -150,7 +164,7 @@ class Sandbox(MQTTModule):
                 else:
                     self.move(self.building_loc[f'Building {current_building}'])
                     current_building += 1
-            if max(self.building_drops) and not self.recon:
+            if bool(max(self.building_drops)) and not self.recon:
                 building = self.building_drops[list(self.building_drops.values()).index(True)]
                 logger.debug(f'Moveing to building: {building}')
                 while not self.move(self.building_loc[building]): pass
@@ -204,9 +218,9 @@ if __name__ == '__main__':
     targeting_thread.setDaemon(True)
     targeting_thread.start()
     
-    status_thread = Thread(target=box.status)
-    status_thread.setDaemon(True)
-    status_thread.start()
+    CIC_thread = Thread(target=box.CIC)
+    CIC_thread.setDaemon(True)
+    CIC_thread.start()
     
     autonomous_thread = Thread(target=box.Autonomous)
     autonomous_thread.setDaemon(True)
