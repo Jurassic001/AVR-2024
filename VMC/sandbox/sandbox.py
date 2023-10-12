@@ -92,18 +92,21 @@ class Sandbox(MQTTModule):
     def handle_thermal_tracker(self, payload) -> None:
         self.auto_target = payload['enabled']
         turret_angles = [275, 275]
-        for i, id in enumerate(range(3, 5)):
-            self.send_message(
-                        "avr/pcm/set_servo_open_abs",
-                        AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
-                    )
+        self.send_message(
+                    "avr/pcm/set_servo_open_abs",
+                    AvrPcmSetServoAbsPayload(servo= 2, absolute= turret_angles[0])
+                )
+        self.send_message(
+                    "avr/pcm/set_servo_open_abs",
+                    AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
+                )
         
     # ===============
     # Threads
     def targeting(self) -> None:
         logger.debug('Tracking Thread: Online')
         turret_angles = [275, 275]
-        for i, id in enumerate(range(3, 5)):
+        for i, id in enumerate(range(2, 4)):
             self.send_message(
                         "avr/pcm/set_servo_open_abs",
                         AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
@@ -127,16 +130,16 @@ class Sandbox(MQTTModule):
             
             if heat_center[0] > frame.shape[0]/2:
                 turret_angles[0] += 5
-                self.move_servo(3, turret_angles[0])
+                self.move_servo(2, turret_angles[0])
             elif heat_center[0] < frame.shape[0]/2:
                 turret_angles[0] -= 5
-                self.move_servo(3, turret_angles[0])
+                self.move_servo(2, turret_angles[0])
             if heat_center[1] > frame.shape[1]/2:
                 turret_angles[1] += 5
-                self.move_servo(4, turret_angles[1])
+                self.move_servo(3, turret_angles[1])
             elif heat_center[1] < frame.shape[1]/2:
                 turret_angles[1] -= 5
-                self.move_servo(4, turret_angles[1])
+                self.move_servo(3, turret_angles[1])
     
     def CIC(self) -> None:
         logger.debug('CIC Thread: Online')
