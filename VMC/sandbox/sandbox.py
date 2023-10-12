@@ -91,6 +91,12 @@ class Sandbox(MQTTModule):
         
     def handle_thermal_tracker(self, payload) -> None:
         self.auto_target = payload['enabled']
+        turret_angles = [275, 275]
+        for i, id in enumerate(range(3, 5)):
+            self.send_message(
+                        "avr/pcm/set_servo_open_abs",
+                        AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
+                    )
         
     # ===============
     # Threads

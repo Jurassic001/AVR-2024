@@ -239,7 +239,7 @@ class AutonomyWidget(BaseTabWidget):
             text = 'Thermal Tracking Enabled'
             color = 'green'
         else:
-            test = 'Thermal Tracking Disabled'
+            text = 'Thermal Tracking Disabled'
             color = 'red'
             
         self.thermal_label.setText(wrap_text(text, color))
