@@ -105,19 +105,19 @@ class Sandbox(MQTTModule):
     # ===============
     # Threads
     def targeting(self) -> None:
-        logger.debug('Tracking Thread: Online')
+        logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         for i, id in enumerate(range(2, 4)):
             self.send_message(
                         "avr/pcm/set_servo_open_abs",
                         AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
                     )
-        while not self.pause and self.auto_target:
+        while True:
+            if not (not self.pause and self.auto_target):
+                continue
             thermal_image = np.asarray(self.thermal_pixel_matrix, dtype=np.uint8)
-            
             lowerb = np.array([0, 0, 150], np.uint8)
             upperb = np.array([90, 90, 255], np.uint8)
-
             frame = cv2.inRange(thermal_image, lowerb, upperb)
             blobs = frame > 100
             labels, nlabels = ndimage.label(blobs)
@@ -128,7 +128,6 @@ class Sandbox(MQTTModule):
             # print the center of mass of the largest blob
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
-            
             if heat_center[0] > frame.shape[0]/2:
                 turret_angles[0] += 5
                 self.move_servo(2, turret_angles[0])
@@ -147,21 +146,25 @@ class Sandbox(MQTTModule):
         status_thread = Thread(target=self.status)
         status_thread.setDaemon(True)
         status_thread.start()
-        while not self.pause and self.CIC_loop:
-            pass
+        while True:
+            if not (not self.pause and self.CIC_loop):
+                continue
     def status(self):
-        while self.show_status:
-            time.sleep(0.5)
-            self.send_message(
-                'avr/sandbox/CIC',
-                {'Autonomous': self.autonomous, 'Recon': self.recon, 'Thermal Auto Target': self.auto_target, 'Sanity': self.sanity}
-            )
+        while True:
+            if self.show_status:
+                time.sleep(0.5)
+                self.send_message(
+                    'avr/sandbox/CIC',
+                    {'Autonomous': self.autonomous, 'Recon': self.recon, 'Thermal Auto Target': self.auto_target, 'Sanity': self.sanity}
+                )
            
     def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
         current_building = 1
         found_recon_apriltag = False
-        while not self.pause and self.autonomous:
+        while True:
+            if not (not self.pause and self.autonomous):
+                continue
             if not found_recon_apriltag and current_building != 6 and self.recon and not max(self.building_drops):
                 apriltag_loc = tuple(np.add(self.april_tags['pos_rel'], self.position))
                 building1_loc = self.building_loc['Building 1']
