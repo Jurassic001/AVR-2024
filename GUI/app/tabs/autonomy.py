@@ -3,10 +3,7 @@ from __future__ import annotations
 import functools
 from typing import List
 
-from bell.avr.mqtt.payloads import (
-    AvrAutonomousBuildingDropPayload,
-    AvrAutonomousEnablePayload,
-)
+from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
@@ -70,8 +67,7 @@ class AutonomyWidget(BaseTabWidget):
         
         self.recon_label = QtWidgets.QLabel()
         self.recon_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
         recon_layout.addWidget(recon_groupbox)
         custom_layout.addWidget(recon_groupbox)
@@ -91,37 +87,90 @@ class AutonomyWidget(BaseTabWidget):
         
         self.thermal_label = QtWidgets.QLabel()
         self.thermal_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignLeft
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
         thermal_layout.addWidget(thermal_groupbox)
         custom_layout.addWidget(thermal_groupbox)
             # ==========================
-            # Placeholder Box
-        _groupbox = QtWidgets.QGroupBox('Placeholder')
-        _layout = QtWidgets.QVBoxLayout()
-        _groupbox.setLayout(_layout)
+            # Spintake Box
+        spintake_groupbox = QtWidgets.QGroupBox('Spintake')
+        spintake_layout = QtWidgets.QVBoxLayout()
+        spintake_groupbox.setLayout(spintake_layout)
+                # ==========================
+                # Spintake Spinner Box
+        spintake_spinner_groupbox = QtWidgets.QGroupBox('Spinner')
+        spintake_spinner_layout = QtWidgets.QVBoxLayout()
+        spintake_spinner_groupbox.setLayout(spintake_spinner_layout)
         
-        _go_button = QtWidgets.QPushButton('_')
-        _go_button.clicked.connect(lambda: self.set_(True))
-        _layout.addWidget(_go_button)
+        spintake_spinner_go_button = QtWidgets.QPushButton('Start')
+        spintake_spinner_go_button.clicked.connect(lambda: self.set_spintake_spinner(True))
+        spintake_spinner_layout.addWidget(spintake_spinner_go_button)
         
-        _stop_button = QtWidgets.QPushButton('_')
-        _stop_button.clicked.connect(lambda: self.set_(False))
-        _layout.addWidget(_stop_button)
+        spintake_spinner_stop_button = QtWidgets.QPushButton('Stop')
+        spintake_spinner_stop_button.clicked.connect(lambda: self.set_spintake_spinner(False))
+        spintake_spinner_layout.addWidget(spintake_spinner_stop_button)
         
-        self._label = QtWidgets.QLabel()
-        self._label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignLeft
-            | QtCore.Qt.AlignmentFlag.AlignVCenter
+        self.spintake_spinner_label = QtWidgets.QLabel()
+        self.spintake_spinner_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
-        _layout.addWidget(_groupbox)
-        custom_layout.addWidget(_groupbox)
+        spintake_spinner_layout.addWidget(spintake_spinner_groupbox)
+        spintake_layout.addWidget(spintake_spinner_groupbox)
+                # ==========================
+                # Spintake Bottom Box
+        spintake_bottom_groupbox = QtWidgets.QGroupBox('Bottom')
+        spintake_bottom_layout = QtWidgets.QVBoxLayout()
+        spintake_bottom_groupbox.setLayout(spintake_bottom_layout)
         
+        spintake_bottom_go_button = QtWidgets.QPushButton('Open')
+        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom('open'))
+        spintake_bottom_layout.addWidget(spintake_bottom_go_button)
+        
+        spintake_bottom_stop_button = QtWidgets.QPushButton('Close')
+        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom('close'))
+        spintake_bottom_layout.addWidget(spintake_bottom_stop_button)
+        
+        self.spintake_bottom_label = QtWidgets.QLabel()
+        self.spintake_bottom_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        spintake_bottom_layout.addWidget(spintake_bottom_groupbox)
+        spintake_layout.addWidget(spintake_bottom_groupbox)
+                # ==========================
+        self.spintake_label = QtWidgets.QLabel()
+        self.spintake_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        spintake_layout.addWidget(spintake_groupbox)
+        custom_layout.addWidget(spintake_groupbox)
+            # ==========================
+            # Sphero Holder Box
+        sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
+        sphero_layout = QtWidgets.QVBoxLayout()
+        sphero_groupbox.setLayout(sphero_layout)
+        
+        sphero_go_button = QtWidgets.QPushButton('Open')
+        sphero_go_button.clicked.connect(lambda: self.set_sphero_holder('open'))
+        sphero_layout.addWidget(sphero_go_button)
+        
+        sphero_stop_button = QtWidgets.QPushButton('Close')
+        sphero_stop_button.clicked.connect(lambda: self.set_sphero_holder('close'))
+        sphero_layout.addWidget(sphero_stop_button)
+        
+        self.sphero_label = QtWidgets.QLabel()
+        self.sphero_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        sphero_layout.addWidget(sphero_groupbox)
+        custom_layout.addWidget(sphero_groupbox)
+            
+            
+            # ==========================
         self.custom_label = QtWidgets.QLabel()
         self.custom_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
+        
         custom_layout.addWidget(self.custom_label)
         layout.addWidget(custom_main_groupbox, 1, 0, 1, 1)
 
@@ -244,8 +293,24 @@ class AutonomyWidget(BaseTabWidget):
             
         self.thermal_label.setText(wrap_text(text, color))
     
-    def set_(self, state: bool) -> None:
+    def set_spintake_spinner(self, state: bool) -> None:
+        """ [Place Holder] """
+        vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
+        self.send_message(
+            "avr/pcm/set_servo_abs",
+            AvrPcmSetServoAbsPayload(servo= 5, absolute= vals[state])
+        )
+        
+    def set_spintake_bottom(self, open_close: str) -> None:
         """ [Place Holder] """
         self.send_message(
-            'avr/autonomous/placeholder', {'enabled': state}
+            "avr/pcm/set_servo_abs",
+            AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
+        )
+        
+    def set_sphero_holder(self, open_close: str) -> None:
+        """ [Place Holder] """
+        self.send_message(
+            "avr/pcm/set_servo_abs",
+            AvrPcmSetServoOpenClosePayload(servo= 5, action= open_close)
         )

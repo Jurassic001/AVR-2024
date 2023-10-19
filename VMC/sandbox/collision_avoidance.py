@@ -30,27 +30,19 @@ class collision_dectector():
     def path_find(self, start_pos: tuple, end_pos: tuple) -> list:
         """  Finds list of positions to reach position with out hitting a hazard.\n\nReturns a list of tuples. Ex: [(x, y, z), (x2, y2, z2), ...]"""
         collided_geos = self.path_check(start_pos, end_pos)
-        node_size = (self.field_length/(self.field_length/self.AVR_rad), self.field_width/(self.field_width/self.AVR_rad), self.field_height/(self.field_height/self.AVR_rad))
-        node_field = [[[]]]
-        for i, h in enumerate(range(0, self.field_height, node_size[2])):
-            if i != 0: node_field.append([])
-            for j, w in enumerate(range(0, self.field_length, node_size[1])):
-                if j != 0: node_field[j].append([])
-                for k, l in enumerate(range(0, self.field_width, node_size[0])):
-                    if k != 0: node_field[j][k].append([])
-                    node = self.geo3D_rect(node_size[0], node_size[1], node_size[2], (l, w, h))
-                    clear = True
-                    for hazard in collided_geos:
-                        clear = not bool(Geometry3D.intersection(node, hazard))
-                    node_field[i][j][k] = ((self.geoPoint_to_tuple(node._get_center_point()), node, clear))
-    
-    def a_star(self, field: list, node: Geometry3D.ConvexPolyhedron, end: tuple):
-        pos = field.index(node)
+        node_size = (self.field_length/self.AVR_rad, self.field_width/self.AVR_rad, self.field_height/self.AVR_rad)
+        node_field = [[[None]*self.field_height/node_size[2]]*self.field_length/node_size[0]]*self.field_width/node_size[1]
+        for y, w in enumerate(node_field):
+            for x, l in enumerate(w):
+                for z, h in enumerate(l):
+                    node_block = self.geo3D_rect(node_size[0], node_size[1], node_size[2], (x * node_size[0], y * node_size[1], z * node_size[2]))
+                    h = False
+                    for geo in collided_geos:
+                        if Geometry3D.intersection(geo, node_block):
+                            h = True
+                            break
         
-        
-            
-        
-        
+                        
     def data_for_cylinder_along_z(self, center_x,center_y,radius,height_z, start_z = 0):
         z = np.linspace(start_z, height_z, 50)
         theta = np.linspace(0, 2*np.pi, 50)
@@ -78,3 +70,4 @@ class collision_dectector():
     
     def geoPoint_to_tuple(self, point: Geometry3D.Point):
         return (point.x, point.y, point.z)
+    
