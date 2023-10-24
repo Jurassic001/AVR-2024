@@ -296,10 +296,16 @@ class AutonomyWidget(BaseTabWidget):
     def set_spintake_spinner(self, state: bool) -> None:
         """ [Place Holder] """
         vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
-        self.send_message(
+        if state:
+            self.send_message(
             "avr/pcm/set_servo_abs",
-            AvrPcmSetServoAbsPayload(servo= 0, absolute= vals[state])
-        )
+            AvrPcmSetServoOpenClosePayload(servo= 0, action= True)
+            )
+        else:
+            self.send_message(
+                "avr/pcm/set_servo_abs",
+                AvrPcmSetServoAbsPayload(servo= 0, absolute= 81)
+            )
         
     def set_spintake_bottom(self, open_close: str) -> None:
         """ [Place Holder] """
