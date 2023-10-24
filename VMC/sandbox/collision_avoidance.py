@@ -1,4 +1,4 @@
-import math, Geometry3D, logging
+import math, Geometry3D, logging, heapq
 import numpy as np
 
 class collision_dectector():
@@ -71,3 +71,13 @@ class collision_dectector():
     def geoPoint_to_tuple(self, point: Geometry3D.Point):
         return (point.x, point.y, point.z)
     
+class Node:
+    def __init__(self, x, y, z, cost, parent = None):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.cost = cost
+        self.parent = parent
+        
+    def __lt__(self, other):
+        return self.cost < other.cost

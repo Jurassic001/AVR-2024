@@ -303,7 +303,7 @@ class AutonomyWidget(BaseTabWidget):
         
     def set_spintake_bottom(self, open_close: str) -> None:
         """ [Place Holder] """
-        self.send_message(
+        self.send_message( #Open: 41
             "avr/pcm/set_servo_abs",
             AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
         )
