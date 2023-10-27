@@ -18,3 +18,5 @@ HAZARD_LIST = [
 
 # Hazard structure:
 # (shape, (x, y, z), radius, height), # Name of structure
+
+PATH_NODE_BLOCKERS = []
