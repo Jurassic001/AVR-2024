@@ -304,7 +304,7 @@ class AutonomyWidget(BaseTabWidget):
         else:
             self.send_message(
                 "avr/pcm/set_servo_abs",
-                AvrPcmSetServoAbsPayload(servo= 0, absolute= 81)
+                AvrPcmSetServoAbsPayload(servo= 0, absolute= 1370)
             )
         
     def set_spintake_bottom(self, open_close: str) -> None:
