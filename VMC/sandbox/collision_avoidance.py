@@ -2,14 +2,22 @@ import math, Geometry3D, logging, sqlite3, os, pathlib
 import numpy as np
 
 class collision_dectector():
+    """ A class to allow for the dectection and avoidence of hazards on a field. """
     def __init__(self, field_dimensions: tuple, drone_radius: float, hazards: list = []) -> None:
+        """ Will use hazards stored in database.db, unless other hazards are given. """
         self.field_length = field_dimensions[0]
         self.field_width = field_dimensions[1]
         self.field_height = field_dimensions[2]
         self.AVR_rad = drone_radius
-        self.hazards = hazards
+        self.hazards = []
         self.field_rec = geo3D_rect(self.field_length, self.field_width, self.field_height)
         os.chdir(pathlib.Path(__file__).parent.resolve())
+        if not hazards:
+            with sqlite3.connect('database.db') as conn:
+                c = conn.cursor()
+                c.execute("""SELECT * FROM hazards""")
+                for row in c:
+                    self.hazards.append((eval(row[0]), row[1], eval(row[2])))
         
     def path_check(self, start_pos: tuple, end_pos: tuple) -> list:
         """ Checks path for hazards and field out.\n\nReturns a list of objects path collides with. """

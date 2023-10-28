@@ -47,15 +47,17 @@ class Sandbox(MQTTModule):
         self.position = [0]*3
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
-        self.col_test = collision_dectector((472, 170, 200), 17.3622, HAZARD_LIST)
+        self.col_test = collision_dectector((472, 170, 200), 17.3622)
 
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
-        data = payload['data']
-        base64_decoded = data.encode('utf-8')
-        as_bytes = base64.b64decode(base64_decoded)
-        thermal_pixel_ints = list(bytearray(as_bytes))
+        data = json.loads(payload)["data"]
+
+        # decode the payload
+        base64Decoded = data.encode("utf-8")
+        asbytes = base64.b64decode(base64Decoded)
+        thermal_pixel_ints = list(bytearray(asbytes))
         i = 0
         for row in range(len(self.thermal_pixel_matrix[0])):
             for col in range(len(self.thermal_pixel_matrix)):
@@ -105,6 +107,7 @@ class Sandbox(MQTTModule):
     # ===============
     # Threads
     def targeting(self) -> None:
+        #FBUWFhYVFhUUFhYZGBYVFRQVFhcaGBUUFRUWGCAaFxYUFRYXGhgWFRQVFRYXFhUUExQUFhYWFRQTExQVFRQUEw==
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         for i, id in enumerate(range(2, 4)):
@@ -115,6 +118,7 @@ class Sandbox(MQTTModule):
         while True:
             if not (not self.pause and self.auto_target):
                 continue
+            print(self.thermal_pixel_matrix)
             thermal_image = np.asarray(self.thermal_pixel_matrix, dtype=np.uint8)
             lowerb = np.array([0, 0, 150], np.uint8)
             upperb = np.array([90, 90, 255], np.uint8)
