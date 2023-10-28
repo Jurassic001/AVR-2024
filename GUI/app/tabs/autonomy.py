@@ -299,7 +299,7 @@ class AutonomyWidget(BaseTabWidget):
         if state:
             self.send_message(
             "avr/pcm/set_servo_open_close",
-            AvrPcmSetServoOpenClosePayload(servo= 0, action= True)
+            AvrPcmSetServoOpenClosePayload(servo= 0, action= 'open')
             )
         else:
             self.send_message(
