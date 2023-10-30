@@ -7,7 +7,6 @@ from bell.avr.mqtt.payloads import *
 from bell.avr.utils import decorators
 from loguru import logger
 from collision_avoidance import collision_dectector
-from data import *
 
 class Sandbox(MQTTModule):
     def __init__(self) -> None:
@@ -113,11 +112,6 @@ class Sandbox(MQTTModule):
     def targeting(self) -> None:
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
-        for i, id in enumerate(range(2, 4)):
-            self.send_message(
-                        "avr/pcm/set_servo_open_abs",
-                        AvrPcmSetServoAbsPayload(servo= id, absolute= turret_angles[i])
-                    )
         while True:
             if not (not self.pause and self.auto_target):
                 continue
