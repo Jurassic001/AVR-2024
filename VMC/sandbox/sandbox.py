@@ -119,6 +119,7 @@ class Sandbox(MQTTModule):
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
+            logger.debug(mask)
             print(mask)
             blobs = mask > 100
             labels, nlabels = ndimage.label(blobs)
