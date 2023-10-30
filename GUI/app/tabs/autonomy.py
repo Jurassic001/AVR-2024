@@ -7,6 +7,7 @@ from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
+from ..lib.widgets import DoubleLineEdit
 from .base import BaseTabWidget
 
 
@@ -76,6 +77,7 @@ class AutonomyWidget(BaseTabWidget):
         thermal_groupbox = QtWidgets.QGroupBox('Thermal Tracking')
         thermal_layout = QtWidgets.QVBoxLayout()
         thermal_groupbox.setLayout(thermal_layout)
+        thermal_groupbox.setMaximumWidth(300)
         
         thermal_go_button = QtWidgets.QPushButton('Start')
         thermal_go_button.clicked.connect(lambda: self.set_thermal_auto(True))
@@ -85,11 +87,32 @@ class AutonomyWidget(BaseTabWidget):
         thermal_stop_button.clicked.connect(lambda: self.set_thermal_auto(False))
         thermal_layout.addWidget(thermal_stop_button)
         
+        temp_range_layout = QtWidgets.QFormLayout()
+
+        self.temp_min_line_edit = DoubleLineEdit()
+        temp_range_layout.addRow(QtWidgets.QLabel("Min:"), self.temp_min_line_edit)
+        self.temp_min_line_edit.setText(str(25))
+
+        self.temp_max_line_edit = DoubleLineEdit()
+        temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
+        self.temp_max_line_edit.setText(str(40))
+
+        set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
+        temp_range_layout.addWidget(set_temp_range_button)
+        thermal_layout.addLayout(temp_range_layout)
+        set_temp_range_button.clicked.connect(  # type: ignore
+            lambda: self.set_targeting_range(
+                float(self.temp_min_line_edit.text()),
+                float(self.temp_max_line_edit.text()),
+            )
+        )
+        
         self.thermal_label = QtWidgets.QLabel()
         self.thermal_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
         thermal_layout.addWidget(thermal_groupbox)
+        
         custom_layout.addWidget(thermal_groupbox)
             # ==========================
             # Spintake Box
@@ -319,4 +342,10 @@ class AutonomyWidget(BaseTabWidget):
         self.send_message(
             "avr/pcm/set_servo_open_close",
             AvrPcmSetServoOpenClosePayload(servo= 7, action= open_close)
+        )
+        
+    def set_targeting_range(self, lower: int, upper: int) -> None:
+        self.send_message(
+            'avr/autonomous/thermal_range',
+            {'range': (lower, upper)}
         )

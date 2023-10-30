@@ -18,12 +18,14 @@ class Sandbox(MQTTModule):
             'avr/autonomous/building/drop': self.handle_drop,
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/recon': self.handle_recon,
+            'avr/autonomous/thermal_range': self.handle_thermal_range,
             'avr/autonomous/thermal_targeting': self.handle_thermal_tracker,
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
             }
         height_is_75_scale = True
+        self.target_range = (25, 40)
         
         self.pause: bool = False
         self.autonomous: bool = False
@@ -35,7 +37,7 @@ class Sandbox(MQTTModule):
         
         self.is_armed: bool = False
         self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
-        self.thermal_pixel_matrix = [[0]*8]*8
+        self.thermal_grid = [[0 for _ in range(8)] for _ in range(8)]
         self.sanity = 'Gone'
         
         self.water_servo_pin = 5
@@ -44,7 +46,7 @@ class Sandbox(MQTTModule):
             for i in range(len(self.building_loc)):
                 self.building_loc[f'Building {i}'] = (self.building_loc[f'Building {i}'][0], self.building_loc[f'Building {i}'][1], self.building_loc[f'Building {i}'][2]*0.75)
         
-        self.position = [0]*3
+        self.position = (0, 0, 0)
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
@@ -52,17 +54,16 @@ class Sandbox(MQTTModule):
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
-        data = json.loads(payload)["data"]
-
+        data = payload['data']
         # decode the payload
         base64Decoded = data.encode("utf-8")
         asbytes = base64.b64decode(base64Decoded)
-        thermal_pixel_ints = list(bytearray(asbytes))
-        i = 0
-        for row in range(len(self.thermal_pixel_matrix[0])):
-            for col in range(len(self.thermal_pixel_matrix)):
-                self.thermal_pixel_matrix[row][col] = thermal_pixel_ints[i]
-                i += 1
+        pixel_ints = list(bytearray(asbytes))
+        k = 0
+        for i in range(len(self.thermal_grid)):
+            for j in range(len(self.thermal_grid[0])):
+                self.thermal_grid[i][j] = pixel_ints[k]
+                k+=1
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         armed = payload['armed']
@@ -103,11 +104,13 @@ class Sandbox(MQTTModule):
                         "avr/pcm/set_servo_abs",
                         AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
                     )
-        
+    
+    def handle_thermal_range(self, payload) -> None:
+        self.target_range = payload['range']
+    
     # ===============
     # Threads
     def targeting(self) -> None:
-        #FBUWFhYVFhUUFhYZGBYVFRQVFhcaGBUUFRUWGCAaFxYUFRYXGhgWFRQVFRYXFhUUExQUFhYWFRQTExQVFRQUEw==
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         for i, id in enumerate(range(2, 4)):
@@ -118,30 +121,29 @@ class Sandbox(MQTTModule):
         while True:
             if not (not self.pause and self.auto_target):
                 continue
-            print(self.thermal_pixel_matrix)
-            thermal_image = np.asarray(self.thermal_pixel_matrix, dtype=np.uint8)
-            lowerb = np.array([0, 0, 150], np.uint8)
-            upperb = np.array([90, 90, 255], np.uint8)
-            frame = cv2.inRange(thermal_image, lowerb, upperb)
-            blobs = frame > 100
+            img = np.array(self.thermal_grid)
+            lowerb = np.array(self.target_range[0], np.uint8)
+            upperb = np.array(self.target_range[1], np.uint8)
+            mask = cv2.inRange(img, lowerb, upperb)
+            print(mask)
+            blobs = mask > 100
             labels, nlabels = ndimage.label(blobs)
             # find the center of mass of each label
-            t = ndimage.center_of_mass(frame, labels, np.arange(nlabels) + 1 )
+            t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1 )
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
-            # print the center of mass of the largest blob
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
-            if heat_center[0] > frame.shape[0]/2:
+            if heat_center[0] > mask.shape[0]/2:
                 turret_angles[0] += 5
                 self.move_servo(2, turret_angles[0])
-            elif heat_center[0] < frame.shape[0]/2:
+            elif heat_center[0] < mask.shape[0]/2:
                 turret_angles[0] -= 5
                 self.move_servo(2, turret_angles[0])
-            if heat_center[1] > frame.shape[1]/2:
+            if heat_center[1] > mask.shape[1]/2:
                 turret_angles[1] += 5
                 self.move_servo(3, turret_angles[1])
-            elif heat_center[1] < frame.shape[1]/2:
+            elif heat_center[1] < mask.shape[1]/2:
                 turret_angles[1] -= 5
                 self.move_servo(3, turret_angles[1])
     
@@ -208,7 +210,7 @@ class Sandbox(MQTTModule):
                 self.move(self.position, p_pos)
     def takeoff(self) -> None:
         """ AVR Takeoff. """
-        self.send_action('takeoff')
+        self.send_action('takeoff', {'alt': 2})
     def land(self, pad: str) -> None:
         """ Move to specified landing pad then land.\n\npad = ground or buidling"""
         self.move(self.landing_pads[pad])
