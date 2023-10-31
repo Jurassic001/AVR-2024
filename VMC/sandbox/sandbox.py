@@ -127,7 +127,7 @@ class Sandbox(MQTTModule):
             t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1 )
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
-            if not any(mask):
+            if np.all(np.array(mask) == 0):
                 continue
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
