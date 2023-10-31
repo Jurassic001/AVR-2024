@@ -113,7 +113,8 @@ class Sandbox(MQTTModule):
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         while True:
-            if not (not self.pause and self.auto_target):
+            logger.debug('test')
+            if not self.auto_target:
                 continue
             img = np.array(self.thermal_grid)
             lowerb = np.array(self.target_range[0], np.uint8)
@@ -153,7 +154,7 @@ class Sandbox(MQTTModule):
         status_thread.setDaemon(True)
         status_thread.start()
         while True:
-            if not (not self.pause and self.CIC_loop):
+            if not self.CIC_loop:
                 continue
     def status(self):
         while True:
@@ -169,7 +170,7 @@ class Sandbox(MQTTModule):
         current_building = 1
         found_recon_apriltag = False
         while True:
-            if not (not self.pause and self.autonomous):
+            if not self.autonomous:
                 continue
             if not found_recon_apriltag and current_building != 6 and self.recon and not max(self.building_drops):
                 apriltag_loc = tuple(np.add(self.april_tags['pos_rel'], self.position))
