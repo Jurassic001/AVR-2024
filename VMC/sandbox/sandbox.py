@@ -131,6 +131,8 @@ class Sandbox(MQTTModule):
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
             logger.debug(heat_center)
+            if not mask or not heat_center:
+                continue
             self.send_message(
                 'avr/sandbox/debug/thermal',
                 {'mask': mask, 'heat_center': heat_center}
