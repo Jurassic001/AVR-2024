@@ -129,6 +129,11 @@ class Sandbox(MQTTModule):
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
+            logger.debug(heat_center)
+            self.send_message(
+                'avr/sandbox/debug/thermal',
+                {'mask': mask, 'heat_center': heat_center}
+            )
             if heat_center[0] > mask.shape[0]/2:
                 turret_angles[0] += 5
                 self.move_servo(2, turret_angles[0])
