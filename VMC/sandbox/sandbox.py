@@ -113,7 +113,6 @@ class Sandbox(MQTTModule):
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         while True:
-            logger.debug('test')
             if not self.auto_target:
                 continue
             img = np.array(self.thermal_grid)
@@ -128,15 +127,12 @@ class Sandbox(MQTTModule):
             t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1 )
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
+            if not mask:
+                continue
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
             logger.debug(heat_center)
-            if not mask or not heat_center:
-                continue
-            self.send_message(
-                'avr/sandbox/debug/thermal',
-                {'mask': mask, 'heat_center': heat_center}
-            )
+            
             if heat_center[0] > mask.shape[0]/2:
                 turret_angles[0] += 5
                 self.move_servo(2, turret_angles[0])
