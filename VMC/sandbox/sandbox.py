@@ -49,7 +49,10 @@ class Sandbox(MQTTModule):
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
+        self.threads: dict
 
+    def set_threads(self, threads):
+        self.threads = threads
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
@@ -121,14 +124,14 @@ class Sandbox(MQTTModule):
             mask = cv2.inRange(img, lowerb, upperb)
             logger.debug(mask)
             print(mask)
+            if np.all(np.array(mask) == 0):
+                continue
             blobs = mask > 100
             labels, nlabels = ndimage.label(blobs)
             # find the center of mass of each label
             t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1 )
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
-            if np.all(np.array(mask) == 0):
-                continue
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
             logger.debug(heat_center)
@@ -145,23 +148,30 @@ class Sandbox(MQTTModule):
             elif heat_center[1] < mask.shape[1]/2:
                 turret_angles[1] -= 5
                 self.move_servo(3, turret_angles[1])
+        logger.debug('Thermal Tracking Thread: Offline')
     
     def CIC(self) -> None:
         logger.debug('CIC Thread: Online')
         status_thread = Thread(target=self.status)
-        status_thread.setDaemon(True)
+        status_thread.daemon = True
+        #status_thread.setDaemon(True)
         status_thread.start()
         while True:
             if not self.CIC_loop:
                 continue
+            if self.position == (42, 42, 42):
+                self.sanity = "Here"
+        logger.debug('CIC Thread: Offline')
     def status(self):
+        onoff = {True: 'Online', False: 'Offline'}
         while True:
             if self.show_status:
                 time.sleep(0.5)
                 self.send_message(
                     'avr/sandbox/CIC',
-                    {'Autonomous': self.autonomous, 'Recon': self.recon, 'Thermal Auto Target': self.auto_target, 'Sanity': self.sanity}
+                    {'Thermal Targeting': onoff[self.threads['thermal'].is_alive()], 'CIC': onoff[self.threads['cic'].is_alive()], 'Autonomous': onoff[self.threads['auto'].is_alive()], 'Recon': self.recon, 'Sanity': self.sanity}
                 )
+        logger.debug('Status CIC Sub-Thread: Offline')
            
     def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
@@ -195,6 +205,7 @@ class Sandbox(MQTTModule):
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload()
                 )
+        logger.debug('Autonomous Thread: Offline')
     # ===============
     # Drone Movment Comands
     def move(self, pos: tuple) -> None:
@@ -202,7 +213,7 @@ class Sandbox(MQTTModule):
         if not self.col_test.path_check(self.position, pos):
             # Path clear. Free to move.
             self.send_action('goto_location_ned', {'n': pos[0], 'e': pos[1], 'd': pos[2]})
-        else: 
+        else:
             # Path obstructed. Pathfinding.
             pathed_positions = self.col_test.path_find(self.position, pos)
             for p_pos in pathed_positions:
@@ -233,15 +244,20 @@ if __name__ == '__main__':
     
     #Create Threads
     targeting_thread = Thread(target=box.targeting)
-    targeting_thread.setDaemon(True)
+    targeting_thread.daemon = True
+    #targeting_thread.setDaemon(True)
     targeting_thread.start()
     
     CIC_thread = Thread(target=box.CIC)
-    CIC_thread.setDaemon(True)
+    CIC_thread.daemon = True
+    #CIC_thread.setDaemon(True)
     CIC_thread.start()
     
     autonomous_thread = Thread(target=box.Autonomous)
-    autonomous_thread.setDaemon(True)
+    autonomous_thread.daemon = True
+    #autonomous_thread.setDaemon(True)
     autonomous_thread.start()
+    
+    box.set_threads({'thermal': targeting_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
     
     box.run()
