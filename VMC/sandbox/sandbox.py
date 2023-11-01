@@ -64,7 +64,7 @@ class Sandbox(MQTTModule):
         k = 0
         for i in range(len(self.thermal_grid)):
             for j in range(len(self.thermal_grid[0])):
-                self.thermal_grid[i][j] = pixel_ints[k]
+                self.thermal_grid[j][i] = pixel_ints[k]
                 k+=1
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:

@@ -11,4 +11,6 @@ git pull
 
 then you can run main command:
 ./start.py run --all
-then run VS Code app.py script, and connect to 10.42.0.1
+then run VS Code app.py script, and connect to 10.42.0.1o
+
+ctrl c to close
