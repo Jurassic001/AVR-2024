@@ -110,8 +110,8 @@ class Sandbox(MQTTModule):
     
     def handle_thermal_range(self, payload) -> None:
         self.target_range = payload['range'][0:2]
-        print(self.target_range)
-        self.targeting_step = payload['range'][2]
+        logger.debug(self.target_range)
+        self.targeting_step = int(payload['range'][2])
     
     # ===============
     # Threads
@@ -138,6 +138,7 @@ class Sandbox(MQTTModule):
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
             logger.debug(heat_center)
+            logger.debug(self.targeting_step)
             if heat_center[0] > mask.shape[0]/2:
                 turret_angles[0] += self.targeting_step
                 self.move_servo(2, turret_angles[0])

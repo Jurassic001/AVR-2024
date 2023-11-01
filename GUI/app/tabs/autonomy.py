@@ -97,9 +97,9 @@ class AutonomyWidget(BaseTabWidget):
         temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
         self.temp_max_line_edit.setText(str(40))
         
-        self.temp_min_line_edit = DoubleLineEdit()
-        temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_min_line_edit)
-        self.temp_min_line_edit.setText(str(5))
+        self.temp_step_edit = DoubleLineEdit()
+        temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_step_edit)
+        self.temp_step_edit.setText(str(5))
 
         set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
         temp_range_layout.addWidget(set_temp_range_button)
@@ -108,7 +108,7 @@ class AutonomyWidget(BaseTabWidget):
             lambda: self.set_targeting_range(
                 float(self.temp_min_line_edit.text()),
                 float(self.temp_max_line_edit.text()),
-                float(self.temp_max_line_edit.text()),
+                float(self.temp_step_edit.text()),
             )
         )
         
