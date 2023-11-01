@@ -24,7 +24,8 @@ class Sandbox(MQTTModule):
             'avr/sandbox/user_in': self.handle_user_in,
             }
         height_is_75_scale = True
-        self.target_range = (25, 40)
+        self.target_range = (30, 40)
+        self.targeting_step = 5
         
         self.pause: bool = False
         self.autonomous: bool = False
@@ -108,7 +109,9 @@ class Sandbox(MQTTModule):
                     )
     
     def handle_thermal_range(self, payload) -> None:
-        self.target_range = payload['range']
+        self.target_range = payload['range'][0:2]
+        print(self.target_range)
+        self.targeting_step = payload['range'][2]
     
     # ===============
     # Threads
@@ -135,18 +138,17 @@ class Sandbox(MQTTModule):
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
             logger.debug(heat_center)
-            step_val = 5
             if heat_center[0] > mask.shape[0]/2:
-                turret_angles[0] += step_val
+                turret_angles[0] += self.targeting_step
                 self.move_servo(2, turret_angles[0])
             elif heat_center[0] < mask.shape[0]/2:
-                turret_angles[0] -= step_val
+                turret_angles[0] -= self.targeting_step
                 self.move_servo(2, turret_angles[0])
             if heat_center[1] < mask.shape[1]/2:
-                turret_angles[1] += step_val
+                turret_angles[1] += self.targeting_step
                 self.move_servo(3, turret_angles[1])
             elif heat_center[1] > mask.shape[1]/2:
-                turret_angles[1] -= step_val
+                turret_angles[1] -= self.targeting_step
                 self.move_servo(3, turret_angles[1])
         logger.debug('Thermal Tracking Thread: Offline')
     

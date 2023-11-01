@@ -96,6 +96,10 @@ class AutonomyWidget(BaseTabWidget):
         self.temp_max_line_edit = DoubleLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
         self.temp_max_line_edit.setText(str(40))
+        
+        self.temp_min_line_edit = DoubleLineEdit()
+        temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_min_line_edit)
+        self.temp_min_line_edit.setText(str(5))
 
         set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
         temp_range_layout.addWidget(set_temp_range_button)
@@ -103,6 +107,7 @@ class AutonomyWidget(BaseTabWidget):
         set_temp_range_button.clicked.connect(  # type: ignore
             lambda: self.set_targeting_range(
                 float(self.temp_min_line_edit.text()),
+                float(self.temp_max_line_edit.text()),
                 float(self.temp_max_line_edit.text()),
             )
         )
@@ -344,8 +349,8 @@ class AutonomyWidget(BaseTabWidget):
             AvrPcmSetServoOpenClosePayload(servo= 7, action= open_close)
         )
         
-    def set_targeting_range(self, lower: int, upper: int) -> None:
+    def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
         self.send_message(
             'avr/autonomous/thermal_range',
-            {'range': (lower, upper)}
+            {'range': (lower, upper, step)}
         )
