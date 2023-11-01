@@ -135,18 +135,18 @@ class Sandbox(MQTTModule):
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             print(heat_center)
             logger.debug(heat_center)
-            
+            step_val = 5
             if heat_center[0] > mask.shape[0]/2:
-                turret_angles[0] += 10
+                turret_angles[0] += step_val
                 self.move_servo(2, turret_angles[0])
             elif heat_center[0] < mask.shape[0]/2:
-                turret_angles[0] -= 10
+                turret_angles[0] -= step_val
                 self.move_servo(2, turret_angles[0])
             if heat_center[1] < mask.shape[1]/2:
-                turret_angles[1] += 10
+                turret_angles[1] += step_val
                 self.move_servo(3, turret_angles[1])
             elif heat_center[1] > mask.shape[1]/2:
-                turret_angles[1] -= 10
+                turret_angles[1] -= step_val
                 self.move_servo(3, turret_angles[1])
         logger.debug('Thermal Tracking Thread: Offline')
     
