@@ -26,7 +26,7 @@ class Sandbox(MQTTModule):
             }
         height_is_75_scale = True
         self.target_range = (30, 40)
-        self.targeting_step = 20
+        self.targeting_step = 7
         
         self.pause: bool = False
         self.autonomous: bool = False
@@ -126,7 +126,7 @@ class Sandbox(MQTTModule):
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
-            #logger.debug(mask)
+            logger.debug(mask)
             if np.all(np.array(mask) == 0):
                 continue
             blobs = mask > 100
