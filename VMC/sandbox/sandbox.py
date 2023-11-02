@@ -126,7 +126,7 @@ class Sandbox(MQTTModule):
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
-            logger.debug(mask)
+            logger.debug(f'\n{mask}')
             if np.all(np.array(mask) == 0):
                 continue
             blobs = mask > 100
