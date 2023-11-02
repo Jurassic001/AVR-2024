@@ -137,17 +137,17 @@ class Sandbox(MQTTModule):
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             logger.debug(heat_center)
-            move_range = [20, -20]
-            m = interp1d([0, 8], move_range)
-            step_x = m(heat_center[0])
-            step_y = m(heat_center[1])
-            logger.debug(f'{step_x}, {step_y}')
-            if step_x != 0:
-                turret_angles[0] += step_x
-                logger.debug(turret_angles)
+            if heat_center[0] > 4:
+                turret_angles[0] += self.targeting_step
                 self.move_servo(2, turret_angles[0])
-            if step_y != 0:
-                turret_angles[1] += step_y
+            elif heat_center[0] < 4:
+                turret_angles[0] -= self.targeting_step
+                self.move_servo(2, turret_angles[0])
+            if heat_center[1] < 4:
+                turret_angles[1] += self.targeting_step
+                self.move_servo(3, turret_angles[1])
+            elif heat_center[1] > 4:
+                turret_angles[1] -= self.targeting_step
                 self.move_servo(3, turret_angles[1])
     
     def CIC(self) -> None:
