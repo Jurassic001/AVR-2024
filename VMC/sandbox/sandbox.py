@@ -125,7 +125,8 @@ class Sandbox(MQTTModule):
                 if self.laser_on:
                     self.set_laser(False)
                 continue
-            self.set_laser(True)
+            if not self.laser_on:
+                self.set_laser(True)
             img = np.array(self.thermal_grid)
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
