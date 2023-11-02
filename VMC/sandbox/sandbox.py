@@ -144,6 +144,7 @@ class Sandbox(MQTTModule):
             logger.debug(f'{step_x}, {step_y}')
             if step_x != 0:
                 turret_angles[0] += step_x
+                logger.debug(turret_angles)
                 self.move_servo(2, turret_angles[0])
             if step_y != 0:
                 turret_angles[1] += step_y
