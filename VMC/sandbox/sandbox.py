@@ -121,7 +121,9 @@ class Sandbox(MQTTModule):
         turret_angles = [1450, 1450]
         while True:
             if not self.auto_target:
+                self.set_laser(False)
                 continue
+            self.set_laser(True)
             img = np.array(self.thermal_grid)
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
@@ -238,6 +240,14 @@ class Sandbox(MQTTModule):
             'avr/fcm/actions',
             {'action': action, 'payload': payload}
         )
+    def set_laser(self, state: bool) -> None:
+        if state:
+            topic = "avr/pcm/set_laser_on"
+            payload = AvrPcmSetLaserOnPayload()
+        else:
+            topic = "avr/pcm/set_laser_off"
+            payload = AvrPcmSetLaserOffPayload()
+        self.send_message(topic, payload)
     # ===============
 
 if __name__ == '__main__':
