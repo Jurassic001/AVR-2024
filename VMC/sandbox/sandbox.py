@@ -126,7 +126,7 @@ class Sandbox(MQTTModule):
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
-            logger.debug(mask)
+            #logger.debug(mask)
             if np.all(np.array(mask) == 0):
                 continue
             blobs = mask > 100
@@ -137,10 +137,11 @@ class Sandbox(MQTTModule):
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
             logger.debug(heat_center)
-            move_range = [self.targeting_step, -self.targeting_step]
+            move_range = [20, -20]
             m = interp1d([0, 8], move_range)
             step_x = m(heat_center[0])
             step_y = m(heat_center[1])
+            logger.debug(f'{step_x}, {step_y}')
             if step_x != 0:
                 turret_angles[0] += step_x
                 self.move_servo(2, turret_angles[0])
