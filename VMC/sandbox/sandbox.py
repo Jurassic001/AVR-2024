@@ -40,6 +40,7 @@ class Sandbox(MQTTModule):
         self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
         self.thermal_grid = [[0 for _ in range(8)] for _ in range(8)]
         self.sanity = 'Gone'
+        self.laser_on = False
         
         self.water_servo_pin = 5
         self.building_loc = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
@@ -121,7 +122,8 @@ class Sandbox(MQTTModule):
         turret_angles = [1450, 1450]
         while True:
             if not self.auto_target:
-                self.set_laser(False)
+                if self.laser_on:
+                    self.set_laser(False)
                 continue
             self.set_laser(True)
             img = np.array(self.thermal_grid)
@@ -173,7 +175,7 @@ class Sandbox(MQTTModule):
                 time.sleep(0.5)
                 self.send_message(
                     'avr/sandbox/CIC',
-                    {'Thermal Targeting': onoff[self.threads['thermal'].is_alive()], 'CIC': onoff[self.threads['cic'].is_alive()], 'Autonomous': onoff[self.threads['auto'].is_alive()], 'Recon': self.recon, 'Sanity': self.sanity}
+                    {'Thermal Targeting': onoff[self.threads['thermal'].is_alive()], 'CIC': onoff[self.threads['cic'].is_alive()], 'Autonomous': onoff[self.threads['auto'].is_alive()], 'Recon': self.recon, 'Sanity': self.sanity, 'Laser': self.laser_on}
                 )
            
     def Autonomous(self):
@@ -241,6 +243,7 @@ class Sandbox(MQTTModule):
             {'action': action, 'payload': payload}
         )
     def set_laser(self, state: bool) -> None:
+        self.laser_on = state
         if state:
             topic = "avr/pcm/set_laser_on"
             payload = AvrPcmSetLaserOnPayload()
