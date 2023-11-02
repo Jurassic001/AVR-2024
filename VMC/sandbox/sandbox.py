@@ -2,6 +2,7 @@ import json, base64, cv2, time, math, keyboard, sys
 import numpy as np
 from threading import Thread
 from scipy import ndimage
+from scipy.interpolate import interp1d
 from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from bell.avr.utils import decorators
@@ -25,7 +26,7 @@ class Sandbox(MQTTModule):
             }
         height_is_75_scale = True
         self.target_range = (30, 40)
-        self.targeting_step = 5
+        self.targeting_step = 20
         
         self.pause: bool = False
         self.autonomous: bool = False
@@ -126,7 +127,6 @@ class Sandbox(MQTTModule):
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
             logger.debug(mask)
-            print(mask)
             if np.all(np.array(mask) == 0):
                 continue
             blobs = mask > 100
@@ -136,22 +136,17 @@ class Sandbox(MQTTModule):
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
             heat_center = [int(x) for x in t[s.argmax()][::-1]]
-            print(heat_center)
             logger.debug(heat_center)
-            logger.debug(self.targeting_step)
-            if heat_center[0] > mask.shape[0]/2:
-                turret_angles[0] += self.targeting_step
+            move_range = [self.targeting_step, -self.targeting_step]
+            m = interp1d([0, 8], move_range)
+            step_x = m(heat_center[0])
+            step_y = m(heat_center[1])
+            if step_x != 0:
+                turret_angles[0] += step_x
                 self.move_servo(2, turret_angles[0])
-            elif heat_center[0] < mask.shape[0]/2:
-                turret_angles[0] -= self.targeting_step
-                self.move_servo(2, turret_angles[0])
-            if heat_center[1] < mask.shape[1]/2:
-                turret_angles[1] += self.targeting_step
+            if step_y != 0:
+                turret_angles[1] += step_y
                 self.move_servo(3, turret_angles[1])
-            elif heat_center[1] > mask.shape[1]/2:
-                turret_angles[1] -= self.targeting_step
-                self.move_servo(3, turret_angles[1])
-        logger.debug('Thermal Tracking Thread: Offline')
     
     def CIC(self) -> None:
         logger.debug('CIC Thread: Online')
@@ -164,7 +159,9 @@ class Sandbox(MQTTModule):
                 continue
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
-        logger.debug('CIC Thread: Offline')
+            else:
+                self.sanity = 'Gone'
+
     def status(self):
         onoff = {True: 'Online', False: 'Offline'}
         while True:
@@ -174,7 +171,6 @@ class Sandbox(MQTTModule):
                     'avr/sandbox/CIC',
                     {'Thermal Targeting': onoff[self.threads['thermal'].is_alive()], 'CIC': onoff[self.threads['cic'].is_alive()], 'Autonomous': onoff[self.threads['auto'].is_alive()], 'Recon': self.recon, 'Sanity': self.sanity}
                 )
-        logger.debug('Status CIC Sub-Thread: Offline')
            
     def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
