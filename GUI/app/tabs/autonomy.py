@@ -8,6 +8,7 @@ from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
 from ..lib.widgets import DoubleLineEdit
+from ..lib.config import config
 from .base import BaseTabWidget
 
 
@@ -91,15 +92,15 @@ class AutonomyWidget(BaseTabWidget):
 
         self.temp_min_line_edit = DoubleLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Min:"), self.temp_min_line_edit)
-        self.temp_min_line_edit.setText(str(25))
+        self.temp_min_line_edit.setText(str(config.temp_range[0]))
 
         self.temp_max_line_edit = DoubleLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
-        self.temp_max_line_edit.setText(str(40))
+        self.temp_max_line_edit.setText(str(config.temp_range[1]))
         
         self.temp_step_edit = DoubleLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_step_edit)
-        self.temp_step_edit.setText(str(5))
+        self.temp_step_edit.setText(str(config.temp_range[2]))
 
         set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
         temp_range_layout.addWidget(set_temp_range_button)
@@ -350,6 +351,7 @@ class AutonomyWidget(BaseTabWidget):
         )
         
     def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
+        config.temp_range = (lower, upper, step)
         self.send_message(
             'avr/autonomous/thermal_range',
             {'range': (lower, upper, step)}
