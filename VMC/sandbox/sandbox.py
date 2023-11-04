@@ -189,7 +189,7 @@ class Sandbox(MQTTModule):
         while True:
             if not self.autonomous:
                 continue
-            if not found_recon_apriltag and current_building != 6 and self.recon and not max(self.building_drops):
+            """ if not found_recon_apriltag and current_building != 6 and self.recon and not max(self.building_drops):
                 apriltag_loc = tuple(np.add(self.april_tags['pos_rel'], self.position))
                 building1_loc = self.building_loc['Building 1']
                 if math.isclose(apriltag_loc[0], building1_loc[0]) and math.isclose(apriltag_loc[1], building1_loc[1]) and math.isclose(apriltag_loc[2], building1_loc[2]):
@@ -213,11 +213,12 @@ class Sandbox(MQTTModule):
                 self.send_message(
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload()
-                )
+                ) """
             if self.recon:
                 self.takeoff()
                 time.sleep(3)
                 self.land()
+                self.autonomous = False
         logger.debug('Autonomous Thread: Offline')
     # ===============
     # Drone Movment Comands
