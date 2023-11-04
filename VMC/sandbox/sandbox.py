@@ -141,6 +141,9 @@ class Sandbox(MQTTModule):
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
             heat_center = [float(x) for x in t[s.argmax()][::-1]]
+            move_range = [15, -15]
+            m = interp1d([0, 8], move_range)
+            move_val = ()
             logger.debug(heat_center)
             if heat_center[0] > 4:
                 turret_angles[0] += self.targeting_step

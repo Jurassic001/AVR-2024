@@ -1,0 +1,9 @@
+{
+    "temp_range": "(30.0, 40.0, 1.0)",
+    "mqtt_host": "10.42.0.1",
+    "mqtt_port": 18830,
+    "serial_port": "",
+    "serial_baud_rate": 115200,
+    "joystick_inverted": false,
+    "log_file_directory": "c:\\Users\\quent\\OneDrive\\Documents\\BELL_2023-2024\\AVR\\AVR-2022\\GUI\\logs"
+}
