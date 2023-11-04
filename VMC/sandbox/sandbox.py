@@ -214,6 +214,10 @@ class Sandbox(MQTTModule):
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload()
                 )
+            if self.recon:
+                self.takeoff()
+                time.sleep(3)
+                self.land()
         logger.debug('Autonomous Thread: Offline')
     # ===============
     # Drone Movment Comands
@@ -232,7 +236,7 @@ class Sandbox(MQTTModule):
         self.send_action('takeoff', {'alt': 2})
     def land(self, pad: str) -> None:
         """ Move to specified landing pad then land.\n\npad = ground or buidling"""
-        self.move(self.landing_pads[pad])
+        #self.move(self.landing_pads[pad])
         self.send_action('land')
     # ===============
     # Send Message Commands
@@ -241,7 +245,7 @@ class Sandbox(MQTTModule):
                     "avr/pcm/set_servo_abs",
                     AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
                 )
-    def send_action(self, action, payload = ''):
+    def send_action(self, action, payload = {}):
         self.send_message(
             'avr/fcm/actions',
             {'action': action, 'payload': payload}
