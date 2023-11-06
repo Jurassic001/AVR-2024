@@ -23,6 +23,7 @@ class Sandbox(MQTTModule):
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
+            'avr/fusion/position/ned': self.handle_pos,
             }
         height_is_75_scale = True
         self.target_range = (30, 40)
@@ -35,6 +36,10 @@ class Sandbox(MQTTModule):
         self.show_status: bool = True
         self.recon: bool = False
         self.april_tags: list = []
+        
+        self.do_pathfinding = False
+        self.position = [0, 0, 0]
+        self.start_pos = [180, 50, 0]
         
         self.is_armed: bool = False
         self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
@@ -114,6 +119,13 @@ class Sandbox(MQTTModule):
         self.target_range = payload['range'][0:2]
         logger.debug(self.target_range)
         self.targeting_step = int(payload['range'][2])
+        
+    def handle_pos(self, payload: AvrFusionPositionNedPayload):
+        # NOTE Check if direction is based on drone start or global
+        self.position[0] = payload['n']
+        self.position[1] = payload['e']
+        self.position[2] = payload['d']
+        
     
     # ===============
     # Threads
@@ -189,56 +201,61 @@ class Sandbox(MQTTModule):
         while True:
             if not self.autonomous:
                 continue
-            """ if not found_recon_apriltag and current_building != 6 and self.recon and not max(self.building_drops):
-                apriltag_loc = tuple(np.add(self.april_tags['pos_rel'], self.position))
-                building1_loc = self.building_loc['Building 1']
-                if math.isclose(apriltag_loc[0], building1_loc[0]) and math.isclose(apriltag_loc[1], building1_loc[1]) and math.isclose(apriltag_loc[2], building1_loc[2]):
-                    logger.debug(f'Found Building 1 April Tag. Id: {self.april_tags["id"]}')
-                    self.move(self.building_loc['Building 1'])
-                    time.sleep(1)
-                    self.land('ground')
-                    found_recon_apriltag = True
-                else:
-                    self.move(self.building_loc[f'Building {current_building}'])
-                    current_building += 1
-            if bool(max(self.building_drops)) and not self.recon:
-                building = self.building_drops[list(self.building_drops.values()).index(True)]
-                logger.debug(f'Moveing to building: {building}')
-                while not self.move(self.building_loc[building]): pass
-                self.send_message(
-                    "avr/pcm/set_servo_open_close",
-                    AvrPcmSetServoOpenClosePayload()
-                )
-                time.sleep(3)
-                self.send_message(
-                    "avr/pcm/set_servo_open_close",
-                    AvrPcmSetServoOpenClosePayload()
-                ) """
-            if self.recon:
-                self.takeoff()
-                time.sleep(3)
-                self.land()
-                self.autonomous = False
-        logger.debug('Autonomous Thread: Offline')
+            
+            # Other non recon auton code goes here.
+            
+            if not self.recon:
+                continue
+            self.takeoff()
+            time.sleep(2)
+            
+            self.move((310, 125, 60)) # Building 5
+            time.sleep(.5)
+            
+            self.move((356, 53, 85)) # Building 4
+            time.sleep(.5)
+            
+            self.move((404, 120, 126)) # Building 1
+            time.sleep(.5)
+            
+            if next((tag for tag in self.april_tags if tag.id == 0), None):
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                time.sleep(.5)
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
+            self.move((231, 85, 52))
+            time.sleep(1)
+            self.land()
+            self.recon = False
+            
     # ===============
-    # Drone Movment Comands
+    # Drone Control Comands
     def move(self, pos: tuple) -> None:
-        """ Moves AVR to postion on field.\n\npos: (x, y, z)"""
+        """ Moves AVR to postion on field.\n\npos(inches): (x, y, z) """
         if not self.col_test.path_check(self.position, pos):
-            # Path clear. Free to move.
-            self.send_action('goto_location_ned', {'n': pos[0], 'e': pos[1], 'd': pos[2]})
+            relative_pos = [0, 0, 0]
+            for i in range(3):
+                relative_pos[i] = self.inch_to_m(pos[i]) - self.start_pos[i]
+            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2]})
         else:
-            # Path obstructed. Pathfinding.
-            pathed_positions = self.col_test.path_find(self.position, pos)
-            for p_pos in pathed_positions:
-                self.move(self.position, p_pos)
+            # Path obstructed.
+            if self.do_pathfinding:
+                # Pathfinding.
+                pathed_positions = self.col_test.path_find(self.position, pos)
+                for p_pos in pathed_positions:
+                    self.move(self.position, p_pos)
+                    time.sleep(.5)
+            else:
+                logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
+                    
+    
     def takeoff(self) -> None:
         """ AVR Takeoff. """
         self.send_action('takeoff', {'alt': 2})
-    def land(self, pad: str) -> None:
-        """ Move to specified landing pad then land.\n\npad = ground or buidling"""
+    def land(self) -> None:
+        """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
+        
     # ===============
     # Send Message Commands
     def move_servo(self, id, angle) -> None:
@@ -261,6 +278,10 @@ class Sandbox(MQTTModule):
             payload = AvrPcmSetLaserOffPayload()
         self.send_message(topic, payload)
     # ===============
+    # Misc/Helper
+    def inch_to_m(self, num):
+        return num/39.37
+    
 
 if __name__ == '__main__':
     box = Sandbox()
