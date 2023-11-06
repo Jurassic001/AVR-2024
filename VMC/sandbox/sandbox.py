@@ -212,20 +212,20 @@ class Sandbox(MQTTModule):
             self.takeoff()
             time.sleep(2)
             
-            self.move((310, 125, 60)) # Building 5
+            self.move((310, 125, 60*.75)) # Building 5
             time.sleep(.5)
             
-            self.move((356, 53, 85)) # Building 4
+            self.move((356, 53, 85*.75)) # Building 4
             time.sleep(.5)
             
-            self.move((404, 120, 126)) # Building 1
+            self.move((404, 120, 126*.75)) # Building 1
             time.sleep(.5)
             
             if next((tag for tag in self.april_tags if tag.id == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
-            self.move((231, 85, 52))
+            self.move((231, 85, 52*.75))
             time.sleep(1)
             self.land()
             self.recon = False
@@ -253,7 +253,7 @@ class Sandbox(MQTTModule):
     
     def takeoff(self) -> None:
         """ AVR Takeoff. """
-        self.send_action('takeoff', {'alt': 2})
+        self.send_action('takeoff', {'alt': 1})
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
