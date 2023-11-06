@@ -39,7 +39,10 @@ class Sandbox(MQTTModule):
         
         self.do_pathfinding = False
         self.position = [0, 0, 0]
-        self.start_pos = [180, 50, 0]
+        
+        self.start_pos = (180, 50, 0)
+        # Only use on homefield firehouse start
+        self.start_pos = (231, 85, 52)
         
         self.is_armed: bool = False
         self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
