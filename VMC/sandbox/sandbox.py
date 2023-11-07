@@ -138,7 +138,7 @@ class Sandbox(MQTTModule):
             logger.debug('takeoff')
             time.sleep(1)
             logger.debug('moving')
-            self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading', 0})
+            self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
             time.sleep(1)
         
     # ===============
