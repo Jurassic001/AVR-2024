@@ -7,3 +7,12 @@ scipy==1.9.0
 numpy==1.24.3
 bell-avr-libraries[mqtt,serial]==0.1.12
 PySide6==6.5.0
+
+
+fcm_1        | 2023-11-06 22:29:32.583 | DEBUG    | __main__:schedule_task:44 - Scheduling a task for 'takeoff'
+fcm_1        | 2023-11-06 22:29:32.586 | INFO     | __main__:set_takeoff:348 - Setting takeoff altitude to 1
+fcm_1        | 2023-11-06 22:29:32.606 | INFO     | __main__:set_arm:305 - Sending arm command
+fcm_1        | 2023-11-06 22:29:32.643 | INFO     | __main__:simple_action_executor:275 - Sending arm_success_event
+fcm_1        | 2023-11-06 22:29:32.655 | INFO     | __main__:set_takeoff:351 - Sending takeoff command
+fcm_1        | 2023-11-06 22:29:32.708 | INFO     | __main__:simple_action_executor:275 - Sending takeoff_success_event
+sandbox_1    | 2023-11-06 22:29:49,610 [Geometry3D WARNING] [[0.09814113595302132, 5.524065685795474, -104.66385551497345] -> (310, 125, 45.0)] Results in AVR hitting hazard at (231, 82, 0)

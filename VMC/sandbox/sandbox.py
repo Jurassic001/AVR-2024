@@ -24,6 +24,7 @@ class Sandbox(MQTTModule):
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fusion/position/ned': self.handle_pos,
+            'avr/sanbox/dev': self.handle_dev,
             }
         height_is_75_scale = True
         self.target_range = (30, 40)
@@ -129,7 +130,15 @@ class Sandbox(MQTTModule):
         self.position[1] = payload['e']
         self.position[2] = payload['d']
         
-    
+    def handle_dev(self, payload):
+        if payload == 'test_flight':
+            self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
+            time.sleep(.5)
+            self.takeoff()
+            time.sleep(1)
+            self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1})
+            time.sleep(1)
+        
     # ===============
     # Threads
     def targeting(self) -> None:
@@ -209,6 +218,10 @@ class Sandbox(MQTTModule):
             
             if not self.recon:
                 continue
+            
+            self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
+            time.sleep(.5)
+            
             self.takeoff()
             time.sleep(2)
             
@@ -232,12 +245,13 @@ class Sandbox(MQTTModule):
             
     # ===============
     # Drone Control Comands
-    def move(self, pos: tuple) -> None:
+    def move(self, pos: tuple, pathing: bool = False) -> None:
         """ Moves AVR to postion on field.\n\npos(inches): (x, y, z) """
-        if not self.col_test.path_check(self.position, pos):
+        if not pathing or not self.col_test.path_check(self.position, pos):
             relative_pos = [0, 0, 0]
             for i in range(3):
                 relative_pos[i] = self.inch_to_m(pos[i]) - self.start_pos[i]
+            relative_pos[2] *= -1
             self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2]})
         else:
             # Path obstructed.
@@ -251,9 +265,9 @@ class Sandbox(MQTTModule):
                 logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
                     
     
-    def takeoff(self) -> None:
-        """ AVR Takeoff. """
-        self.send_action('takeoff', {'alt': 1})
+    def takeoff(self, alt = 39.3701) -> None:
+        """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
+        self.send_action('takeoff', {'alt': self.inch_to_m(alt)})
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
