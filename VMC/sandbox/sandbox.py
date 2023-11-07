@@ -133,10 +133,10 @@ class Sandbox(MQTTModule):
     def handle_dev(self, payload):
         if payload == 'test_flight':
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
-            time.sleep(.5)
+            time.sleep(1)
             self.takeoff()
             logger.debug('takeoff')
-            time.sleep(1)
+            time.sleep(4)
             logger.debug('moving')
             self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
             time.sleep(1)
@@ -269,7 +269,7 @@ class Sandbox(MQTTModule):
     
     def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
-        self.send_action('takeoff', {'alt': self.inch_to_m(alt)})
+        self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 4)})
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
