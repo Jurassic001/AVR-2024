@@ -135,8 +135,10 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(.5)
             self.takeoff()
+            logger.debug('takeoff')
             time.sleep(1)
-            self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1})
+            logger.debug('moving')
+            self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading', 0})
             time.sleep(1)
         
     # ===============
@@ -252,7 +254,7 @@ class Sandbox(MQTTModule):
             for i in range(3):
                 relative_pos[i] = self.inch_to_m(pos[i]) - self.start_pos[i]
             relative_pos[2] *= -1
-            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2]})
+            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': 0})
         else:
             # Path obstructed.
             if self.do_pathfinding:
