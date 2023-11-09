@@ -140,7 +140,7 @@ class Sandbox(MQTTModule):
             self.send_action(
                 "upload_mission",
                 {"waypoints": [
-                    {"type": "goto", "n": 1, "e": 0, "d": -1},
+                    {"type": "goto", "n": 1, "e": 0, "d": -1, "heading": 0},
                     ]
                 }
             )
