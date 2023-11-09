@@ -24,7 +24,7 @@ class Sandbox(MQTTModule):
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fusion/position/ned': self.handle_pos,
-            'avr/sanbox/dev': self.handle_dev,
+            'avr/sandbox/dev': self.handle_dev,
             }
         height_is_75_scale = True
         self.target_range = (30, 40)
@@ -136,12 +136,11 @@ class Sandbox(MQTTModule):
         if payload == 'test_flight':
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
+            self.takeoff()
             self.send_action(
                 "upload_mission",
                 {"waypoints": [
-                    {"type": "takeoff", "alt": 1},
                     {"type": "goto", "n": 1, "e": 0, "d": -1},
-                    {"type": "land"}
                     ]
                 }
             )
