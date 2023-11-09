@@ -45,6 +45,8 @@ class Sandbox(MQTTModule):
         # Only use on homefield firehouse start
         self.start_pos = (231, 85, 52)
         
+        self.action_queue = []
+        
         self.is_armed: bool = False
         self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
         self.thermal_grid = [[0 for _ in range(8)] for _ in range(8)]
@@ -134,12 +136,15 @@ class Sandbox(MQTTModule):
         if payload == 'test_flight':
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
-            self.takeoff()
-            logger.debug('takeoff')
-            time.sleep(4)
-            logger.debug('moving')
-            self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
-            time.sleep(1)
+            self.send_action(
+                "upload_mission",
+                {"waypoints": [
+                    {"type": "takeoff", "alt": 1},
+                    {"type": "goto", "n": 1, "e": 0, "d": -1},
+                    {"type": "land"}
+                    ]
+                }
+            )
         
     # ===============
     # Threads
@@ -274,6 +279,16 @@ class Sandbox(MQTTModule):
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
+    # ==============
+    # Mission Commands
+    def queue(self, action: str, payload: dict = []):
+        temp = [action]
+        if payload:
+            temp.extend(list(payload))
+        self.action_queue.append(temp)
+        
+    def execute_queue(self):
+        self.send_action("upload_mission", {"waypoints:", self.action_queue})
         
     # ===============
     # Send Message Commands
