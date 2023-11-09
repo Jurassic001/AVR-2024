@@ -137,13 +137,6 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
-            self.send_action(
-                "upload_mission",
-                {"waypoints": [
-                    {"type": "goto", "n": 1, "e": 0, "d": -1, "heading": 0},
-                    ]
-                }
-            )
         
     # ===============
     # Threads
@@ -229,23 +222,23 @@ class Sandbox(MQTTModule):
             time.sleep(.5)
             
             self.takeoff()
-            time.sleep(2)
+            time.sleep(8)
             
             self.move((310, 125, 60*.75)) # Building 5
-            time.sleep(.5)
+            time.sleep(4)
             
             self.move((356, 53, 85*.75)) # Building 4
-            time.sleep(.5)
+            time.sleep(4)
             
             self.move((404, 120, 126*.75)) # Building 1
-            time.sleep(.5)
+            time.sleep(4)
             
             if next((tag for tag in self.april_tags if tag.id == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
             self.move((231, 85, 52*.75))
-            time.sleep(1)
+            time.sleep(4)
             self.land()
             self.recon = False
             
