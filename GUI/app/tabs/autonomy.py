@@ -367,8 +367,15 @@ class AutonomyWidget(BaseTabWidget):
                 AvrPcmSetServoAbsPayload(servo= 0, absolute= 1370)
             )
         
-    def set_spintake_bottom(self, door: int, open_close: str) -> None:
+    def set_spintake_bottom(self, open_close: str) -> None:
         """ [Placeholder]"""
+        self.send_message( #Open: 41
+        "avr/pcm/set_servo_open_close",
+        AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
+        )
+        
+    def set_sphero_holder(self, door: int, open_close: str) -> None:
+        """ Open sphero gates. \n\n`door` = 0 opens/closes all.  """
         if door == 0:
             for i in range (5, 8):
                 self.send_message( #Open: 41
@@ -380,13 +387,6 @@ class AutonomyWidget(BaseTabWidget):
                 "avr/pcm/set_servo_open_close",
                 AvrPcmSetServoOpenClosePayload(servo= 4+door, action= open_close)
             )
-        
-    def set_sphero_holder(self, open_close: str) -> None:
-        """ Open sphero gates. \n\n`door` = 0 opens/closes all.  """
-        self.send_message(
-            "avr/pcm/set_servo_open_close",
-            AvrPcmSetServoOpenClosePayload(servo= 7, action= open_close)
-        )
         
     def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
         config.temp_range = (lower, upper, step)
