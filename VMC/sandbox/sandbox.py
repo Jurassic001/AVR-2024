@@ -138,6 +138,10 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
+            time.sleep(8)
+            self.move((180+40, 50, 40))
+            time.sleep(5)
+            self.land()
         elif payload == 'check':
             self.invert = 1
         
