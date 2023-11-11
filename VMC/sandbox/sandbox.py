@@ -66,7 +66,7 @@ class Sandbox(MQTTModule):
         self.threads: dict
         self.invert = 1
         
-        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
+        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
 
     def set_threads(self, threads):
         self.threads = threads
@@ -100,11 +100,11 @@ class Sandbox(MQTTModule):
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
         self.april_tags = payload['tags']
         logger.debug(self.april_tags)
-        if next((tag for tag in self.april_tags if tag['id'] == 0), None):
+        if next((tag for tag in self.april_tags if tag['id'] == 1), None):
             logger.debug('Tag found')
-            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
             time.sleep(1)
-            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
+            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
@@ -253,7 +253,7 @@ class Sandbox(MQTTModule):
             self.move((404, 120, 126*.75)) # Building 1
             time.sleep(4)
             
-            if next((tag for tag in self.april_tags if tag['id'] == 1), None):
+            if next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
