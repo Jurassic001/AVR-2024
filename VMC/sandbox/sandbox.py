@@ -64,7 +64,7 @@ class Sandbox(MQTTModule):
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
         self.threads: dict
-        self.invert = -1
+        self.invert = 1
 
     def set_threads(self, threads):
         self.threads = threads
@@ -138,9 +138,14 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
-            time.sleep(8)
+            for i in range(5):
+                logger.debug(f'Waiting: {i+1}')
+                time.sleep(1)
+            logger.debug('About to send move message')
             self.move((180+40, 50, 40))
-            time.sleep(5)
+            for i in range(5):
+                logger.debug(f'Waiting: {i+1}')
+                time.sleep(1)
             self.land()
         elif payload == 'check':
             self.invert = 1
