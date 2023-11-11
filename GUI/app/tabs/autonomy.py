@@ -151,36 +151,12 @@ class AutonomyWidget(BaseTabWidget):
         spintake_bottom_layout = QtWidgets.QVBoxLayout()
         spintake_bottom_groupbox.setLayout(spintake_bottom_layout)
         
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open 1')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom(1, 'open'))
+        spintake_bottom_go_button = QtWidgets.QPushButton('Open')
+        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom('open'))
         spintake_bottom_layout.addWidget(spintake_bottom_go_button)
         
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 1')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom(1, 'close'))
-        spintake_bottom_layout.addWidget(spintake_bottom_stop_button)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open 2')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom(2, 'open'))
-        spintake_bottom_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 2')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom(2, 'close'))
-        spintake_bottom_layout.addWidget(spintake_bottom_stop_button)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open 3')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom(3, 'open'))
-        spintake_bottom_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 3')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom(3, 'close'))
-        spintake_bottom_layout.addWidget(spintake_bottom_stop_button)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open All')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom(0, 'open'))
-        spintake_bottom_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close All')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom(0, 'close'))
+        spintake_bottom_stop_button = QtWidgets.QPushButton('Close')
+        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom('close'))
         spintake_bottom_layout.addWidget(spintake_bottom_stop_button)
         
         self.spintake_bottom_label = QtWidgets.QLabel()
@@ -203,12 +179,36 @@ class AutonomyWidget(BaseTabWidget):
         sphero_groupbox.setLayout(sphero_layout)
         
         sphero_go_button = QtWidgets.QPushButton('Open')
-        sphero_go_button.clicked.connect(lambda: self.set_sphero_holder('open'))
+        sphero_go_button.clicked.connect(lambda: self.set_sphero_holder(1, 'open'))
         sphero_layout.addWidget(sphero_go_button)
         
         sphero_stop_button = QtWidgets.QPushButton('Close')
-        sphero_stop_button.clicked.connect(lambda: self.set_sphero_holder('close'))
+        sphero_stop_button.clicked.connect(lambda: self.set_sphero_holder(1, 'close'))
         sphero_layout.addWidget(sphero_stop_button)
+        
+        spintake_bottom_go_button = QtWidgets.QPushButton('Open 2')
+        spintake_bottom_go_button.clicked.connect(lambda: self.set_sphero_holder(2, 'open'))
+        sphero_layout.addWidget(spintake_bottom_go_button)
+        
+        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 2')
+        spintake_bottom_stop_button.clicked.connect(lambda: self.set_sphero_holder(2, 'close'))
+        sphero_layout.addWidget(spintake_bottom_stop_button)
+        
+        spintake_bottom_go_button = QtWidgets.QPushButton('Open 3')
+        spintake_bottom_go_button.clicked.connect(lambda: self.set_sphero_holder(3, 'open'))
+        sphero_layout.addWidget(spintake_bottom_go_button)
+        
+        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 3')
+        spintake_bottom_stop_button.clicked.connect(lambda: self.set_sphero_holder(3, 'close'))
+        sphero_layout.addWidget(spintake_bottom_stop_button)
+        
+        spintake_bottom_go_button = QtWidgets.QPushButton('Open All')
+        spintake_bottom_go_button.clicked.connect(lambda: self.set_sphero_holder(0, 'open'))
+        sphero_layout.addWidget(spintake_bottom_go_button)
+        
+        spintake_bottom_stop_button = QtWidgets.QPushButton('Close All')
+        spintake_bottom_stop_button.clicked.connect(lambda: self.set_sphero_holder(0, 'close'))
+        sphero_layout.addWidget(spintake_bottom_stop_button)
         
         self.sphero_label = QtWidgets.QLabel()
         self.sphero_label.setAlignment(
