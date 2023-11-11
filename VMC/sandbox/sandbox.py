@@ -106,9 +106,11 @@ class Sandbox(MQTTModule):
         if next((tag for tag in self.april_tags if tag['id'] == 1), None):
             self.tag_flashing = False
             logger.debug('Tag found')
-            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
-            time.sleep(1)
-            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+            for i in range(3):
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
+                time.sleep(.3)
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+            self.tag_flashing = True
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
