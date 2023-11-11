@@ -138,7 +138,7 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
-            for i in range(5):
+            for i in range(10):
                 logger.debug(f'Waiting: {i+1}')
                 time.sleep(1)
             logger.debug('About to send move message')
