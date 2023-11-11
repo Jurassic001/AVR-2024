@@ -67,6 +67,7 @@ class Sandbox(MQTTModule):
         self.invert = 1
         
         self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+        self.tag_flashing = True
 
     def set_threads(self, threads):
         self.threads = threads
@@ -100,7 +101,10 @@ class Sandbox(MQTTModule):
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
         self.april_tags = payload['tags']
         logger.debug(self.april_tags)
+        if not self.tag_flashing:
+            return
         if next((tag for tag in self.april_tags if tag['id'] == 1), None):
+            self.tag_flashing = False
             logger.debug('Tag found')
             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
             time.sleep(1)
