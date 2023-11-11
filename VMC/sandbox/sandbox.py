@@ -66,7 +66,6 @@ class Sandbox(MQTTModule):
         self.threads: dict
         self.invert = 1
         
-        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
         self.tag_flashing = True
 
     def set_threads(self, threads):
@@ -169,6 +168,10 @@ class Sandbox(MQTTModule):
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         while True:
+            if np.any(np.array(mask) >= 30):
+                for i in range(10):
+                    logger.debug('HOT SPOT DETECTED. GO UP')
+                time.sleep(7)
             if not self.auto_target:
                 if self.laser_on:
                     self.set_laser(False)
@@ -212,9 +215,13 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         #status_thread.setDaemon(True)
         status_thread.start()
+        light_on_run = False
         while True:
             if not self.CIC_loop:
                 continue
+            if not self.april_tags and not light_on_run:
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                light_on_run = True
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
             else:
