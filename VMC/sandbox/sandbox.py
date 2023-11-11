@@ -261,7 +261,7 @@ class Sandbox(MQTTModule):
         if not pathing or not self.col_test.path_check(self.position, pos):
             relative_pos = [0, 0, 0]
             for i in range(3):
-                relative_pos[i] = self.inch_to_m(pos[i]) - self.start_pos[i] * self.invert
+                relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i] * self.invert
             relative_pos[2] *= -1
             logger.debug(f'NED: {relative_pos}')
             self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
@@ -279,7 +279,7 @@ class Sandbox(MQTTModule):
     
     def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
-        self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 4)})
+        self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
@@ -292,6 +292,7 @@ class Sandbox(MQTTModule):
                     "avr/pcm/set_servo_abs",
                     AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
                 )
+
     def send_action(self, action, payload = {}):
         self.send_message(
             'avr/fcm/actions',
