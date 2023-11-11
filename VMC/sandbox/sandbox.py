@@ -97,6 +97,10 @@ class Sandbox(MQTTModule):
                 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
         self.april_tags = payload['tags']
+        if next((tag for tag in self.april_tags if tag.id == 0), None):
+            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+            time.sleep(1)
+            self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
