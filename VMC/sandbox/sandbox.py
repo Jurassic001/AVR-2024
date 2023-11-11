@@ -174,6 +174,10 @@ class Sandbox(MQTTModule):
                     logger.debug('HOT SPOT DETECTED. GO UP')
                 has_gotten_hot = True
                 time.sleep(7)
+                for i in range(3):
+                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
+                    time.sleep(.3)
+                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
             if not self.auto_target:
                 if self.laser_on:
                     self.set_laser(False)
