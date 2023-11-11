@@ -253,7 +253,7 @@ class Sandbox(MQTTModule):
             self.move((404, 120, 126*.75)) # Building 1
             time.sleep(4)
             
-            if next((tag for tag in self.april_tags if tag['id'] == 0), None):
+            if next((tag for tag in self.april_tags if tag['id'] == 1), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
