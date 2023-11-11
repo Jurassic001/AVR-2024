@@ -65,6 +65,8 @@ class Sandbox(MQTTModule):
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
         self.threads: dict
         self.invert = 1
+        
+        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
 
     def set_threads(self, threads):
         self.threads = threads
@@ -97,7 +99,9 @@ class Sandbox(MQTTModule):
                 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
         self.april_tags = payload['tags']
+        logger.debug(self.april_tags)
         if next((tag for tag in self.april_tags if tag.id == 0), None):
+            logger.debug('Tag found')
             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
             time.sleep(1)
             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
