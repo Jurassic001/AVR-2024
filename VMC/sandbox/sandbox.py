@@ -167,10 +167,12 @@ class Sandbox(MQTTModule):
     def targeting(self) -> None:
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
+        has_gotten_hot = False
         while True:
-            if np.any(np.array(mask) >= 30):
+            if not has_gotten_hot and np.any(np.array(mask) >= 30):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
+                has_gotten_hot = True
                 time.sleep(7)
             if not self.auto_target:
                 if self.laser_on:
