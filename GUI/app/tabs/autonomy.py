@@ -254,6 +254,13 @@ class AutonomyWidget(BaseTabWidget):
         """
         Set a building state
         """
+        if number == 5:
+            self.send_message(
+                'avr/sandbox/dev',
+                'check'
+            )
+            return
+        
         self.send_message(
             "avr/autonomous/building/drop",
             AvrAutonomousBuildingDropPayload(id=number, enabled=state),

@@ -64,6 +64,7 @@ class Sandbox(MQTTModule):
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
         self.threads: dict
+        self.invert = -1
 
     def set_threads(self, threads):
         self.threads = threads
@@ -137,6 +138,8 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
+        elif payload == 'check':
+            self.invert = 1
         
     # ===============
     # Threads
@@ -163,7 +166,7 @@ class Sandbox(MQTTModule):
             t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1 )
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
-            heat_center = [float(x) for x in t[s.argmax()][::-1]]
+            heat_center = [float(x) * self.invert for x in t[s.argmax()][::-1]]
             move_range = [15, -15]
             m = interp1d([0, 8], move_range)
             move_val = ()
@@ -244,14 +247,15 @@ class Sandbox(MQTTModule):
             
     # ===============
     # Drone Control Comands
-    def move(self, pos: tuple, pathing: bool = False) -> None:
+    def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Moves AVR to postion on field.\n\npos(inches): (x, y, z) """
         if not pathing or not self.col_test.path_check(self.position, pos):
             relative_pos = [0, 0, 0]
             for i in range(3):
-                relative_pos[i] = self.inch_to_m(pos[i]) - self.start_pos[i]
+                relative_pos[i] = self.inch_to_m(pos[i]) - self.start_pos[i] * self.invert
             relative_pos[2] *= -1
-            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': 0})
+            logger.debug(f'NED: {relative_pos}')
+            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
         else:
             # Path obstructed.
             if self.do_pathfinding:
@@ -271,17 +275,7 @@ class Sandbox(MQTTModule):
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
-    # ==============
-    # Mission Commands
-    def queue(self, action: str, payload: dict = []):
-        temp = [action]
-        if payload:
-            temp.extend(list(payload))
-        self.action_queue.append(temp)
-        
-    def execute_queue(self):
-        self.send_action("upload_mission", {"waypoints:", self.action_queue})
-        
+
     # ===============
     # Send Message Commands
     def move_servo(self, id, angle) -> None:
