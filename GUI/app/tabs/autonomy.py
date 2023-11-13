@@ -175,46 +175,57 @@ class AutonomyWidget(BaseTabWidget):
             # ==========================
             # Sphero Holder Box
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
-        sphero_layout = QtWidgets.QVBoxLayout()
+        sphero_layout = QtWidgets.QGridLayout()
         sphero_groupbox.setLayout(sphero_layout)
         
-        sphero_go_button = QtWidgets.QPushButton('Open')
-        sphero_go_button.clicked.connect(lambda: self.set_sphero_holder(1, 'open'))
-        sphero_layout.addWidget(sphero_go_button)
+        sphero_groupbox1 = QtWidgets.QGroupBox('Holder 1')
+        sphero_layout1 = QtWidgets.QVBoxLayout()
+        sphero_groupbox1.setLayout(sphero_layout1)
+        sphero_go_button1 = QtWidgets.QPushButton('Open')
+        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(1, 'open'))
+        sphero_layout1.addWidget(sphero_go_button1)
+        sphero_stop_button1 = QtWidgets.QPushButton('Close')
+        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(1, 'close'))
+        sphero_layout1.addWidget(sphero_stop_button1)
+        sphero_layout.addWidget(sphero_groupbox1, 0, 0)
+
+        sphero_groupbox1 = QtWidgets.QGroupBox('Holder 2')
+        sphero_layout1 = QtWidgets.QVBoxLayout()
+        sphero_groupbox1.setLayout(sphero_layout1)
+        sphero_go_button1 = QtWidgets.QPushButton('Open')
+        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(2, 'open'))
+        sphero_layout1.addWidget(sphero_go_button1)
+        sphero_stop_button1 = QtWidgets.QPushButton('Close')
+        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(2, 'close'))
+        sphero_layout1.addWidget(sphero_stop_button1)
+        sphero_layout.addWidget(sphero_groupbox1, 0, 1)
         
-        sphero_stop_button = QtWidgets.QPushButton('Close')
-        sphero_stop_button.clicked.connect(lambda: self.set_sphero_holder(1, 'close'))
-        sphero_layout.addWidget(sphero_stop_button)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open 2')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_sphero_holder(2, 'open'))
-        sphero_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 2')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_sphero_holder(2, 'close'))
-        sphero_layout.addWidget(spintake_bottom_stop_button)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open 3')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_sphero_holder(3, 'open'))
-        sphero_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close 3')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_sphero_holder(3, 'close'))
-        sphero_layout.addWidget(spintake_bottom_stop_button)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open All')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_sphero_holder(0, 'open'))
-        sphero_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close All')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_sphero_holder(0, 'close'))
-        sphero_layout.addWidget(spintake_bottom_stop_button)
+        sphero_groupbox1 = QtWidgets.QGroupBox('Holder 3')
+        sphero_layout1 = QtWidgets.QVBoxLayout()
+        sphero_groupbox1.setLayout(sphero_layout1)
+        sphero_go_button1 = QtWidgets.QPushButton('Open')
+        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(3, 'open'))
+        sphero_layout1.addWidget(sphero_go_button1)
+        sphero_stop_button1 = QtWidgets.QPushButton('Close')
+        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(3, 'close'))
+        sphero_layout1.addWidget(sphero_stop_button1)
+        sphero_layout.addWidget(sphero_groupbox1, 0, 2)
+
+        sphero_all_groupbox = QtWidgets.QGroupBox('All')
+        sphero_all_layout = QtWidgets.QGridLayout()
+        sphero_all_groupbox.setLayout(sphero_all_layout)
+        sphero_go_button1 = QtWidgets.QPushButton('Open')
+        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(0, 'open'))
+        sphero_all_layout.addWidget(sphero_go_button1, 1, 1)
+        sphero_stop_button1 = QtWidgets.QPushButton('Close')
+        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(0, 'close'))
+        sphero_all_layout.addWidget(sphero_stop_button1, 1, 2)
+        sphero_layout.addWidget(sphero_all_groupbox, 1, 0, 1, 3)
         
         self.sphero_label = QtWidgets.QLabel()
         self.sphero_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
-        sphero_layout.addWidget(sphero_groupbox)
         custom_layout.addWidget(sphero_groupbox)
             
             

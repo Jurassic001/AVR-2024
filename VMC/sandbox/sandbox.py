@@ -25,6 +25,7 @@ class Sandbox(MQTTModule):
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fusion/position/ned': self.handle_pos,
             'avr/sandbox/dev': self.handle_dev,
+            'avr/fcm/events': self.handle_events,
             }
         height_is_75_scale = True
         self.target_range = (30, 40)
@@ -67,6 +68,10 @@ class Sandbox(MQTTModule):
         self.invert = 1
         
         self.tag_flashing = True
+        
+        self.takeoff_complete = False
+        self.move_complete = False
+        self.land_complete = False
 
     def set_threads(self, threads):
         self.threads = threads
@@ -161,6 +166,16 @@ class Sandbox(MQTTModule):
             self.land()
         elif payload == 'check':
             self.invert = 1
+            
+    def handle_events(self, payload: AvrFcmEventsPayload):
+        """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
+        action = payload['name']
+        if action == 'takeoff':
+            self.takeoff_complete = True
+        elif action == 'goto_location_ned':
+            self.move_complete = True
+        elif action == 'land':
+            self.land_complete = True
         
     # ===============
     # Threads
@@ -301,15 +316,24 @@ class Sandbox(MQTTModule):
                     time.sleep(.5)
             else:
                 logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
+        while not self.move_complete:
+            pass
+        self.move_complete = False
                     
     
     def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
         self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
+        while not self.takeoff_complete:
+            pass
+        self.takeoff_complete = False
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
+        while not self.land_complete:
+            pass
+        self.land_complete = False
 
     # ===============
     # Send Message Commands

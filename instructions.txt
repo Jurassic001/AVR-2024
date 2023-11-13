@@ -5,12 +5,10 @@ username is avr
 password is bellavr22
 run the command cd ~/AVR-2022/VMC/
 IF CHANGES WERE MADE:
-run:
-git pull
-./start.py build sandbox
+    git pull
+    ./start.py build sandbox
 
-then you can run main command:
 ./start.py run --all
-then run VS Code app.py script, and connect to 10.42.0.1o
+run app.py script, and connect to 10.42.0.1o
 
 ctrl c to close
