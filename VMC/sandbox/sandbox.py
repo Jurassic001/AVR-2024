@@ -149,13 +149,17 @@ class Sandbox(MQTTModule):
         if payload == 'test_flight':
             logger.debug('Test Flight Starting...')
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
+            logger.debug('Home Captured')
             time.sleep(1)
             self.takeoff()
+            logger.debug('Takeoff Exectuded')
             time.sleep(2)
             logger.debug('About to send move message')
             self.move((180+40, 50, 40))
+            logger.debug('Move Exectuded')
             time.sleep(2)
             self.land()
+            logger.debug('Landed')
         elif payload == 'check':
             self.invert = 1
             
