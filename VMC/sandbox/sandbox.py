@@ -147,6 +147,7 @@ class Sandbox(MQTTModule):
         
     def handle_dev(self, payload):
         if payload == 'test_flight':
+            logger.debug('Test Flight Starting...')
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
