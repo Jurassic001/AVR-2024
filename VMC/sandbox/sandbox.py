@@ -166,12 +166,11 @@ class Sandbox(MQTTModule):
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
         action = payload['name']
-        print(action)
-        if action == 'takeoff':
+        if action == 'landed_state_in_air_event':
             self.takeoff_complete = True
         elif action == 'goto_location_ned':
             self.move_complete = True
-        elif action == 'land':
+        elif action == 'landed_state_on_ground_event':
             self.land_complete = True
         
     # ===============
