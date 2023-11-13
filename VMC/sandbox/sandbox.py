@@ -72,6 +72,8 @@ class Sandbox(MQTTModule):
         self.takeoff_complete = False
         self.move_complete = False
         self.land_complete = False
+        
+        self.fcm_init = False
 
     def set_threads(self, threads):
         self.threads = threads
@@ -92,6 +94,7 @@ class Sandbox(MQTTModule):
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         armed = payload['armed']
         self.is_armed = armed
+        self.fcm_init = True
         
     def handle_drop(self, payload: AvrAutonomousBuildingDropPayload) -> None:
         self.building_drops[list(self.building_drops.keys())[payload['id']]] = payload['enabled']
@@ -236,13 +239,13 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         #status_thread.setDaemon(True)
         status_thread.start()
-        light_on_run = False
+        light_init = False
         while True:
             if not self.CIC_loop:
                 continue
-            if not self.april_tags and not light_on_run:
+            if self.fcm_init and not light_init:
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
-                light_on_run = True
+                light_init = True
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
             else:
