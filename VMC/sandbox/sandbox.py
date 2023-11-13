@@ -109,14 +109,6 @@ class Sandbox(MQTTModule):
         self.april_tags = payload['tags']
         if not self.tag_flashing:
             return
-        if next((tag for tag in self.april_tags if tag['id'] == 0), None):
-            self.tag_flashing = False
-            logger.debug('Tag found')
-            for i in range(3):
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
-                time.sleep(.3)
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
-            self.tag_flashing = True
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
@@ -158,14 +150,10 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(1)
             self.takeoff()
-            for i in range(10):
-                logger.debug(f'Waiting: {i+1}')
-                time.sleep(1)
+            time.sleep(2)
             logger.debug('About to send move message')
             self.move((180+40, 50, 40))
-            for i in range(5):
-                logger.debug(f'Waiting: {i+1}')
-                time.sleep(1)
+            time.sleep(2)
             self.land()
         elif payload == 'check':
             self.invert = 1
@@ -185,17 +173,7 @@ class Sandbox(MQTTModule):
     def targeting(self) -> None:
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
-        has_gotten_hot = False
         while True:
-            if not has_gotten_hot and np.any(np.array(mask) >= 30):
-                for i in range(10):
-                    logger.debug('HOT SPOT DETECTED. GO UP')
-                has_gotten_hot = True
-                time.sleep(7)
-                for i in range(3):
-                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
-                    time.sleep(.3)
-                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
             if not self.auto_target:
                 if self.laser_on:
                     self.set_laser(False)
@@ -240,12 +218,34 @@ class Sandbox(MQTTModule):
         #status_thread.setDaemon(True)
         status_thread.start()
         light_init = False
+        has_gotten_hot = False
         while True:
             if not self.CIC_loop:
                 continue
+            
             if self.fcm_init and not light_init:
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 light_init = True
+                
+            if next((tag for tag in self.april_tags if tag['id'] == 0), None):
+                self.tag_flashing = False
+                logger.debug('Tag found')
+                for i in range(3):
+                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
+                    time.sleep(.3)
+                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                self.tag_flashing = True
+                
+            if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 30):
+                for i in range(10):
+                    logger.debug('HOT SPOT DETECTED. GO UP')
+                has_gotten_hot = True
+                if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
+                    for i in range(3):
+                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
+                        time.sleep(.3)
+                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
             else:

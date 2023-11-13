@@ -11,11 +11,13 @@ from ..lib.widgets import DoubleLineEdit
 from ..lib.config import config
 from .base import BaseTabWidget
 
+from scipy.interpolate import interp1d
+
 
 class AutonomyWidget(BaseTabWidget):
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
-
+        self.spinner_speed_val = 1070
         self.setWindowTitle("Autonomy")
 
     def build(self) -> None:
@@ -125,6 +127,7 @@ class AutonomyWidget(BaseTabWidget):
         spintake_groupbox = QtWidgets.QGroupBox('Spintake')
         spintake_layout = QtWidgets.QVBoxLayout()
         spintake_groupbox.setLayout(spintake_layout)
+        spintake_groupbox.setMaximumWidth(300)
                 # ==========================
                 # Spintake Spinner Box
         spintake_spinner_groupbox = QtWidgets.QGroupBox('Spinner')
@@ -138,6 +141,22 @@ class AutonomyWidget(BaseTabWidget):
         spintake_spinner_stop_button = QtWidgets.QPushButton('Stop')
         spintake_spinner_stop_button.clicked.connect(lambda: self.set_spintake_spinner(False))
         spintake_spinner_layout.addWidget(spintake_spinner_stop_button)
+        
+        speed_layout = QtWidgets.QFormLayout()
+        
+        speed_precent = DoubleLineEdit()
+        speed_layout.addRow(QtWidgets.QLabel("Speed:"), speed_precent)
+        speed_precent.setText('100')
+        inter = interp1d((100, 0), (1070, 1370))
+        
+        speed_button = QtWidgets.QPushButton("Set Speed")
+        speed_layout.addWidget(speed_button)
+        spintake_spinner_layout.addLayout(speed_layout)
+        speed_button.clicked.connect(  # type: ignore
+            lambda: self.set_spinner_speed(
+                inter(float(speed_precent.text()))
+            )
+        )
         
         self.spintake_spinner_label = QtWidgets.QLabel()
         self.spintake_spinner_label.setAlignment(
@@ -369,8 +388,8 @@ class AutonomyWidget(BaseTabWidget):
         vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
         if state:
             self.send_message(
-            "avr/pcm/set_servo_open_close",
-            AvrPcmSetServoOpenClosePayload(servo= 0, action= 'close')
+                "avr/pcm/set_servo_abs",
+                AvrPcmSetServoAbsPayload(servo= 0, absolute= self.spinner_speed_val)
             )
         else:
             self.send_message(
@@ -405,3 +424,7 @@ class AutonomyWidget(BaseTabWidget):
             'avr/autonomous/thermal_range',
             {'range': (lower, upper, step)}
         )
+        
+    def set_spinner_speed(self, precent: float) -> None:
+        print(precent)
+        self.spinner_speed_val = int(precent)
