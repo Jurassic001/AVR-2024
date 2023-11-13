@@ -166,6 +166,7 @@ class Sandbox(MQTTModule):
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
         action = payload['name']
+        print(action)
         if action == 'takeoff':
             self.takeoff_complete = True
         elif action == 'goto_location_ned':
@@ -325,6 +326,7 @@ class Sandbox(MQTTModule):
             else:
                 logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
         while not self.move_complete:
+            logger.debug('Waiting for move confirm', self.move_complete)
             pass
         self.move_complete = False
                     
@@ -333,6 +335,7 @@ class Sandbox(MQTTModule):
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
         self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
         while not self.takeoff_complete:
+            logger.debug('Waiting for takeoff confirm', self.takeoff_complete)
             pass
         self.takeoff_complete = False
     def land(self) -> None:
@@ -340,6 +343,7 @@ class Sandbox(MQTTModule):
         #self.move(self.landing_pads[pad])
         self.send_action('land')
         while not self.land_complete:
+            logger.debug('Waiting for land confirm', self.land_complete)
             pass
         self.land_complete = False
 
