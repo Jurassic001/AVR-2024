@@ -152,16 +152,18 @@ class Sandbox(MQTTModule):
             logger.debug('Home Captured')
             time.sleep(1)
             self.takeoff()
-            logger.debug('Takeoff Exectuded')
+            logger.debug('Takeoff Done')
             time.sleep(2)
-            logger.debug('About to send move message')
+            logger.debug('Moving forward 40 inches')
             self.move((180+40, 50, 40))
-            logger.debug('Move Exectuded')
+            logger.debug('Move Done')
             time.sleep(2)
             self.land()
             logger.debug('Landed')
-        elif payload == 'check':
-            self.invert = 1
+
+        elif payload == 'sound_test':
+            logger.debug('Playing sound file: sound_1.WAV')
+            self.sound_laptop(1)
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
@@ -244,6 +246,7 @@ class Sandbox(MQTTModule):
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 30):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
+                self.sound_laptop(1)
                 has_gotten_hot = True
                 if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
                     for i in range(3):
@@ -292,14 +295,16 @@ class Sandbox(MQTTModule):
             time.sleep(4)
             
             self.move((404, 120, 126*.75)) # Building 1
-            time.sleep(4)
-            
+            # Look for april tag 1 and flash led if found.
             if next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
-            self.move((231, 85, 52*.75))
             time.sleep(4)
+            
+            self.move((231, 85, 52*.75)) # Fire house
+            time.sleep(4)
+            
             self.land()
             self.recon = False
             
@@ -368,6 +373,12 @@ class Sandbox(MQTTModule):
             topic = "avr/pcm/set_laser_off"
             payload = AvrPcmSetLaserOffPayload()
         self.send_message(topic, payload)
+
+    def sound_laptop(self, id: int, loops: int = 1):
+        self.send_message(
+            'avr/autonomous/sound',
+            {'id': id, 'loops': loops}
+        )
     # ===============
     # Misc/Helper
     def inch_to_m(self, num):
@@ -380,17 +391,14 @@ if __name__ == '__main__':
     #Create Threads
     targeting_thread = Thread(target=box.targeting)
     targeting_thread.daemon = True
-    #targeting_thread.setDaemon(True)
     targeting_thread.start()
     
     CIC_thread = Thread(target=box.CIC)
     CIC_thread.daemon = True
-    #CIC_thread.setDaemon(True)
     CIC_thread.start()
     
     autonomous_thread = Thread(target=box.Autonomous)
     autonomous_thread.daemon = True
-    #autonomous_thread.setDaemon(True)
     autonomous_thread.start()
     
     box.set_threads({'thermal': targeting_thread, 'cic': CIC_thread, 'auto': autonomous_thread})

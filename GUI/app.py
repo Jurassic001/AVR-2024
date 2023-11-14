@@ -194,6 +194,10 @@ class MainWindow(QtWidgets.QWidget):
         self.autonomy_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.autonomy_widget, self.autonomy_widget.windowTitle())
 
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
+            self.autonomy_widget.process_message
+        )
+
         self.autonomy_widget.emit_message.connect(
             self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish
         )

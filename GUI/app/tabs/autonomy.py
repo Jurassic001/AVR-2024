@@ -4,7 +4,7 @@ import functools
 from typing import List
 
 from bell.avr.mqtt.payloads import *
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets, QtMultimedia
 
 from ..lib.color import wrap_text
 from ..lib.widgets import DoubleLineEdit
@@ -428,3 +428,12 @@ class AutonomyWidget(BaseTabWidget):
     def set_spinner_speed(self, precent: float) -> None:
         print(precent)
         self.spinner_speed_val = int(precent)
+        
+    def process_message(self, topic: str, payload: dict) -> None:
+        # discard topics we don't recognize
+        if topic != "avr/autonomous/sound":
+            return
+        effect = QtMultimedia.QSoundEffect()
+        effect.setSource(f'AVR\\AVR-2022\\GUI\\assets\\sounds\\sound_{payload["id"]}.WAV')
+        effect.setLoopCount(payload['loops'])
+        effect.play()
