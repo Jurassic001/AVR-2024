@@ -431,7 +431,7 @@ class ThermalViewControlWidget(BaseTabWidget):
         # connect signals
         self.joystick.emit_message.connect(self.emit_message.emit)
 
-        set_gimbal_button.clicked.connect(lambda: self.joystick.set_gimbal(gimbal_picker.text()))
+        set_gimbal_button.clicked.connect(lambda: self.joystick.set_gimbal(int(gimbal_picker.text())))
 
         fire_laser_button.clicked.connect(  # type: ignore
             lambda: self.send_message("avr/pcm/fire_laser", AvrPcmFireLaserPayload())
