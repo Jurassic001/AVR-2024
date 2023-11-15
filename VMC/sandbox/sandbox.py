@@ -169,11 +169,13 @@ class Sandbox(MQTTModule):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
         action = payload['name']
         if action == 'landed_state_in_air_event':
-            self.takeoff_complete = True
+            self.in_air = True
+            self.on_ground = False
         elif action == 'goto_location_ned':
             self.move_complete = True
         elif action == 'landed_state_on_ground_event':
-            self.land_complete = True
+            self.on_ground = True
+            self.in_air = False
         
     # ===============
     # Threads
@@ -338,18 +340,16 @@ class Sandbox(MQTTModule):
     def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
         self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
-        while not self.takeoff_complete:
-            logger.debug('Waiting for takeoff confirm', self.takeoff_complete)
+        while not self.in_air:
+            logger.debug('Waiting for takeoff confirm', self.in_air)
             pass
-        self.takeoff_complete = False
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
-        while not self.land_complete:
-            logger.debug('Waiting for land confirm', self.land_complete)
+        while not self.on_ground:
+            logger.debug('Waiting for land confirm', self.on_ground)
             pass
-        self.land_complete = False
 
     # ===============
     # Send Message Commands

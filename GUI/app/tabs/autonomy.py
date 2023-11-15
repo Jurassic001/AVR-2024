@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import functools
+import functools, json, os
 from typing import List
 
 from bell.avr.mqtt.payloads import *
-from PySide6 import QtCore, QtWidgets, QtMultimedia
+from PySide6 import QtCore, QtWidgets
+
+from playsound import playsound
 
 from ..lib.color import wrap_text
 from ..lib.widgets import DoubleLineEdit
@@ -24,6 +26,7 @@ class AutonomyWidget(BaseTabWidget):
         """
         Build the GUI layout
         """
+        print(os.getcwd())
         layout = QtWidgets.QGridLayout(self)
         self.setLayout(layout)
 
@@ -433,7 +436,6 @@ class AutonomyWidget(BaseTabWidget):
         # discard topics we don't recognize
         if topic != "avr/autonomous/sound":
             return
-        effect = QtMultimedia.QSoundEffect()
-        effect.setSource(f'AVR\\AVR-2022\\GUI\\assets\\sounds\\sound_{payload["id"]}.WAV')
-        effect.setLoopCount(payload['loops'])
-        effect.play()
+        print('Playing sound')
+        payload = json.loads(payload)
+        playsound(f'.\\AVR\\AVR-2022\\GUI\\assets\\sounds\\sound_{payload["id"]}.WAV')
