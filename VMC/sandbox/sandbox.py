@@ -251,7 +251,7 @@ class Sandbox(MQTTModule):
                     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 self.tag_flashing = True
                 
-            if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 30):
+            if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 24):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
                 self.sound_laptop(1)
