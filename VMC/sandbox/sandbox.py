@@ -152,6 +152,9 @@ class Sandbox(MQTTModule):
             logger.debug('Home Captured')
             time.sleep(1)
             self.takeoff()
+            while not self.in_air:
+                logger.debug('Waiting for takeoff confirm', self.in_air)
+            self.in_air = False
             logger.debug('Takeoff Done')
             time.sleep(2)
             """ logger.debug('Moving forward 40 inches')
@@ -160,6 +163,9 @@ class Sandbox(MQTTModule):
             time.sleep(2) """
             self.land()
             logger.debug('Landed')
+            while not self.on_ground:
+                logger.debug('Waiting for move confirm', self.on_ground)
+            self.on_ground = False
 
         elif payload == 'sound_test':
             logger.debug('Playing sound file: sound_1.WAV')
@@ -331,25 +337,18 @@ class Sandbox(MQTTModule):
                     time.sleep(.5)
             else:
                 logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
-        while not self.move_complete:
+                
+        """ while not self.move_complete:
             logger.debug('Waiting for move confirm', self.move_complete)
-            pass
-        self.move_complete = False
-                    
+        self.move_complete = False """
     
     def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
         self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
-        while not self.in_air:
-            logger.debug('Waiting for takeoff confirm', self.in_air)
-            pass
     def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
-        while not self.on_ground:
-            logger.debug('Waiting for land confirm', self.on_ground)
-            pass
 
     # ===============
     # Send Message Commands
