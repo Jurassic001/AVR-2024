@@ -154,10 +154,10 @@ class Sandbox(MQTTModule):
             self.takeoff()
             logger.debug('Takeoff Done')
             time.sleep(2)
-            logger.debug('Moving forward 40 inches')
+            """ logger.debug('Moving forward 40 inches')
             self.move((180+40, 50, 40))
             logger.debug('Move Done')
-            time.sleep(2)
+            time.sleep(2) """
             self.land()
             logger.debug('Landed')
 
