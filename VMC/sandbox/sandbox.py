@@ -156,7 +156,7 @@ class Sandbox(MQTTModule):
                 self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
                 logger.debug('Home Captured')
                 await asyncio.sleep(1)
-                asyncio.create_task(self.takeoff())
+                await self.takeoff()
                 await task_wait_takeoff
                 logger.debug('Takeoff Done')
                 await asyncio.sleep(2)
@@ -165,7 +165,7 @@ class Sandbox(MQTTModule):
                 self.wait_for_event('goto_complete_event')
                 logger.debug('Move Done')
                 time.sleep(2) """
-                await asyncio.create_task(self.land())
+                await self.land()
                 logger.debug('Landed')
             asyncio.run(tester())
 
@@ -329,7 +329,7 @@ class Sandbox(MQTTModule):
                 relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i] * self.invert
             relative_pos[2] *= -1
             logger.debug(f'NED: {relative_pos}')
-            await self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
+            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
         else:
             # Path obstructed.
             if self.do_pathfinding:
@@ -347,11 +347,11 @@ class Sandbox(MQTTModule):
     
     async def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
-        await self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
+        self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
     async def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
-        await self.send_action('land')
+        self.send_action('land')
 
     # ===============
     # Send Message Commands
@@ -361,7 +361,7 @@ class Sandbox(MQTTModule):
                     AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
                 )
 
-    async def send_action(self, action, payload = {}):
+    def send_action(self, action, payload = {}):
         self.send_message(
             'avr/fcm/actions',
             {'action': action, 'payload': payload}
