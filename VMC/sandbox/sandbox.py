@@ -319,7 +319,7 @@ class Sandbox(MQTTModule):
             
     # ===============
     # Drone Control Comands
-    def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
+    async def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Moves AVR to postion on field.\n\npos(inches): (x, y, z) """
         if not pathing or not self.col_test.path_check(self.position, pos):
             relative_pos = [0, 0, 0]
@@ -343,10 +343,10 @@ class Sandbox(MQTTModule):
             logger.debug('Waiting for move confirm', self.move_complete)
         self.move_complete = False """
     
-    def takeoff(self, alt = 39.3701) -> None:
+    async def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
         self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
-    def land(self) -> None:
+    async def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
         self.send_action('land')
@@ -383,7 +383,8 @@ class Sandbox(MQTTModule):
     # Misc/Helper
     def wait_for_event(self, event: str):
         while self.latest_fcm_return != event:
-            time.sleep(.01)
+            logger.debug(f'Waiting for {event}')
+        
     
     def inch_to_m(self, num):
         return num/39.37
