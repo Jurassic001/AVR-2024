@@ -74,6 +74,7 @@ class Sandbox(MQTTModule):
         self.land_complete = False
         
         self.fcm_init = False
+        self.latest_fcm_return = None
 
     def set_threads(self, threads):
         self.threads = threads
@@ -173,12 +174,11 @@ class Sandbox(MQTTModule):
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
-        action = payload['name']
+        self.latest_fcm_return, action = payload['name']
+        
         if action == 'landed_state_in_air_event':
             self.in_air = True
             self.on_ground = False
-        elif action == 'goto_location_ned':
-            self.move_complete = True
         elif action == 'landed_state_on_ground_event':
             self.on_ground = True
             self.in_air = False
@@ -294,24 +294,25 @@ class Sandbox(MQTTModule):
             time.sleep(.5)
             
             self.takeoff()
-            time.sleep(8)
+            self.wait_for_event('landed_state_in_air_event')
             
             self.move((310, 125, 60*.75)) # Building 5
-            time.sleep(4)
+            self.wait_for_event('goto_complete_event')
             
             self.move((356, 53, 85*.75)) # Building 4
-            time.sleep(4)
+            self.wait_for_event('goto_complete_event')
             
             self.move((404, 120, 126*.75)) # Building 1
+            self.wait_for_event('goto_complete_event')
             # Look for april tag 1 and flash led if found.
             if next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
-            time.sleep(4)
+            time.sleep(1)
             
             self.move((231, 85, 52*.75)) # Fire house
-            time.sleep(4)
+            self.wait_for_event('goto_complete_event')
             
             self.land()
             self.recon = False
@@ -380,6 +381,10 @@ class Sandbox(MQTTModule):
         )
     # ===============
     # Misc/Helper
+    def wait_for_event(self, event: str):
+        while self.latest_fcm_return != event:
+            time.sleep(.01)
+    
     def inch_to_m(self, num):
         return num/39.37
     
