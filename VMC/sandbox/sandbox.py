@@ -153,13 +153,12 @@ class Sandbox(MQTTModule):
             logger.debug('Home Captured')
             time.sleep(1)
             self.takeoff()
-            while not self.in_air:
-                logger.debug('Waiting for takeoff confirm', self.in_air)
-            self.in_air = False
+            self.wait_for_event('landed_state_in_air_event')
             logger.debug('Takeoff Done')
             time.sleep(2)
             """ logger.debug('Moving forward 40 inches')
             self.move((180+40, 50, 40))
+            self.wait_for_event('goto_complete_event')
             logger.debug('Move Done')
             time.sleep(2) """
             self.land()
