@@ -174,7 +174,8 @@ class Sandbox(MQTTModule):
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
-        self.latest_fcm_return, action = payload['name']
+        action = payload['name']
+        self.latest_fcm_return = payload['name']
         
         if action == 'landed_state_in_air_event':
             self.in_air = True
