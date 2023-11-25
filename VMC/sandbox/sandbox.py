@@ -149,6 +149,7 @@ class Sandbox(MQTTModule):
         if payload == 'test_flight':
             async def tester():
                 task_takeoff = asyncio.create_task(self.takeoff())
+                task_wait_takeoff = asyncio.create_task(self.wait_for_event('landed_state_in_air_event'))
                 task_land = asyncio.create_task(self.land())
                 
                 logger.debug('Test Flight Starting...')
@@ -156,7 +157,7 @@ class Sandbox(MQTTModule):
                 logger.debug('Home Captured')
                 await asyncio.sleep(1)
                 await task_takeoff
-                asyncio.create_task(self.wait_for_event('landed_state_in_air_event'))
+                await task_wait_takeoff
                 logger.debug('Takeoff Done')
                 await asyncio.sleep(2)
                 """ logger.debug('Moving forward 40 inches')
@@ -386,6 +387,7 @@ class Sandbox(MQTTModule):
         while self.latest_fcm_return != event:
             logger.debug(f'Waiting for {event}')
             await asyncio.sleep(0.1)
+        logger.debug(f'Completed Event: {event} ')
         
     
     def inch_to_m(self, num):
