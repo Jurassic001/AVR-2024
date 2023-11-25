@@ -148,15 +148,15 @@ class Sandbox(MQTTModule):
     def handle_dev(self, payload):
         if payload == 'test_flight':
             async def tester():
-                task_takeoff = asyncio.create_task(self.takeoff())
+                #task_takeoff = asyncio.create_task(self.takeoff())
                 task_wait_takeoff = asyncio.create_task(self.wait_for_event('landed_state_in_air_event'))
-                task_land = asyncio.create_task(self.land())
+                #task_land = asyncio.create_task(self.land())
                 
                 logger.debug('Test Flight Starting...')
                 self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
                 logger.debug('Home Captured')
                 await asyncio.sleep(1)
-                await task_takeoff
+                asyncio.create_task(self.takeoff())
                 await task_wait_takeoff
                 logger.debug('Takeoff Done')
                 await asyncio.sleep(2)
@@ -165,7 +165,7 @@ class Sandbox(MQTTModule):
                 self.wait_for_event('goto_complete_event')
                 logger.debug('Move Done')
                 time.sleep(2) """
-                await task_land
+                await asyncio.create_task(self.land())
                 logger.debug('Landed')
             asyncio.run(tester())
 
