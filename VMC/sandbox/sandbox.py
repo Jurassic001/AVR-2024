@@ -1,4 +1,4 @@
-import json, base64, cv2, time, math, keyboard, sys
+import json, base64, cv2, time, math, keyboard, sys, asyncio
 import numpy as np
 from threading import Thread
 from scipy import ndimage
@@ -43,8 +43,7 @@ class Sandbox(MQTTModule):
         self.position = [0, 0, 0]
         
         self.start_pos = (180, 50, 0)
-        # Only use on homefield firehouse start
-        self.start_pos = (231, 85, 52)
+        #self.start_pos = (231, 85, 52) # Only use on homefield firehouse start
         
         self.action_queue = []
         
@@ -148,24 +147,26 @@ class Sandbox(MQTTModule):
         
     def handle_dev(self, payload):
         if payload == 'test_flight':
-            logger.debug('Test Flight Starting...')
-            self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
-            logger.debug('Home Captured')
-            time.sleep(1)
-            self.takeoff()
-            self.wait_for_event('landed_state_in_air_event')
-            logger.debug('Takeoff Done')
-            time.sleep(2)
-            """ logger.debug('Moving forward 40 inches')
-            self.move((180+40, 50, 40))
-            self.wait_for_event('goto_complete_event')
-            logger.debug('Move Done')
-            time.sleep(2) """
-            self.land()
-            logger.debug('Landed')
-            while not self.on_ground:
-                logger.debug('Waiting for move confirm', self.on_ground)
-            self.on_ground = False
+            async def tester():
+                task_takeoff = asyncio.create_task(self.takeoff())
+                task_land = asyncio.create_task(self.land())
+                
+                logger.debug('Test Flight Starting...')
+                self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
+                logger.debug('Home Captured')
+                asyncio.sleep(1)
+                await task_takeoff
+                asyncio.create_task(self.wait_for_event('landed_state_in_air_event'))
+                logger.debug('Takeoff Done')
+                asyncio.sleep(2)
+                """ logger.debug('Moving forward 40 inches')
+                self.move((180+40, 50, 40))
+                self.wait_for_event('goto_complete_event')
+                logger.debug('Move Done')
+                time.sleep(2) """
+                await task_land
+                logger.debug('Landed')
+            asyncio.run(tester())
 
         elif payload == 'sound_test':
             logger.debug('Playing sound file: sound_1.WAV')
@@ -327,7 +328,7 @@ class Sandbox(MQTTModule):
                 relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i] * self.invert
             relative_pos[2] *= -1
             logger.debug(f'NED: {relative_pos}')
-            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
+            await self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
         else:
             # Path obstructed.
             if self.do_pathfinding:
@@ -345,11 +346,11 @@ class Sandbox(MQTTModule):
     
     async def takeoff(self, alt = 39.3701) -> None:
         """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
-        self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
+        await self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
     async def land(self) -> None:
         """ AVR Land"""
         #self.move(self.landing_pads[pad])
-        self.send_action('land')
+        await self.send_action('land')
 
     # ===============
     # Send Message Commands
@@ -359,7 +360,7 @@ class Sandbox(MQTTModule):
                     AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
                 )
 
-    def send_action(self, action, payload = {}):
+    async def send_action(self, action, payload = {}):
         self.send_message(
             'avr/fcm/actions',
             {'action': action, 'payload': payload}
@@ -381,9 +382,10 @@ class Sandbox(MQTTModule):
         )
     # ===============
     # Misc/Helper
-    def wait_for_event(self, event: str):
+    async def wait_for_event(self, event: str):
         while self.latest_fcm_return != event:
             logger.debug(f'Waiting for {event}')
+            asyncio.sleep(0.1)
         
     
     def inch_to_m(self, num):
