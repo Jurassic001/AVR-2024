@@ -154,11 +154,11 @@ class Sandbox(MQTTModule):
                 logger.debug('Test Flight Starting...')
                 self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
                 logger.debug('Home Captured')
-                asyncio.sleep(1)
+                await asyncio.sleep(1)
                 await task_takeoff
                 asyncio.create_task(self.wait_for_event('landed_state_in_air_event'))
                 logger.debug('Takeoff Done')
-                asyncio.sleep(2)
+                await asyncio.sleep(2)
                 """ logger.debug('Moving forward 40 inches')
                 self.move((180+40, 50, 40))
                 self.wait_for_event('goto_complete_event')
@@ -385,7 +385,7 @@ class Sandbox(MQTTModule):
     async def wait_for_event(self, event: str):
         while self.latest_fcm_return != event:
             logger.debug(f'Waiting for {event}')
-            asyncio.sleep(0.1)
+            await asyncio.sleep(0.1)
         
     
     def inch_to_m(self, num):
