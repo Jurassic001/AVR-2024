@@ -1,6 +1,7 @@
 import json, base64, cv2, time, math, keyboard, sys, asyncio
 import numpy as np
 from threading import Thread
+from typing_extensions import Dict
 from scipy import ndimage
 from scipy.interpolate import interp1d
 from bell.avr.mqtt.client import MQTTModule
@@ -63,7 +64,7 @@ class Sandbox(MQTTModule):
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
-        self.threads: dict
+        self.threads: Dict[Thread]
         self.invert = 1
         
         self.tag_flashing = True
@@ -73,10 +74,12 @@ class Sandbox(MQTTModule):
         self.land_complete = False
         
         self.fcm_init = False
-        self.latest_fcm_return = None
+        self.latest_dev = None
+        
+        self.waiting_events = {'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event(), }
 
-    def set_threads(self, threads):
-        self.threads = threads
+    def set_threads(self, threads: Dict[Thread]):
+        self.threads: Dict[Thread] = threads
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
@@ -146,26 +149,17 @@ class Sandbox(MQTTModule):
         self.position[2] = payload['d']
         
     def handle_dev(self, payload):
+        self.latest_dev = payload
         if payload == 'test_flight':
             async def tester():
-                #task_takeoff = asyncio.create_task(self.takeoff())
-                task_wait_takeoff = asyncio.create_task(self.wait_for_event('landed_state_in_air_event'))
-                #task_land = asyncio.create_task(self.land())
-                
                 logger.debug('Test Flight Starting...')
                 self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
                 logger.debug('Home Captured')
-                await asyncio.sleep(1)
                 await self.takeoff()
-                await task_wait_takeoff
+                await self.wait_for_event('landed_state_in_air_event')
                 logger.debug('Takeoff Done')
-                await asyncio.sleep(2)
-                """ logger.debug('Moving forward 40 inches')
-                self.move((180+40, 50, 40))
-                self.wait_for_event('goto_complete_event')
-                logger.debug('Move Done')
-                time.sleep(2) """
                 await self.land()
+                await self.wait_for_event('landed_state_on_ground_event')
                 logger.debug('Landed')
             asyncio.run(tester())
 
@@ -176,8 +170,9 @@ class Sandbox(MQTTModule):
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
         action = payload['name']
-        self.latest_fcm_return = payload['name']
-        
+        if action in self.waiting_events.keys():
+            self.waiting_events[action].set()
+            
         if action == 'landed_state_in_air_event':
             self.in_air = True
             self.on_ground = False
@@ -270,19 +265,19 @@ class Sandbox(MQTTModule):
                 self.sanity = 'Gone'
 
     def status(self):
-        onoff = {True: 'Online', False: 'Offline'}
+        logger.debug('Status Sub-Thread: Online')
+        onoffline = {True: 'Online', False: 'Offline'}
+        onoff = {True: 'On', False: 'Off'}
         while True:
             if self.show_status:
                 time.sleep(0.5)
                 self.send_message(
                     'avr/sandbox/CIC',
-                    {'Thermal Targeting': onoff[self.threads['thermal'].is_alive()], 'CIC': onoff[self.threads['cic'].is_alive()], 'Autonomous': onoff[self.threads['auto'].is_alive()], 'Recon': self.recon, 'Sanity': self.sanity, 'Laser': self.laser_on}
+                    {'Thermal Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Sanity': self.sanity, 'Laser': onoff[self.laser_on]}
                 )
            
     def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
-        current_building = 1
-        found_recon_apriltag = False
         while True:
             if not self.autonomous:
                 continue
@@ -384,11 +379,10 @@ class Sandbox(MQTTModule):
     # ===============
     # Misc/Helper
     async def wait_for_event(self, event: str):
-        while self.latest_fcm_return != event:
-            logger.debug(f'Waiting for {event}')
-            await asyncio.sleep(0.1)
-        logger.debug(f'Completed Event: {event} ')
-        
+        logger.debug(f'Waiting for {event}')
+        await self.waiting_events[event].wait()
+        logger.debug(f'Completed Event: {event}')
+        self.waiting_events[event].clear()
     
     def inch_to_m(self, num):
         return num/39.37
