@@ -1,7 +1,6 @@
 import json, base64, cv2, time, math, keyboard, sys, asyncio
 import numpy as np
 from threading import Thread
-from typing_extensions import Dict
 from scipy import ndimage
 from scipy.interpolate import interp1d
 from bell.avr.mqtt.client import MQTTModule
@@ -64,7 +63,7 @@ class Sandbox(MQTTModule):
         self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
-        self.threads: Dict[Thread]
+        self.threads: dict
         self.invert = 1
         
         self.tag_flashing = True
@@ -78,8 +77,8 @@ class Sandbox(MQTTModule):
         
         self.waiting_events = {'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event(), }
 
-    def set_threads(self, threads: Dict[Thread]):
-        self.threads: Dict[Thread] = threads
+    def set_threads(self, threads: dict):
+        self.threads: dict = threads
     # ===============
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
