@@ -8,6 +8,7 @@ from bell.avr.mqtt.payloads import *
 from bell.avr.utils import decorators
 from loguru import logger
 from collision_avoidance import collision_dectector
+from contextvars import ContextVar
 
 class Sandbox(MQTTModule):
     def __init__(self) -> None:
@@ -75,8 +76,8 @@ class Sandbox(MQTTModule):
         self.fcm_init = False
         self.latest_dev = None
         
-        self.waiting_events = {'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event(), }
-
+        self.waiting_events = ContextVar('test', default={'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event(),})
+        
     def set_threads(self, threads: dict):
         self.threads: dict = threads
     # ===============
@@ -169,8 +170,8 @@ class Sandbox(MQTTModule):
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
         action = payload['name']
-        if action in self.waiting_events.keys():
-            self.waiting_events[action].set()
+        if action in self.waiting_events.get().keys():
+            self.waiting_events.set(self.waiting_events.get()[action].set())
             
         if action == 'landed_state_in_air_event':
             self.in_air = True
@@ -379,9 +380,9 @@ class Sandbox(MQTTModule):
     # Misc/Helper
     async def wait_for_event(self, event: str):
         logger.debug(f'Waiting for {event}')
-        await self.waiting_events[event].wait()
+        await self.waiting_events.get()[event].wait()
         logger.debug(f'Completed Event: {event}')
-        self.waiting_events[event].clear()
+        self.waiting_events.set(self.waiting_events.get()[event].clear())
     
     def inch_to_m(self, num):
         return num/39.37
