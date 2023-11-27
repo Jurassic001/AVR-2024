@@ -154,10 +154,10 @@ class Sandbox(MQTTModule):
                 logger.debug('Test Flight Starting...')
                 self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
                 logger.debug('Home Captured')
-                await self.takeoff()
+                asyncio.create_task(self.takeoff())
                 await self.wait_for_event('landed_state_in_air_event')
                 logger.debug('Takeoff Done')
-                await self.land()
+                asyncio.create_task(self.land())
                 await self.wait_for_event('landed_state_on_ground_event')
                 logger.debug('Landed')
             asyncio.run(tester())
