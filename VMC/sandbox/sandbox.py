@@ -174,8 +174,8 @@ class Sandbox(MQTTModule):
         try:
             if action in self.waiting_events.get().keys():
                 self.waiting_events.set(self.waiting_events.get()[action].set())
-        except:
-            logger.debug('error')
+        except Exception as e:
+            logger.error(e)
             
         if action == 'landed_state_in_air_event':
             self.in_air = True
