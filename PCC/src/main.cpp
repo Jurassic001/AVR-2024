@@ -33,6 +33,7 @@ AVRLED onboard(8, 2, NEO_GRB);
 
 /////////////// S E R V O S ///////////////////////////////////
 AVRServo servos = AVRServo();
+AVRServo servos2 = AVRServo();
 ///////////////////////////////////////////////////////////////
 
 void setup()
@@ -58,6 +59,10 @@ void setup()
   servos.begin();
   servos.setOscillatorFrequency(27000000);
   servos.setPWMFreq(SERVO_FREQ);
+
+  servos2.begin();
+  servos2.setOscillatorFrequency(27000000);
+  servos2.setPWMFreq(SERVO_FREQ);
   //////////////////////////////////////////////////////////////
 
   Serial.println("init");
@@ -121,16 +126,31 @@ void loop()
     {
       uint8_t which_servo = message.data[0];
       uint8_t value = message.data[1];
-
-      if (value > 127)
+      if (which_servo < 8)
       {
-        servos.open_servo(which_servo);
-        onboard.set_base_color_target(0, 255, 0, 0);
+        if (value > 127)
+        {
+          servos.open_servo(which_servo);
+          onboard.set_base_color_target(0, 255, 0, 0);
+        }
+        else
+        {
+          servos.close_servo(which_servo);
+          onboard.set_base_color_target(0, 0, 255, 0);
+        }
       }
       else
       {
-        servos.close_servo(which_servo);
-        onboard.set_base_color_target(0, 0, 255, 0);
+        if (value > 127)
+        {
+          servos2.open_servo(which_servo-8);
+          onboard.set_base_color_target(0, 255, 0, 0);
+        }
+        else
+        {
+          servos2.close_servo(which_servo-8);
+          onboard.set_base_color_target(0, 0, 255, 0);
+        }
       }
     }
     break;
@@ -138,8 +158,14 @@ void loop()
     {
       uint8_t which_servo = message.data[0];
       uint8_t percent = message.data[1];
-
-      servos.set_servo_percent(which_servo, percent);
+      if (which_servo < 8)
+      {
+        servos.set_servo_percent(which_servo, percent);
+      }
+      else
+      {
+        servos2.set_servo_percent(which_servo-8, percent);
+      }
     }
     break;
     case SET_SERVO_ABS:
@@ -148,7 +174,14 @@ void loop()
       uint8_t absolute_high = message.data[1];
       uint8_t absolute_low = message.data[2];
       uint16_t absolute = ((uint16_t)absolute_high << 8) | absolute_low;
-      servos.set_servo_absolute(which_servo, absolute);
+      if (which_servo < 8)
+      {
+        servos.set_servo_absolute(which_servo, absolute);
+      }
+      else
+      {
+        servos2.set_servo_absolute(which_servo-8, absolute);
+      }
     }
     break;
     case RESET_AVR_PERIPH:
@@ -163,6 +196,13 @@ void loop()
       //Serial.printf("Res: %d\n",res);
     }
     break;
+    /* case CHECK_SERVO_CONTROLLER2:
+    {
+      //Serial.printf("Checking controller...\n");
+      uint8_t res = servos2.check_controller();
+      //Serial.printf("Res: %d\n",res);
+    }
+    break; */
     case SET_LASER_OFF:
     {
         laser_on = 0;

@@ -6,25 +6,19 @@ AVRServo::AVRServo() : Adafruit_PWMServoDriver()
     servo_max = SERVOMAX;
 }
 
+AVRServo::AVRServo(const uint8_t addr) : Adafruit_PWMServoDriver(addr)
+{
+    servo_min = SERVOMIN;
+    servo_max = SERVOMAX;
+}
+
 void AVRServo::open_servo(uint8_t servo)
 {
-    if(servo > (uint8_t)7) {
-        AVRServo.addr = 0x41
-    }
-    else {
-        AVRServo.addr = 0x40
-    }
     setPWM(servo, 0, servo_max);
 }
 
 void AVRServo::close_servo(uint8_t servo)
 {
-    if(servo > (uint8_t)7) {
-        AVRServo.addr = 0x41
-    }
-    else {
-        AVRServo.addr = 0x40
-    }
     setPWM(servo, 0, servo_min);
 }
 
@@ -35,23 +29,11 @@ void AVRServo::set_servo_percent(uint8_t servo, uint8_t percent)
 
     uint16_t pwm = map(percent, 0, servo_min, 100, servo_max);
 
-    if(servo > (uint8_t)7) {
-        AVRServo.addr = 0x41
-    }
-    else {
-        AVRServo.addr = 0x40
-    }
     setPWM(servo, 0, pwm);
 }
 
 void AVRServo::set_servo_absolute(uint8_t servo, uint16_t absolute)
 {
-    if(servo > (uint8_t)7) {
-        AVRServo.addr = 0x41
-    }
-    else {
-        AVRServo.addr = 0x40
-    }
     writeMicroseconds(servo, absolute);
 }
 

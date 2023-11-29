@@ -162,7 +162,7 @@ class JoystickWidget(BaseTabWidget):
 
         self.gimbal_num = 1
         
-        self.gimabal_servos = {1: (2, 3)}
+        self.gimabal_servos = {1: (2, 3), 2: (8, 9), 3: (10, 11)}
 
         # servo declarations
         self.SERVO_ABS_MAX = 2200
