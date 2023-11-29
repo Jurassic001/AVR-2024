@@ -196,13 +196,6 @@ void loop()
       //Serial.printf("Res: %d\n",res);
     }
     break;
-    /* case CHECK_SERVO_CONTROLLER2:
-    {
-      //Serial.printf("Checking controller...\n");
-      uint8_t res = servos2.check_controller();
-      //Serial.printf("Res: %d\n",res);
-    }
-    break; */
     case SET_LASER_OFF:
     {
         laser_on = 0;
