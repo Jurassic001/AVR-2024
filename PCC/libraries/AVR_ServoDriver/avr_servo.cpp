@@ -8,7 +8,7 @@ AVRServo::AVRServo() : Adafruit_PWMServoDriver()
 
 void AVRServo::open_servo(uint8_t servo)
 {
-    if(servo > 7) {
+    if(servo > (uint8_t)7) {
         AVRServo.addr = 0x41
     }
     else {
@@ -19,7 +19,7 @@ void AVRServo::open_servo(uint8_t servo)
 
 void AVRServo::close_servo(uint8_t servo)
 {
-    if(servo > 7) {
+    if(servo > (uint8_t)7) {
         AVRServo.addr = 0x41
     }
     else {
@@ -35,7 +35,7 @@ void AVRServo::set_servo_percent(uint8_t servo, uint8_t percent)
 
     uint16_t pwm = map(percent, 0, servo_min, 100, servo_max);
 
-    if(servo > 7) {
+    if(servo > (uint8_t)7) {
         AVRServo.addr = 0x41
     }
     else {
@@ -46,7 +46,7 @@ void AVRServo::set_servo_percent(uint8_t servo, uint8_t percent)
 
 void AVRServo::set_servo_absolute(uint8_t servo, uint16_t absolute)
 {
-    if(servo > 7) {
+    if(servo > (uint8_t)7) {
         AVRServo.addr = 0x41
     }
     else {
