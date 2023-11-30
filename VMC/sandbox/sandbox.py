@@ -49,7 +49,7 @@ class Sandbox(MQTTModule):
         self.action_queue = []
         
         self.is_armed: bool = False
-        self.building_drops: dict  = {'Building 0': False, 'Building 1': False, 'Building 2': False, 'Building 3': False, 'Building 4': False, 'Building 5': False}
+        self.building_drops: dict  = {0: False, 1: False, 2: False, 3: False, 4: False, 6: False}
         self.thermal_grid = [[0 for _ in range(8)] for _ in range(8)]
         self.sanity = 'Gone'
         self.laser_on = False
@@ -286,7 +286,9 @@ class Sandbox(MQTTModule):
             if not self.autonomous:
                 continue
             
-            # Other non recon auton code goes here.
+            if next((tag for tag in self.april_tags if tag['id'] in building[0] for building in self.building_drops.items() if building[1])):
+                pass
+                
             
             if not self.recon:
                 continue
@@ -410,4 +412,4 @@ if __name__ == '__main__':
     
     box.set_threads({'thermal': targeting_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
     
-    box.run()
+    box.run_non_blocking()
