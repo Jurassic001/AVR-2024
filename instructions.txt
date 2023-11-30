@@ -12,4 +12,4 @@ IF CHANGES WERE MADE:
 run app.py script, and connect to 10.42.0.1
 
 ctrl c to close
-left mouse to paste
+right mouse to paste
