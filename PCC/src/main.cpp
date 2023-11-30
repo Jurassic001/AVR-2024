@@ -33,7 +33,7 @@ AVRLED onboard(8, 2, NEO_GRB);
 
 /////////////// S E R V O S ///////////////////////////////////
 AVRServo servos = AVRServo();
-AVRServo servos2 = AVRServo();
+AVRServo servos2 = AVRServo(0x41);
 ///////////////////////////////////////////////////////////////
 
 void setup()

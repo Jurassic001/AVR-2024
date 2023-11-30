@@ -11,6 +11,7 @@ class AVRServo : public Adafruit_PWMServoDriver
 {
 public:
     AVRServo();
+    AVRServo(const uint8_t addr);
 
     void open_servo(uint8_t servo);
     void close_servo(uint8_t servo);
