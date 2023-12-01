@@ -21,6 +21,7 @@ class AutonomyWidget(BaseTabWidget):
         super().__init__(parent)
         self.spinner_speed_val = 1070
         self.setWindowTitle("Autonomy")
+        self.spin_stop_val = 1472
 
     def build(self) -> None:
         """
@@ -150,7 +151,7 @@ class AutonomyWidget(BaseTabWidget):
         speed_precent = DoubleLineEdit()
         speed_layout.addRow(QtWidgets.QLabel("Speed:"), speed_precent)
         speed_precent.setText('100')
-        inter = interp1d((100, 0), (1070, 1370))
+        inter = interp1d((100, 0), (1070, self.spin_stop_val))
         
         speed_button = QtWidgets.QPushButton("Set Speed")
         speed_layout.addWidget(speed_button)
@@ -397,7 +398,7 @@ class AutonomyWidget(BaseTabWidget):
         else:
             self.send_message(
                 "avr/pcm/set_servo_abs",
-                AvrPcmSetServoAbsPayload(servo= 0, absolute= 1370)
+                AvrPcmSetServoAbsPayload(servo= 0, absolute= self.spin_stop_val)
             )
         
     def set_spintake_bottom(self, open_close: str) -> None:
