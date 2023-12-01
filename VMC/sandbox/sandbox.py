@@ -79,6 +79,7 @@ class Sandbox(MQTTModule):
         self.waiting_events = ContextVar('test', default={'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event()})
         logger.debug(f'{self.waiting_events.get()}, {type(self.waiting_events.get())}')
         
+        
     def set_threads(self, threads: dict):
         self.threads: dict = threads
     # ===============
@@ -241,6 +242,11 @@ class Sandbox(MQTTModule):
             
             if self.fcm_init and not light_init:
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                for i in range (5, 8):
+                    self.send_message(
+                    "avr/pcm/set_servo_open_close",
+                    AvrPcmSetServoOpenClosePayload(servo= i, action= 'open')
+                    )
                 light_init = True
                 
             if next((tag for tag in self.april_tags if tag['id'] == 0), None):
