@@ -70,7 +70,7 @@ class Sandbox(MQTTModule):
         self.threads: dict
         self.invert = 1
         
-        self.tag_flashing = True
+        self.tag_flashing = False
         
         self.takeoff_complete = False
         self.move_complete = False
@@ -80,7 +80,6 @@ class Sandbox(MQTTModule):
         self.latest_dev = None
         
         self.waiting_events = ContextVar('test', default={'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event()})
-        logger.debug(f'{self.waiting_events.get()}, {type(self.waiting_events.get())}')
         
         
     def set_threads(self, threads: dict):
@@ -114,9 +113,9 @@ class Sandbox(MQTTModule):
         self.recon = payload['enabled']
                 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
-        self.april_tags = payload['tags']
-        if not self.tag_flashing:
+        if self.tag_flashing:
             return
+        self.april_tags = payload['tags']
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
@@ -230,7 +229,7 @@ class Sandbox(MQTTModule):
             elif heat_center[1] > 4:
                 turret_angles[1] -= self.targeting_step
                 self.move_servo(3, turret_angles[1])
-    
+                
     def CIC(self) -> None:
         logger.debug('CIC Thread: Online')
         status_thread = Thread(target=self.status)
@@ -297,9 +296,9 @@ class Sandbox(MQTTModule):
             if not self.autonomous:
                 continue
             
-            tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
+            """ tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
             if tag:
-                n, e, d = tag['pos'].values()
+                n, e, d = tag['pos'].values() """
                 
             
             if not self.recon:
