@@ -259,7 +259,7 @@ class Sandbox(MQTTModule):
                     time.sleep(.3)
                     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
                 self.tag_flashing = False
-                found_high_tag = False
+                found_high_tag = True
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
