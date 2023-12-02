@@ -423,4 +423,4 @@ if __name__ == '__main__':
     
     box.set_threads({'thermal': targeting_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
     
-    box.run_non_blocking()
+    box.run()
