@@ -253,12 +253,13 @@ class Sandbox(MQTTModule):
             if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.tag_flashing = True
                 logger.debug('Tag found')
-                for i in range(1):
+                for i in range(3):
                     #self.send_message('avr/pcm/set_temp_color', {'wrgb': self.flash_color, 'duration': 0.3})
                     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
                     time.sleep(.3)
                     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
                 self.tag_flashing = False
+                found_high_tag = False
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
