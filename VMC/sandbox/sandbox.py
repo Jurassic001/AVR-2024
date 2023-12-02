@@ -46,6 +46,9 @@ class Sandbox(MQTTModule):
         self.start_pos = (180, 50, 0)
         #self.start_pos = (231, 85, 52) # Only use on homefield firehouse start
         
+        self.normal_color = [0, 255, 0, 0]
+        self.flash_color = [0, 255, 255, 0]
+        
         self.action_queue = []
         
         self.is_armed: bool = False
@@ -232,16 +235,14 @@ class Sandbox(MQTTModule):
         logger.debug('CIC Thread: Online')
         status_thread = Thread(target=self.status)
         status_thread.daemon = True
-        #status_thread.setDaemon(True)
         status_thread.start()
         light_init = False
         has_gotten_hot = False
         while True:
             if not self.CIC_loop:
                 continue
-            
             if self.fcm_init and not light_init:
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 for i in range (5, 8):
                     self.send_message(
                     "avr/pcm/set_servo_open_close",
@@ -250,24 +251,28 @@ class Sandbox(MQTTModule):
                 light_init = True
                 
             if next((tag for tag in self.april_tags if tag['id'] == 0), None):
-                self.tag_flashing = False
+                self.tag_flashing = True
                 logger.debug('Tag found')
                 for i in range(3):
-                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
+                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
                     time.sleep(.3)
-                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
-                self.tag_flashing = True
+                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
+                self.tag_flashing = False
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
                 self.sound_laptop(1)
                 has_gotten_hot = True
+                self.tag_flashing = True
                 if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
                     for i in range(3):
-                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 255, 0]))
+                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
                         time.sleep(.3)
-                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
+                self.tag_flashing = False
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
@@ -292,8 +297,9 @@ class Sandbox(MQTTModule):
             if not self.autonomous:
                 continue
             
-            if next((tag for tag in self.april_tags if tag['id'] in building[0] for building in self.building_drops.items() if building[1])):
-                pass
+            tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
+            if tag:
+                n, e, d = tag['pos'].values()
                 
             
             if not self.recon:
