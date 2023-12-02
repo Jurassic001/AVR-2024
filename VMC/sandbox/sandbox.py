@@ -237,6 +237,7 @@ class Sandbox(MQTTModule):
         status_thread.start()
         light_init = False
         has_gotten_hot = False
+        found_high_tag = False
         while True:
             if not self.CIC_loop:
                 continue
@@ -249,10 +250,11 @@ class Sandbox(MQTTModule):
                     )
                 light_init = True
                 
-            if next((tag for tag in self.april_tags if tag['id'] == 0), None):
+            if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.tag_flashing = True
                 logger.debug('Tag found')
-                for i in range(3):
+                for i in range(1):
+                    #self.send_message('avr/pcm/set_temp_color', {'wrgb': self.flash_color, 'duration': 0.3})
                     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
                     time.sleep(.3)
                     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
