@@ -1,6 +1,6 @@
 import argparse
 import sys
-# This is a test change
+
 from app.lib.enums import ConnectionState
 from app.lib.qt_icon import set_icon
 from app.tabs.autonomy import AutonomyWidget
