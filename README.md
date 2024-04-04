@@ -1,9 +1,9 @@
-# AVR-2022
-
+# AVR-2024
+<!--
 ## Project Management
 
 For Bell employees and partners, work items are tracked on [Trello](https://trello.com/bellavr).
-
+-->
 ## Structure
 
 - `.github`: GitHub Actions files
