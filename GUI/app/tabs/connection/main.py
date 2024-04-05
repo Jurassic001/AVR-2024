@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets, QtGui
 
 from ..base import BaseTabWidget
 from .mqtt import MQTTConnectionWidget
@@ -75,9 +75,10 @@ class MainConnectionWidget(BaseTabWidget):
         # Create the Config layout & buttons
         configBtns_layout = QtWidgets.QHBoxLayout()
 
-        close_btn = QtWidgets.QPushButton("Exit GUI")
-        close_btn.clicked.connect(lambda: parent.close())
-        configBtns_layout.addWidget(close_btn)
+        testing_btn = QtWidgets.QPushButton("Toggle testing mode")
+        testing_btn.setCheckable(True)
+        testing_btn.clicked.connect(lambda: parent.toggleTesting())
+        configBtns_layout.addWidget(testing_btn)
 
         # Add button layouts to the Options layout
         options_layout.addLayout(windowBtns_layout)
@@ -118,3 +119,7 @@ class MainConnectionWidget(BaseTabWidget):
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
         )
         layout.addWidget(serial_groupbox)
+
+        # Close window keybind
+        close_keybind = QtGui.QShortcut(QtGui.QKeySequence("Backspace"), parent)
+        close_keybind.activated.connect(lambda: parent.exit())

@@ -107,6 +107,7 @@ class MainWindow(QtWidgets.QWidget):
         self.mqtt_connected = False
         self.serial_connected = False
         self.forceEnableTabs = True
+        self.testingMode = False
 
         # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
         mainMonitor = get_monitors()[0]
@@ -312,6 +313,21 @@ class MainWindow(QtWidgets.QWidget):
             self.main_connection_widget.serial_connection_widget.serial_client.logout()
 
         event.accept()
+    
+    def exit(self) -> None:
+        """
+        Closes the GUI if testing mode is enabled
+
+        Intended for use with "Backspace to close GUI" keybind
+        """
+        if self.testingMode:
+            self.close()
+
+    def toggleTesting(self) -> None:
+        """
+        Self explanatory, toggles the testingMode boolean
+        """
+        self.testingMode ^= 1
 
 
 def main() -> None:

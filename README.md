@@ -22,7 +22,8 @@ Documentation is located on the `docs` branch.
 - Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
 - ~~Add ability to switch between window size options with +/- keys~~
 - ~~Add maximize window option~~
-- Add ability to force enable tabs
+- ~~Add testing mode~~
+    - ~~Add quick exit keybind in testing mode~~
     - ~~Add ability to create a second row of buttons in the same box to facilitate this~~
 
 ## Developer Setup
