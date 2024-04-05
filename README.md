@@ -64,10 +64,10 @@ recommended extensions.
 
 ### Python Setup
 
-Create a Python 3.9 virtual environment:
+Create a Python 3.9 virtual environment (Make sure you're creating the venv in AVR-2024, not the parent repo):
 
 ```bash
-py -3.9 -m venv .venv # Windows
+py -m venv .venv # Windows
 python3.9 -m venv .venv # Linux
 ```
 
