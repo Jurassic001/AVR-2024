@@ -1,4 +1,4 @@
-import json, base64, cv2, time, math, keyboard, sys, asyncio
+import base64, cv2, time, asyncio
 import numpy as np
 from threading import Thread
 from scipy import ndimage
@@ -28,58 +28,46 @@ class Sandbox(MQTTModule):
             'avr/sandbox/dev': self.handle_dev,
             'avr/fcm/events': self.handle_events,
             }
-        height_is_75_scale = True
-        self.target_range = (30, 40)
-        self.targeting_step = 7
         
+        self.is_armed: bool = False
         self.pause: bool = False
         self.autonomous: bool = False
         self.auto_target: bool = False
         self.CIC_loop: bool = True
         self.show_status: bool = True
         self.recon: bool = False
-        self.april_tags: list = []
+        self.fcm_init: bool = False
         
-        self.do_pathfinding = False
-        self.position = [0, 0, 0]
+        self.position: list = [0, 0, 0]
+        self.start_pos: tuple = (180, 50, 0)
         
-        self.start_pos = (180, 50, 0)
-        #self.start_pos = (231, 85, 52) # Only use on homefield firehouse start
+        self.building_loc: dict[str, tuple[int, int, int]] = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
+        self.landing_pads: dict[str, tuple[int, int, int]] = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
+
+        self.building_drops: dict[int, bool] = {0: False, 1: False, 2: False, 3: False, 4: False, 6: False}
         
-        self.normal_color = [0, 255, 0, 0]
-        self.flash_color = [0, 255, 255, 0]
-        
-        self.action_queue = []
-        
-        self.is_armed: bool = False
-        self.building_drops: dict  = {0: False, 1: False, 2: False, 3: False, 4: False, 6: False}
-        self.thermal_grid = [[0 for _ in range(8)] for _ in range(8)]
-        self.sanity = 'Gone'
-        self.laser_on = False
-        
-        self.water_servo_pin = 5
-        self.building_loc = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
-        if height_is_75_scale:
-            for i in range(len(self.building_loc)):
-                self.building_loc[f'Building {i}'] = (self.building_loc[f'Building {i}'][0], self.building_loc[f'Building {i}'][1], self.building_loc[f'Building {i}'][2]*0.75)
-        
-        self.position = (0, 0, 0)
-        self.landing_pads = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
-        
+        self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
+        self.target_range: tuple[int, int] = (30, 40)
+        self.targeting_step: int = 7
+        self.laser_on: bool = False
+  
+        self.sanity: str = 'Gone'
+        self.do_pathfinding: bool = False
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
-        self.threads: dict
-        self.invert = 1
-        
-        self.tag_flashing = False
-        
-        self.takeoff_complete = False
-        self.move_complete = False
-        self.land_complete = False
-        
-        self.fcm_init = False
-        self.latest_dev = None
-        
         self.waiting_events = ContextVar('test', default={'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event()})
+        
+        self.april_tags: list = []
+        self.tag_flashing: bool = False
+        self.normal_color: list[int] = [0, 255, 0, 0] # rgba
+        self.flash_color: list[int] = [0, 255, 255, 0] # rgba
+        
+        self.threads: dict
+        
+        # Only turn on if using home field
+        homefield_test: bool = False
+        if homefield_test:
+            self.start_pos = (231, 85, 52)
+            self.building_loc = {building: tuple(list(loc)[2]*.75) for building, loc in self.building_loc.items()}
         
         
     def set_threads(self, threads: dict):
@@ -122,13 +110,13 @@ class Sandbox(MQTTModule):
                          payload['e'], # Y
                          payload['d']] # Z
         
-    def handle_user_in(self, payload) -> None:
+    def handle_user_in(self, payload: dict) -> None:
         try:
             self.pause = payload['pause']
         except:
             pass
         
-    def handle_thermal_tracker(self, payload) -> None:
+    def handle_thermal_tracker(self, payload: dict) -> None:
         self.auto_target = payload['enabled']
         if self.auto_target:
             turret_angles = [1450, 1450]
@@ -141,19 +129,16 @@ class Sandbox(MQTTModule):
                         AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
                     )
     
-    def handle_thermal_range(self, payload) -> None:
+    def handle_thermal_range(self, payload: dict) -> None:
         self.target_range = payload['range'][0:2]
         logger.debug(self.target_range)
         self.targeting_step = int(payload['range'][2])
         
     def handle_pos(self, payload: AvrFusionPositionNedPayload):
         # NOTE Check if direction is based on drone start or global
-        self.position[0] = payload['n']
-        self.position[1] = payload['e']
-        self.position[2] = payload['d']
+        self.position = [payload['n'], payload['e'], payload['d']]
         
-    def handle_dev(self, payload):
-        self.latest_dev = payload
+    def handle_dev(self, payload: dict):
         if payload == 'test_flight':
             async def tester():
                 logger.debug('Test Flight Starting...')
@@ -189,7 +174,7 @@ class Sandbox(MQTTModule):
         
     # ===============
     # Threads
-    def targeting(self) -> None:
+    def targeting(self) -> None: # Currently useless as there is no application for it, still works though.
         logger.debug('Thermal Tracking Thread: Online')
         turret_angles = [1450, 1450]
         while True:
@@ -199,6 +184,8 @@ class Sandbox(MQTTModule):
                 continue
             if not self.laser_on:
                 self.set_laser(True)
+                
+            # Create mask of pixels above thermal threshold
             img = np.array(self.thermal_grid)
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
@@ -212,11 +199,13 @@ class Sandbox(MQTTModule):
             t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1 )
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s  = ndimage.sum(blobs, labels,  np.arange(nlabels) + 1 )
-            heat_center = [float(x) * self.invert for x in t[s.argmax()][::-1]]
+            heat_center = [float(x) for x in t[s.argmax()][::-1]]
             move_range = [15, -15]
             m = interp1d([0, 8], move_range)
-            move_val = ()
             logger.debug(heat_center)
+            
+            # Couldn't figure out the math to move the gimbal to the right position
+            # so this justs moves reactily in small steps, it also sucks ass.
             if heat_center[0] > 4:
                 turret_angles[0] += self.targeting_step
                 self.move_servo(2, turret_angles[0])
@@ -241,6 +230,8 @@ class Sandbox(MQTTModule):
         while True:
             if not self.CIC_loop:
                 continue
+            
+            # Turns lights on only after fcm has been initialized
             if self.fcm_init and not light_init:
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 for i in range (5, 8):
@@ -250,6 +241,7 @@ class Sandbox(MQTTModule):
                     )
                 light_init = True
                 
+            # Flash lights if the april tag on the highbuilding during recon is found
             if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.tag_flashing = True
                 logger.debug('Tag found')
@@ -261,7 +253,8 @@ class Sandbox(MQTTModule):
                 self.tag_flashing = False
                 found_high_tag = True
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
-                
+            
+            # Warn piolet and flash lights if the hotspot is detected
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
@@ -281,6 +274,7 @@ class Sandbox(MQTTModule):
             else:
                 self.sanity = 'Gone'
 
+    # This is essentially useless, it just shows the stats of the threads.
     def status(self):
         logger.debug('Status Sub-Thread: Online')
         onoffline = {True: 'Online', False: 'Offline'}
@@ -292,7 +286,7 @@ class Sandbox(MQTTModule):
                     'avr/sandbox/CIC',
                     {'Thermal Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Sanity': self.sanity, 'Laser': onoff[self.laser_on]}
                 )
-           
+    
     def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
         while True:
@@ -304,6 +298,8 @@ class Sandbox(MQTTModule):
                 n, e, d = tag['pos'].values() """
                 
             
+            # Abandon hope all ye who enter here
+            # None of this works
             if not self.recon:
                 continue
             
@@ -336,12 +332,14 @@ class Sandbox(MQTTModule):
             
     # ===============
     # Drone Control Comands
+    # WARNING none of this works so proceed with caution
+    
     async def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Moves AVR to postion on field.\n\npos(inches): (x, y, z) """
         if not pathing or not self.col_test.path_check(self.position, pos):
             relative_pos = [0, 0, 0]
             for i in range(3):
-                relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i] * self.invert
+                relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i]
             relative_pos[2] *= -1
             logger.debug(f'NED: {relative_pos}')
             self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
@@ -404,6 +402,7 @@ class Sandbox(MQTTModule):
         logger.debug(f'Completed Event: {event}')
         self.waiting_events.set(self.waiting_events.get()[event].clear())
     
+    # Bell gives us field dimensions in inches then programs the drone to use meters because fuck you.
     def inch_to_m(self, num):
         return num/39.37
     
