@@ -106,6 +106,7 @@ class MainWindow(QtWidgets.QWidget):
 
         self.mqtt_connected = False
         self.serial_connected = False
+        self.forceEnableTabs = False
 
         # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
         mainMonitor = get_monitors()[0]
@@ -274,7 +275,7 @@ class MainWindow(QtWidgets.QWidget):
         for widget in widgets:
             idx = self.tabs.indexOf(widget)
             # Lock tabs if not connected to mqtt
-            self.tabs.setTabEnabled(idx, self.mqtt_connected)
+            # self.tabs.setTabEnabled(idx, self.mqtt_connected)
             if not self.mqtt_connected:
                 self.tabs.setTabToolTip(idx, "MQTT not connected")
             else:

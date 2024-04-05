@@ -23,6 +23,7 @@ Documentation is located on the `docs` branch.
 - ~~Add ability to switch between window size options with +/- keys~~
 - ~~Add maximize window option~~
 - Add ability to force enable tabs
+    - ~~Add ability to create a second row of buttons in the same box to facilitate this~~
 
 ## Developer Setup
 
