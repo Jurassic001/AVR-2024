@@ -22,8 +22,8 @@ class MainConnectionWidget(BaseTabWidget):
             parent (QtWidgets.QWidget): The window object, self explanatory
             preset (int): 0 for small, 1 for medium, 2 for large
         """
-        if preset > 2:
-            preset = 2
+        if preset > 3:
+            preset = 3
         elif preset < 0:
             preset = 0
         parent.resize(parent.sizePresets[preset][0], parent.sizePresets[preset][1])
@@ -53,6 +53,10 @@ class MainConnectionWidget(BaseTabWidget):
         setSizeLarge_button = QtWidgets.QPushButton("Large Window (Default)")
         winSize_layout.addWidget(setSizeLarge_button)
         setSizeLarge_button.clicked.connect(lambda: self.resize_window(parent, 2))
+
+        setSizeMax_button = QtWidgets.QPushButton("Large Window (Default)")
+        winSize_layout.addWidget(setSizeMax_button)
+        setSizeMax_button.clicked.connect(lambda: self.resize_window(parent, 3))
 
         # Create keybinds for changing window size
         shrink_keybind = QtGui.QShortcut(QtGui.QKeySequence("-"), parent)

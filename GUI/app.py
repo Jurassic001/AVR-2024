@@ -107,6 +107,20 @@ class MainWindow(QtWidgets.QWidget):
         self.mqtt_connected = False
         self.serial_connected = False
 
+        # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
+        mainMonitor = get_monitors()[0]
+        self.move(0, 0)
+        self.setMaximumSize(mainMonitor.width - 360, mainMonitor.height - 300)
+        self.setMinimumSize(500, 400)
+        self.resize(mainMonitor.width - 525, mainMonitor.height - 400)
+        self.sizePresets = [
+            [500, 400],
+            [(mainMonitor.width - 25)/2, mainMonitor.height/2],
+            [mainMonitor.width - 525, mainMonitor.height - 400],
+            [mainMonitor.width - 385, mainMonitor.height - 325]
+            ]
+        self.curPreset = 2
+
     def build(self) -> None:
         """
         Build the GUI layout
@@ -117,18 +131,6 @@ class MainWindow(QtWidgets.QWidget):
         self.tabs = TabWidget(self)
         layout.addWidget(self.tabs)
 
-        # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
-        mainMonitor = get_monitors()[0]
-        self.move(0, 0)
-        self.setMaximumSize(mainMonitor.width - 525, mainMonitor.height - 400)
-        self.setMinimumSize(500, 400)
-        self.resize(mainMonitor.width, mainMonitor.height)
-        self.sizePresets = [
-            [500, 400],
-            [(mainMonitor.width - 25)/2, mainMonitor.height/2],
-            [mainMonitor.width, mainMonitor.height]
-            ]
-        self.curPreset = 2
 
         # add tabs
 
