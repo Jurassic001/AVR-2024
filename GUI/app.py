@@ -117,19 +117,25 @@ class MainWindow(QtWidgets.QWidget):
         self.tabs = TabWidget(self)
         layout.addWidget(self.tabs)
 
-        # Configure the positon, min and max sizes of AVR GUI based on screen width and height
+        # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
         mainMonitor = get_monitors()[0]
         self.move(0, 0)
         self.setMaximumSize(mainMonitor.width - 525, mainMonitor.height - 400)
         self.setMinimumSize(500, 400)
         self.resize(mainMonitor.width, mainMonitor.height)
+        self.sizePresets = [
+            [500, 400],
+            [(mainMonitor.width - 25)/2, mainMonitor.height/2],
+            [mainMonitor.width, mainMonitor.height]
+            ]
+        self.curPreset = 2
 
         # add tabs
 
         # connection widget
 
         self.main_connection_widget = MainConnectionWidget(self)
-        self.main_connection_widget.build(self, mainMonitor)
+        self.main_connection_widget.build(self)
         self.main_connection_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(
             self.main_connection_widget, self.main_connection_widget.windowTitle()

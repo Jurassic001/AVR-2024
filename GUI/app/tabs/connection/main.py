@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets
+from PySide6 import QtWidgets, QtGui
 
 from ..base import BaseTabWidget
 from .mqtt import MQTTConnectionWidget
@@ -14,8 +14,22 @@ class MainConnectionWidget(BaseTabWidget):
         super().__init__(parent)
 
         self.setWindowTitle("Connections")
+    
+    def resize_window(self, parent: QtWidgets.QWidget, preset: int):
+        """Internal function for resizing windows with buttons or keybinds
 
-    def build(self, parent, monitor: object) -> None:
+        Args:
+            parent (QtWidgets.QWidget): The window object, self explanatory
+            preset (int): 0 for small, 1 for medium, 2 for large
+        """
+        if preset > 2:
+            preset = 2
+        elif preset < 0:
+            preset = 0
+        parent.resize(parent.sizePresets[preset][0], parent.sizePresets[preset][1])
+        parent.curPreset = preset
+
+    def build(self, parent: QtWidgets.QWidget) -> None:
         """
         Build the GUI layout
         """
@@ -27,26 +41,25 @@ class MainConnectionWidget(BaseTabWidget):
         winSize_layout = QtWidgets.QHBoxLayout()
         winSize_groupbox.setLayout(winSize_layout)
 
+        # Create size buttons
         setSizeSmall_button = QtWidgets.QPushButton("Small Window")
         winSize_layout.addWidget(setSizeSmall_button)
-
-        setSizeSmall_button.clicked.connect(
-            lambda: parent.resize(500, 400)
-        )
+        setSizeSmall_button.clicked.connect(lambda: self.resize_window(parent, 0))
 
         setSizeMed_button = QtWidgets.QPushButton("Medium Window")
         winSize_layout.addWidget(setSizeMed_button)
-
-        setSizeMed_button.clicked.connect(
-            lambda: parent.resize(monitor.width - 800, monitor.height - 500)
-        )
+        setSizeMed_button.clicked.connect(lambda: self.resize_window(parent, 1))
 
         setSizeLarge_button = QtWidgets.QPushButton("Large Window (Default)")
         winSize_layout.addWidget(setSizeLarge_button)
+        setSizeLarge_button.clicked.connect(lambda: self.resize_window(parent, 2))
 
-        setSizeLarge_button.clicked.connect(
-            lambda: parent.resize(monitor.width, monitor.height)
-        )
+        # Create keybinds for changing window size
+        shrink_keybind = QtGui.QShortcut(QtGui.QKeySequence("-"), parent)
+        shrink_keybind.activated.connect(lambda: self.resize_window(parent, parent.curPreset - 1))
+
+        grow_keybind = QtGui.QShortcut(QtGui.QKeySequence("="), parent)
+        grow_keybind.activated.connect(lambda: self.resize_window(parent, parent.curPreset + 1))
 
         winSize_groupbox.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
