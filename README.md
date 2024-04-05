@@ -16,10 +16,19 @@ For Bell employees and partners, work items are tracked on [Trello](https://trel
 
 Documentation is located on the `docs` branch.
 
+## To do
+- [ ] Add ability to toggle between auto-aim and manual laser control
+- [ ] Change auto-aim logic to use real math (need a cheeky distance sensor)
+- [ ] Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
+- [ ] Add ability to switch between window size options with +/- keys
+
 ## Developer Setup
 
 To do development work, you'll want to have Docker setup, along with Python 3.9
 with the `venv` module.
+
+<!--
+No Linux users on the team
 
 If you need to install Python 3.9 on Linux, do the following:
 
@@ -28,7 +37,7 @@ sudo add-apt-repository ppa:deadsnakes/ppa
 sudo apt install python3-pip python3.9 python3.9-venv
 sudo -H python3.9 -m pip install pip wheel --upgrade
 ```
-
+-->
 If you want to build/run Docker images not on a Jetson, run
 
 ```bash
@@ -38,6 +47,9 @@ docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
 once first.
 
 Refer to individual module README files for specific instructions.
+
+<!--
+This repo was setup when you setup the parent repo initially
 
 ### Repo Setup
 
@@ -55,25 +67,31 @@ git submodule update --init --recursive
 ```
 
 to initialize and/or update the submodules.
-
+-->
 ### VS Code Setup
+
+<!--
+Who actually uses git pull? VSCode Source Control anyone?
 
 We recommend setting `git.pullTags` to `false` in VS Code workspace settings
 to prevent tag errors when doing `git pull`, along with installing the
 recommended extensions.
+-->
+Install the recommended extensions. If you don't see a popup in the bottom right corner of your screen, go to the VSCode extensions tab and type `@recommended` into the search bar
 
 ### Python Setup
 
-#### The easy & cool way:
-I'm 95% sure that you can run these commands in sequence, in the VSCode Powershell terminal <br/>
-(Make sure you're in the AVR-2024 repo, NOT HPBell_2024-25) <br/>
-Note: This will take 5-15 minutes
+You can (perchance) run these commands in sequence, in the VSCode Powershell terminal <br/>
+(Make sure you're in the AVR-2024 repo, NOT HPBell_2024-25. The first command will try to open AVR_2024 if you're in HPBell) <br/>
+Note: This will take 10-15 minutes
 ```bash
 cd AVR/AVR-2024
 py -m venv .venv
 .venv\Scripts\Activate
 py scripts/install_requirements.py
 ```
+<!--
+My way or the high way (jk, I'm reducing visual clutter)
 
 #### The long & hard way:
 Create a Python 3.9 virtual environment (Make sure you're creating the venv in AVR-2024, not the parent repo):
@@ -95,7 +113,7 @@ Finally, you can install all the dependencies so you get autocomplete and type h
 ```bash
 python scripts/install_requirements.py
 ```
-
+-->
 ## Running Containers on a Jetson
 
 If on a Jetson, clone the repository and check out the git branch you want.
