@@ -69,6 +69,7 @@ I'm 95% sure that you can run these commands in sequence, in the VSCode Powershe
 (Make sure you're in the AVR-2024 repo, NOT HPBell_2024-25) <br/>
 Note: This will take 5-15 minutes
 ```bash
+cd AVR/AVR-2024
 py -m venv .venv
 .venv\Scripts\Activate
 py scripts/install_requirements.py
