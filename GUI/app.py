@@ -15,6 +15,7 @@ from app.tabs.vmc_telemetry import VMCTelemetryWidget
 from loguru import logger
 from PySide6 import QtCore, QtGui, QtWidgets
 
+from screeninfo import get_monitors
 
 class TabBar(QtWidgets.QTabBar):
     """
@@ -239,6 +240,19 @@ class MainWindow(QtWidgets.QWidget):
         # set initial state
         self.set_mqtt_connected_state(ConnectionState.disconnected)
         self.set_serial_connected_state(ConnectionState.disconnected)
+
+        # Configure the positon, min and max sizes of AVR GUI based on screen width and height
+        mainMonitor = get_monitors()[0]
+        self.move(0, 0)
+        self.setMaximumSize(mainMonitor.width - 525, mainMonitor.height - 400)
+        self.setMinimumSize(500, 400)
+        self.resize(mainMonitor.width, mainMonitor.height)
+        """
+        Window size config examples:
+        Max size: self.resize(mainMonitorStats.width, mainMonitorStats.height)
+        Middle of the road: self.resize(mainMonitorStats.width - 800, mainMonitorStats.height - 500)
+        As small as possible (Good testing size): self.resize(0, 0)
+        """
 
     def set_mqtt_connected_state(self, connection_state: ConnectionState) -> None:
         self.mqtt_connected = connection_state == ConnectionState.connected
