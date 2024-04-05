@@ -20,7 +20,9 @@ Documentation is located on the `docs` branch.
 - Add ability to toggle between auto-aim and manual laser control
 - Change auto-aim logic to use real math (need a cheeky distance sensor)
 - Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
-- Add ability to switch between window size options with +/- keys
+- ~~Add ability to switch between window size options with +/- keys~~
+- Add maximize window option
+- Add ability to force enable tabs
 
 ## Developer Setup
 

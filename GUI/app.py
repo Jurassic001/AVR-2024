@@ -271,6 +271,7 @@ class MainWindow(QtWidgets.QWidget):
         # disable/enable widgets
         for widget in widgets:
             idx = self.tabs.indexOf(widget)
+            # Lock tabs if not connected to mqtt
             self.tabs.setTabEnabled(idx, self.mqtt_connected)
             if not self.mqtt_connected:
                 self.tabs.setTabToolTip(idx, "MQTT not connected")
