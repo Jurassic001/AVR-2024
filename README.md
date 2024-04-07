@@ -22,40 +22,11 @@ Documentation is located on the `docs` branch.
 - Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
 - ~~Add ability to switch between window size options with +/- keys~~
 - ~~Add maximize window option~~
-- ~~Add testing mode~~
-    - ~~Add quick exit keybind in testing mode~~
-    - ~~Add ability to create a second row of buttons in the same box to facilitate this~~
+- Reformat the auton tab so it fits on a maximized screen
 
-## Developer Setup
-
-To do development work, you'll want to have Docker setup, along with Python 3.9
-with the `venv` module.
-
+## Repo Setup
 <!--
-No Linux users on the team
-
-If you need to install Python 3.9 on Linux, do the following:
-
-```bash
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3-pip python3.9 python3.9-venv
-sudo -H python3.9 -m pip install pip wheel --upgrade
-```
--->
-If you want to build/run Docker images not on a Jetson, run
-
-```bash
-docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
-```
-
-once first.
-
-Refer to individual module README files for specific instructions.
-
-<!--
-This repo was setup when you setup the parent repo initially
-
-### Repo Setup
+All this should already be done
 
 Clone the repository with submodules:
 
@@ -72,11 +43,9 @@ git submodule update --init --recursive
 
 to initialize and/or update the submodules.
 -->
-### VS Code Setup
+### VSCode Setup
 
 <!--
-Who actually uses git pull? VSCode Source Control anyone?
-
 We recommend setting `git.pullTags` to `false` in VS Code workspace settings
 to prevent tag errors when doing `git pull`, along with installing the
 recommended extensions.
@@ -118,6 +87,33 @@ Finally, you can install all the dependencies so you get autocomplete and type h
 python scripts/install_requirements.py
 ```
 -->
+
+## Developer Setup
+<!-- All of this confuses me -->
+To do development work, you'll want to have Docker setup, along with Python 3.9
+with the `venv` module.
+
+<!--
+No Linux users on the team
+
+If you need to install Python 3.9 on Linux, do the following:
+
+```bash
+sudo add-apt-repository ppa:deadsnakes/ppa
+sudo apt install python3-pip python3.9 python3.9-venv
+sudo -H python3.9 -m pip install pip wheel --upgrade
+```
+-->
+If you want to build/run Docker images not on a Jetson, run
+
+```bash
+docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
+```
+
+once first.
+
+Refer to individual module README files for specific instructions.
+
 ## Running Containers on a Jetson
 
 If on a Jetson, clone the repository and check out the git branch you want.
