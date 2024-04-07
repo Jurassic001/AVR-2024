@@ -75,9 +75,8 @@ class MainConnectionWidget(BaseTabWidget):
         # Create the Config layout & buttons
         configBtns_layout = QtWidgets.QHBoxLayout()
 
-        testing_btn = QtWidgets.QPushButton("Toggle testing mode")
-        testing_btn.setCheckable(True)
-        testing_btn.clicked.connect(lambda: parent.toggleTesting())
+        testing_btn = QtWidgets.QPushButton("Second row button")
+        # testing_btn.clicked.connect(lambda: )
         configBtns_layout.addWidget(testing_btn)
 
         # Add button layouts to the Options layout
@@ -119,7 +118,3 @@ class MainConnectionWidget(BaseTabWidget):
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
         )
         layout.addWidget(serial_groupbox)
-
-        # Close window keybind
-        close_keybind = QtGui.QShortcut(QtGui.QKeySequence("Backspace"), parent)
-        close_keybind.activated.connect(lambda: parent.exit())
