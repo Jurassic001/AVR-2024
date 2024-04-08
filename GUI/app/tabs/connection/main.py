@@ -46,6 +46,7 @@ class MainConnectionWidget(BaseTabWidget):
         windowBtns_layout = QtWidgets.QHBoxLayout()
 
         windowBtns_text = QtWidgets.QLabel("Window Size Presets (Use -/+ to switch around):")
+        windowBtns_text.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
         windowBtns_layout.addWidget(windowBtns_text)
 
         setSizeSmall_btn = QtWidgets.QPushButton("Small Window")
