@@ -45,7 +45,7 @@ class AutonomyWidget(BaseTabWidget):
         autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(False))  # type: ignore
         autonomous_layout.addWidget(autonomous_disable_button)
 
-        self.autonomous_label = QtWidgets.QLabel()
+        self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
         self.autonomous_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
@@ -54,10 +54,8 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
         
         # ==========================
-        # Custom Box
-        custom_main_groupbox = QtWidgets.QGroupBox('Custom')
+        # Recon, Thermal autoaim, spintake, Sphero controls
         custom_layout = QtWidgets.QHBoxLayout()
-        custom_main_groupbox.setLayout(custom_layout)
         
             # ==========================
             # Recon Box
@@ -259,12 +257,12 @@ class AutonomyWidget(BaseTabWidget):
         )
         
         custom_layout.addWidget(self.custom_label)
-        layout.addWidget(custom_main_groupbox, 1, 0, 1, 1)
+        layout.addLayout(custom_layout, 1, 0, 1, 1)
 
         # ==========================
         # Buildings
         self.number_of_buildings = 6
-        self.building_labels: List[QtWidgets.QLabel] = []
+        self.building_states: List[QtWidgets.QLabel] = []
 
         buildings_groupbox = QtWidgets.QGroupBox("Buildings")
         buildings_layout = QtWidgets.QVBoxLayout()
@@ -282,29 +280,29 @@ class AutonomyWidget(BaseTabWidget):
 
         buildings_layout.addLayout(building_all_layout)
 
+            # ======================
+            # Make each line of building buttons
         for i in range(self.number_of_buildings):
-            building_groupbox = QtWidgets.QGroupBox(f"Building {i}")
             building_layout = QtWidgets.QHBoxLayout()
-            building_groupbox.setLayout(building_layout)
 
+            building_name = QtWidgets.QLabel(f"Building {i+1}")
+            building_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            building_layout.addWidget(building_name)
+            
+            building_state = QtWidgets.QLabel(wrap_text("Drop Disabled", "red"))
+            building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            building_layout.addWidget(building_state)
+            self.building_states.append(building_state)
+            
             building_enable_button = QtWidgets.QPushButton("Enable Drop")
-            building_enable_button.clicked.connect(functools.partial(self.set_building, i, True))  # type: ignore
             building_layout.addWidget(building_enable_button)
+            building_enable_button.clicked.connect(functools.partial(self.set_building, i, True))  # type: ignore
 
             building_disable_button = QtWidgets.QPushButton("Disable Drop")
-            building_disable_button.clicked.connect(functools.partial(self.set_building, i, False))  # type: ignore
             building_layout.addWidget(building_disable_button)
-
-            building_label = QtWidgets.QLabel()
-            building_label.setAlignment(
-                QtCore.Qt.AlignmentFlag.AlignRight
-                | QtCore.Qt.AlignmentFlag.AlignVCenter
-            )
-            building_layout.addWidget(building_label)
-            self.building_labels.append(building_label)
-
-            buildings_layout.addWidget(building_groupbox)
-
+            building_disable_button.clicked.connect(functools.partial(self.set_building, i, False))  # type: ignore
+            
+            buildings_layout.addLayout(building_layout)
         layout.addWidget(buildings_groupbox, 2, 0, 4, 1)
 
     def set_building(self, number: int, state: bool) -> None:
@@ -331,7 +329,7 @@ class AutonomyWidget(BaseTabWidget):
             text = "Drop Disabled"
             color = "red"
 
-        self.building_labels[number].setText(wrap_text(text, color))
+        self.building_states[number].setText(wrap_text(text, color))
 
     def set_building_all(self, state: bool) -> None:
         """
