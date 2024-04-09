@@ -10,6 +10,7 @@ from bell.avr.mqtt.payloads import (
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
+from ..lib.config import config
 from .base import BaseTabWidget
 
 
@@ -59,8 +60,7 @@ class VMCControlWidget(BaseTabWidget):
 
         # ==========================
         # Servos
-        self.number_of_servos = 4
-        self.servo_labels: List[QtWidgets.QLabel] = []
+        self.servo_states: List[QtWidgets.QLabel] = []
 
         servos_groupbox = QtWidgets.QGroupBox("Servos")
         servos_layout = QtWidgets.QVBoxLayout()
@@ -78,11 +78,21 @@ class VMCControlWidget(BaseTabWidget):
 
         servos_layout.addLayout(servo_all_layout)
 
-        for i in range(self.number_of_servos):
-            servo_groupbox = QtWidgets.QGroupBox(f"Servo {i+1}")
+        for i in range(config.num_servos):
             servo_layout = QtWidgets.QHBoxLayout()
-            servo_groupbox.setLayout(servo_layout)
 
+            # Servo name label
+            servo_name = QtWidgets.QLabel(f"Servo {i+1}")
+            servo_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            servo_layout.addWidget(servo_name)
+
+            # Servo state label
+            servo_state = QtWidgets.QLabel()
+            servo_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            servo_layout.addWidget(servo_state)
+            self.servo_states.append(servo_state)
+
+            # Open and close buttons
             servo_open_button = QtWidgets.QPushButton("Open")
             servo_open_button.clicked.connect(functools.partial(self.set_servo, i, "open"))  # type: ignore
             servo_layout.addWidget(servo_open_button)
@@ -91,15 +101,8 @@ class VMCControlWidget(BaseTabWidget):
             servo_close_button.clicked.connect(functools.partial(self.set_servo, i, "close"))  # type: ignore
             servo_layout.addWidget(servo_close_button)
 
-            servo_label = QtWidgets.QLabel()
-            servo_label.setAlignment(
-                QtCore.Qt.AlignmentFlag.AlignRight
-                | QtCore.Qt.AlignmentFlag.AlignVCenter
-            )
-            servo_layout.addWidget(servo_label)
-            self.servo_labels.append(servo_label)
-
-            servos_layout.addWidget(servo_groupbox)
+            # Add each row to the servo layout
+            servos_layout.addLayout(servo_layout)
 
         layout.addWidget(servos_groupbox, 0, 1, 3, 3)
 
@@ -132,7 +135,7 @@ class VMCControlWidget(BaseTabWidget):
             text = "Closed"
             color = "chocolate"
 
-        self.servo_labels[number].setText(wrap_text(text, color))
+        self.servo_states[number].setText(wrap_text(text, color))
 
     def set_servo_all(self, action: Literal["open", "close"]) -> None:
         """

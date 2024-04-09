@@ -125,5 +125,12 @@ class _Config:
     def joystick_inverted(self, value: bool) -> None:
         return self.__set("joystick_inverted", value)
 
+    @property
+    def num_servos(self) -> int:
+        return self.__get("num_servos", 8)
+
+    @num_servos.setter
+    def num_servos(self, value: int) -> None:
+        return self.__set("num_servos", value)
 
 config = _Config()

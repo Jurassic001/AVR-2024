@@ -23,6 +23,8 @@ Documentation is located on the `docs` branch.
 - ~~Add ability to switch between window size options with +/- keys~~
 - ~~Add maximize window option~~
 - ~~Reformat the auton tab so it fits on a maximized screen~~
+- ~~Reformat VMC control page to better support higher numbers of servos~~
+    - ~~Add num_servos setting to settings.json~~
 
 ## Repo Setup
 <!--
