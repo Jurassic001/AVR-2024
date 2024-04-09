@@ -17,14 +17,17 @@ For Bell employees and partners, work items are tracked on [Trello](https://trel
 Documentation is located on the `docs` branch.
 
 ## To do
-- Add ability to toggle between auto-aim and manual laser control
-- Change auto-aim logic to use real math (need a cheeky distance sensor)
-- Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
+
 - ~~Add ability to switch between window size options with +/- keys~~
 - ~~Add maximize window option~~
 - ~~Reformat the auton tab so it fits on a maximized screen~~
 - ~~Reformat VMC control page to better support higher numbers of servos~~
     - ~~Add num_servos setting to settings.json~~
+
+### Brainstorming
+
+- Change auto-aim logic to use real math (need a cheeky distance sensor)
+- Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
 
 ## Repo Setup
 <!--
