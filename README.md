@@ -59,11 +59,10 @@ Install the recommended extensions. If you don't see a popup in the bottom right
 
 ### Python Setup
 
-You can (perchance) run these commands in sequence, in the VSCode Powershell terminal <br/>
-(Make sure you're in the AVR-2024 repo, NOT HPBell_2024-25. The first command will try to open AVR_2024 if you're in HPBell) <br/>
+You can run these commands in sequence, in the VSCode Powershell terminal <br/>
+(Make sure you're in the AVR-2024 repo, NOT HPBell_2024-25. Come talk to Max if you have any questions) <br/>
 Note: This will take 10-15 minutes
 ```bash
-cd AVR/AVR-2024
 py -m venv .venv
 .venv\Scripts\Activate
 py scripts/install_requirements.py
