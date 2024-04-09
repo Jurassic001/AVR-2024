@@ -106,19 +106,13 @@ class MainWindow(QtWidgets.QWidget):
         self.serial_connected = False
         self.forceEnableTabs = True
 
-        # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
-        mainMonitor = QApp.primaryScreen().size()
+        # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size modifier
+        self.mainMonitor = QApp.primaryScreen().size()
         self.move(0, 0)
-        self.setMaximumSize(mainMonitor.width(), mainMonitor.height())
-        self.setMinimumSize(mainMonitor.width() * .25, mainMonitor.width() * .25)
-        self.sizePresets = [
-            [0, 0],
-            [mainMonitor.width() * .50, mainMonitor.height() * .50],
-            [mainMonitor.width() * .75, mainMonitor.height() * .75],
-            [mainMonitor.width(), mainMonitor.height()]
-            ]
-        self.curPreset = 2
-        self.resize(self.sizePresets[self.curPreset][0], self.sizePresets[self.curPreset][1])
+        self.setMaximumSize(self.mainMonitor.width(), self.mainMonitor.height())
+        self.setMinimumSize(self.mainMonitor.width() * .2, self.mainMonitor.width() * .2)
+        self.curMod = .8
+        self.resize(self.mainMonitor.width() * self.curMod, self.mainMonitor.height() * self.curMod)
 
     def build(self) -> None:
         """
