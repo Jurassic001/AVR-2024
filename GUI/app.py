@@ -15,8 +15,6 @@ from app.tabs.vmc_telemetry import VMCTelemetryWidget
 from loguru import logger
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from screeninfo import get_monitors
-
 class TabBar(QtWidgets.QTabBar):
     """
     Custom QTabBar for a QTabWidget to allow the tabs to be popped in/out
@@ -98,7 +96,7 @@ class MainWindow(QtWidgets.QWidget):
     This is the main application class.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, QApp: QtWidgets.QApplication) -> None:
         super().__init__()
 
         set_icon(self)
@@ -109,18 +107,18 @@ class MainWindow(QtWidgets.QWidget):
         self.forceEnableTabs = True
 
         # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size preset
-        mainMonitor = get_monitors()[0]
+        mainMonitor = QApp.primaryScreen().size()
         self.move(0, 0)
-        self.setMaximumSize(mainMonitor.width - 360, mainMonitor.height - 300)
-        self.setMinimumSize(500, 400)
-        self.resize(mainMonitor.width - 525, mainMonitor.height - 400)
+        self.setMaximumSize(mainMonitor.width(), mainMonitor.height())
+        self.setMinimumSize(mainMonitor.width() * .25, mainMonitor.width() * .25)
         self.sizePresets = [
-            [500, 400],
-            [(mainMonitor.width - 25)/2, mainMonitor.height/2],
-            [mainMonitor.width - 525, mainMonitor.height - 400],
-            [mainMonitor.width - 385, mainMonitor.height - 325]
+            [0, 0],
+            [mainMonitor.width() * .50, mainMonitor.height() * .50],
+            [mainMonitor.width() * .75, mainMonitor.height() * .75],
+            [mainMonitor.width(), mainMonitor.height()]
             ]
         self.curPreset = 2
+        self.resize(self.sizePresets[self.curPreset][0], self.sizePresets[self.curPreset][1])
 
     def build(self) -> None:
         """
@@ -319,7 +317,7 @@ def main() -> None:
     app = QtWidgets.QApplication()
 
     # create the main window
-    w = MainWindow()
+    w = MainWindow(app)
     w.build()
     w.show()
 
