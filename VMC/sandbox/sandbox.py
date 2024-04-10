@@ -335,34 +335,48 @@ class Sandbox(MQTTModule):
     # WARNING none of this works so proceed with caution
     
     async def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
-        """ Moves AVR to postion on field.\n\npos(inches): (x, y, z) """
+        """ Move the AVR to a specified position on the field
+
+        Args:
+            pos (tuple): Absolute position on the field, in inches, as (x: fwd, y: right, z: up)
+            heading (float, optional): Heading that the drone will face while moving (?) as a decimal (?). Defaults to 0.
+            pathing (bool, optional): If the AVR will attempt to path around buildings (?). Defaults to False.
+        """
         if not pathing or not self.col_test.path_check(self.position, pos):
             relative_pos = [0, 0, 0]
             for i in range(3):
+                # Get the relative coords of the destination by adding the absolute position to the starting position
                 relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i]
+            # Reverse the value of the Z coord since the MQTT syntax is <dis_down> for some reason
             relative_pos[2] *= -1
+            # Report the destination (No clue where this prints to) and send the command
             logger.debug(f'NED: {relative_pos}')
             self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
-        else:
-            # Path obstructed.
+        else: # Pathfinding process
             if self.do_pathfinding:
-                # Pathfinding.
+                # Paths points along the way to the target destination (?)
                 pathed_positions = self.col_test.path_find(self.position, pos)
                 for p_pos in pathed_positions:
                     self.move(self.position, p_pos)
                     time.sleep(.5)
-            else:
+            else: # Path obstructed (?)
                 logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
                 
         """ while not self.move_complete:
             logger.debug('Waiting for move confirm', self.move_complete)
         self.move_complete = False """
     
-    async def takeoff(self, alt = 39.3701) -> None:
-        """ AVR Takeoff. \n\nAlt in inches. Defult 1 meter."""
+    async def takeoff(self, alt: float = 39.3701) -> None:
+        """ Tell the AVR to takeoff
+
+        Args:
+            alt (float, optional): Height that the AVR will takeoff to. Defaults to 39.3701.
+        """
         self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
+    
     async def land(self) -> None:
-        """ AVR Land"""
+        """ Land the AVR
+        """
         #self.move(self.landing_pads[pad])
         self.send_action('land')
 
