@@ -172,6 +172,7 @@ class Sandbox(MQTTModule):
             self.on_ground = True
             self.in_air = False
         
+
     # ===============
     # Threads
     def targeting(self) -> None: # Currently useless as there is no application for it, still works though.
@@ -254,7 +255,7 @@ class Sandbox(MQTTModule):
                 found_high_tag = True
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
             
-            # Warn piolet and flash lights if the hotspot is detected
+            # Warn pilot and flash lights if the hotspot is detected
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
@@ -274,8 +275,10 @@ class Sandbox(MQTTModule):
             else:
                 self.sanity = 'Gone'
 
-    # This is essentially useless, it just shows the stats of the threads.
+
     def status(self):
+        """ Shows the stats of the threads.
+        """
         logger.debug('Status Sub-Thread: Online')
         onoffline = {True: 'Online', False: 'Offline'}
         onoff = {True: 'On', False: 'Off'}
@@ -287,7 +290,7 @@ class Sandbox(MQTTModule):
                     {'Thermal Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Sanity': self.sanity, 'Laser': onoff[self.laser_on]}
                 )
     
-    def Autonomous(self):
+    def Autonomous(self): # What is this, headache city?
         logger.debug('Autonomous Thread: Online')
         while True:
             if not self.autonomous:
@@ -298,8 +301,7 @@ class Sandbox(MQTTModule):
                 n, e, d = tag['pos'].values() """
                 
             
-            # Abandon hope all ye who enter here
-            # None of this works
+            # Abandon hope all ye who enter (None of this works)
             if not self.recon:
                 continue
             
@@ -317,7 +319,8 @@ class Sandbox(MQTTModule):
             
             self.move((404, 120, 126*.75)) # Building 1
             self.wait_for_event('goto_complete_event')
-            # Look for april tag 1 and flash led if found.
+
+            # Look for april tag 1 and flash led if its found.
             if next((tag for tag in self.april_tags if tag['id'] == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
@@ -329,10 +332,11 @@ class Sandbox(MQTTModule):
             
             self.land()
             self.recon = False
-            
+
+
     # ===============
     # Drone Control Comands
-    # WARNING none of this works so proceed with caution
+    # BEWARE! None of this works so proceed with caution
     
     async def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Move the AVR to a specified position on the field
@@ -346,7 +350,7 @@ class Sandbox(MQTTModule):
             relative_pos = [0, 0, 0]
             for i in range(3):
                 # Get the relative coords of the destination by adding the absolute position to the starting position
-                relative_pos[i] = self.inch_to_m(pos[i]) + self.start_pos[i]
+                relative_pos[i] = self.inchesToMeters(pos[i]) + self.start_pos[i]
             # Reverse the value of the Z coord since the MQTT syntax is <dis_down> for some reason
             relative_pos[2] *= -1
             # Report the destination (No clue where this prints to) and send the command
@@ -370,9 +374,9 @@ class Sandbox(MQTTModule):
         """ Tell the AVR to takeoff
 
         Args:
-            alt (float, optional): Height that the AVR will takeoff to. Defaults to 39.3701.
+            alt (float, optional): Height that the AVR will takeoff to in inches. Defaults to 39.3701 (1 meter)
         """
-        self.send_action('takeoff', {'alt': round(self.inch_to_m(alt), 1)})
+        self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
     
     async def land(self) -> None:
         """ Land the AVR
@@ -380,7 +384,8 @@ class Sandbox(MQTTModule):
         #self.move(self.landing_pads[pad])
         self.send_action('land')
 
-    # ===============
+
+    # ================================
     # Send Message Commands
     def move_servo(self, id, angle) -> None:
         self.send_message(
@@ -408,17 +413,27 @@ class Sandbox(MQTTModule):
             'avr/autonomous/sound',
             {'id': id, 'loops': loops}
         )
-    # ===============
-    # Misc/Helper
+    
+    
+    # ================================
+    # Misc/Helper commands
     async def wait_for_event(self, event: str):
         logger.debug(f'Waiting for {event}')
         await self.waiting_events.get()[event].wait()
         logger.debug(f'Completed Event: {event}')
         self.waiting_events.set(self.waiting_events.get()[event].clear())
     
-    # Bell gives us field dimensions in inches then programs the drone to use meters because fuck you.
-    def inch_to_m(self, num):
-        return num/39.37
+    # From Quentin: Bell gives us field dimensions in inches then programs the drone to use meters because fuck you
+    def inchesToMeters(self, inches: float) -> float:
+        """ Converts inches to meters
+        
+        Args:
+            inches (float): Self explanatory, distance in inches
+
+        Returns:
+            float: Distance in meters
+        """
+        return inches/39.37
     
 
 if __name__ == '__main__':
