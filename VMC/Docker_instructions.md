@@ -1,10 +1,15 @@
-<!--
-First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
-Then, run `pip install docker` if you haven't yet
--->
+## Docker setup
+- First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
+- Then, run `pip install docker` if you haven't yet
+- If you want to build/run Docker images **NOT** on a Jetson, run this command once first:
+
+    ```bash
+    docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
+    ```
 
 ## Here's a bunch of Docker build commands
-#### Note that images are mainly meant for the Jetson, although the root README offers instructions to build/run images not on a Jetson
+#### Note: If you update a VMC module you'll need to rebuild the image <!-- Not 100% sure on this as I haven't tested it -->
+
 apriltag:
 ```bash
 docker build -t apriltag ./VMC/apriltag/
@@ -59,12 +64,13 @@ vio:
 ```bash
 docker build -t vio ./VMC/vio/
 ```
-<!--
+<!-- Ignore this section it's full of lies
 <br/>
 
-#### Or, if you want to setup all the containers at once, try this command:
-(Note: This command will take approx. 30 mins to run. There's also a 90% chance that atleast one image will fail to setup properly (Won't interrupt the process). If the process is interrupted run `docker system prune` to delete any broken/half-downloaded images)
-```
+### Or, if you want to setup all the containers at once, try this command:
+#### (Only recommended for first time setup)
+(Note: This command will take approx. 30 mins to run. If the process is interrupted run `docker system prune` to delete any broken/half-downloaded images)
+```bash
 docker build -t apriltag ./VMC/apriltag/
 docker build -t fcm ./VMC/fcm/
 docker build -t fusion ./VMC/fusion/

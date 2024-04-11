@@ -93,21 +93,9 @@ python scripts/install_requirements.py
 -->
 
 ## Developer Setup
-<!-- All of this confuses me -->
 To do development work, you'll want to have Docker setup, along with Python 3.9
 with the `venv` module.
 
-<!--
-No Linux users on the team
-
-If you need to install Python 3.9 on Linux, do the following:
-
-```bash
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt install python3-pip python3.9 python3.9-venv
-sudo -H python3.9 -m pip install pip wheel --upgrade
-```
--->
 If you want to build/run Docker images not on a Jetson, run
 
 ```bash
