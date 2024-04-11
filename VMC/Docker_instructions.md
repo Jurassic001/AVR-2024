@@ -1,9 +1,10 @@
-## Heres a quick, rough walkthrough on how to setup an image on Docker, so you can run containers.
+<!--
+First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
+Then, run `pip install docker` if you haven't yet
+-->
 
-### First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
-### Then, run `pip install docker` if you haven't yet
-#### Then, based on the image you want to setup, run one of the following commands in your VSCode terminal:
-
+## Here's a bunch of Docker build commands
+#### Note that images are mainly meant for the Jetson, although the root README offers instructions to build/run images not on a Jetson
 apriltag:
 ```bash
 docker build -t apriltag ./VMC/apriltag/
@@ -41,7 +42,7 @@ docker build -t sandbox ./VMC/sandbox/
 
 simulator:
 ```bash
-docker build -t simulator ./VMC/simulator/ # Broken
+docker build -t simulator ./VMC/simulator/
 ```
 
 status:
