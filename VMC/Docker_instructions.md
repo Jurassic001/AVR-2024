@@ -8,7 +8,6 @@
     ```
 
 ## Here's a bunch of Docker build commands
-#### Note: If you update a VMC module you'll need to rebuild the image <!-- Not 100% sure on this as I haven't tested it -->
 
 apriltag:
 ```bash
@@ -47,7 +46,7 @@ docker build -t sandbox ./VMC/sandbox/
 
 simulator:
 ```bash
-docker build -t simulator ./VMC/simulator/
+docker build -t simulator ./VMC/simulator/ # Broken
 ```
 
 status:
@@ -63,6 +62,13 @@ docker build -t thermal ./VMC/thermal/
 vio:
 ```bash
 docker build -t vio ./VMC/vio/
+```
+
+## You'll also need to build the modules through start.py, since they're run through start.py
+#### Note: If you update a VMC module you'll need to rebuild it
+This command will build all modules:
+```bash
+start.py build
 ```
 <!-- Ignore this section it's full of lies
 <br/>
