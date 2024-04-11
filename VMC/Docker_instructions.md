@@ -2,60 +2,60 @@
 
 ### First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 ### Then, run `pip install docker` if you haven't yet
-#### Then, based on the image you want to setup, pick from the following commands I've laid out:
+#### Then, based on the image you want to setup, run one of the following commands in your VSCode terminal:
 
 apriltag:
-```
+```bash
 docker build -t apriltag ./VMC/apriltag/
 ```
 
 fcm:
-```
+```bash
 docker build -t fcm ./VMC/fcm/
 ```
 
 fusion:
-```
+```bash
 docker build -t fusion ./VMC/fusion/
 ```
 
 mavp2p:
-```
+```bash
 docker build -t mavp2p ./VMC/mavp2p/
 ```
 
 mqtt:
-```
+```bash
 docker build -t mqtt ./VMC/mqtt/
 ```
 
 pcm:
-```
+```bash
 docker build -t pcm ./VMC/pcm/
 ```
 
 sandbox:
-```
+```bash
 docker build -t sandbox ./VMC/sandbox/
 ```
 
 simulator:
-```
-docker build -t simulator ./VMC/simulator/
+```bash
+docker build -t simulator ./VMC/simulator/ # Broken
 ```
 
 status:
-```
+```bash
 docker build -t status ./VMC/status/
 ```
 
 thermal:
-```
+```bash
 docker build -t thermal ./VMC/thermal/
 ```
 
 vio:
-```
+```bash
 docker build -t vio ./VMC/vio/
 ```
 <!--
