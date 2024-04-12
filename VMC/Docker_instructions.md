@@ -1,17 +1,19 @@
+# Docker Instructions
 ## Docker setup
 - First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 - Then, run `pip install docker` if you haven't yet
 - If you want to build/run Docker images **NOT** on a Jetson, run this command once first:
 
     ```bash
-    docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
+    docker run --rm jetson_image --privileged docker.io/multiarch/qemu-user-static --reset -p yes
     ```
+<br/>
 
-## Here's a bunch of Docker build commands
+## Docker build commands
 
 apriltag:
 ```bash
-docker build -t apriltag ./VMC/apriltag/
+docker build -t apriltag ./VMC/apriltag/ # Broken
 ```
 
 fcm:
@@ -64,18 +66,11 @@ vio:
 docker build -t vio ./VMC/vio/
 ```
 
-## You'll also need to build the modules through start.py, since they're run through start.py
-#### Note: If you update a VMC module you'll need to rebuild it
-This command will build all modules:
-```bash
-start.py build
-```
-<!-- Ignore this section it's full of lies
 <br/>
 
 ### Or, if you want to setup all the containers at once, try this command:
-#### (Only recommended for first time setup)
-(Note: This command will take approx. 30 mins to run. If the process is interrupted run `docker system prune` to delete any broken/half-downloaded images)
+This command will take approx. 45 mins to run. A couple images likely won't build, so keep a close eye on docker desktop.
+<!-- Note that an image failing to build won't interupt other images -->
 ```bash
 docker build -t apriltag ./VMC/apriltag/
 docker build -t fcm ./VMC/fcm/
@@ -88,4 +83,33 @@ docker build -t simulator ./VMC/simulator/
 docker build -t status ./VMC/status/
 docker build -t thermal ./VMC/thermal/
 docker build -t vio ./VMC/vio/
+echo off
 ```
+
+<br/>
+
+## Building and running containers
+
+#### IMPORTANT: Add `--help` to the end of these commands to see command syntax & options/configs
+
+### You'll need to build the modules through start.py before running them
+```bash
+start.py build
+```
+
+Note: If you update a VMC module you'll need to rebuild it
+
+### Then run the modules you want
+```bash
+start.py run
+```
+
+### Finally open up docker desktop and take a look at your glorious new container
+### You can also run `app.py` in the GUI folder and connect to your container
+#### That's right, you can connect your computer... to your own computer...
+
+<!-- Might add some example commands here in the future idk
+## examples
+
+-->
+<!-- Ignore this section it's full of lies
