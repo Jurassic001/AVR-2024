@@ -4,6 +4,8 @@ import paho.mqtt.client as mqtt
 from loguru import logger
 from PySide6 import QtCore, QtGui, QtWidgets
 
+import socket
+
 from ...lib.color import wrap_text
 from ...lib.config import config
 from ...lib.enums import ConnectionState
@@ -62,12 +64,12 @@ class MQTTClient(QtCore.QObject):
         logger.debug("Disconnected from MQTT server")
         self.connection_state.emit(ConnectionState.disconnected)
 
-    def login(self, host: str, port: int) -> None:
+    def login(self, localHost: bool, host: str, port: int) -> None:
         """
         Connect the MQTT client to the server. This method cannot be named "connect"
         as this conflicts with the connect methods of the Signals
         """
-        # do nothing on empty sring
+        # do nothing on empty string
         if not host:
             return
 
@@ -79,9 +81,10 @@ class MQTTClient(QtCore.QObject):
             self.client.connect(host=host, port=port, keepalive=60)
             self.client.loop_start()
 
-            # save settings
-            config.mqtt_host = host
-            config.mqtt_port = port
+            # only save settings if you're running images on the Jetson
+            if not localHost:
+                config.mqtt_host = host
+                config.mqtt_port = port
 
             # emit success
             logger.success("Connected to MQTT server")
@@ -121,8 +124,22 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
 
+        self.localHost = False
         self.mqtt_client = MQTTClient()
         self.mqtt_client.connection_state.connect(self.set_connected_state)
+
+    def hostnameSetter(self, hostLine: QtWidgets.QLineEdit) -> None:
+        """ Set the value of the host based on the localHost boolean
+
+        Args:
+            hostLine (QtWidgets.QLineEdit): The hostLine object
+        """
+        if self.localHost_checkbox.isChecked():
+            # Set the hostLine value to the user's current IP address
+            hostLine.setText(socket.gethostbyname(socket.gethostname()))
+        else:
+            # Set the hostLine value to the configured AVR address
+            hostLine.setText(config.mqtt_host)
 
     def build(self) -> None:
         """
@@ -158,20 +175,28 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
 
         layout.addLayout(bottom_layout)
 
+        # create the local hosting checkbox
+        localHost_layout = QtWidgets.QHBoxLayout()
+        self.localHost_checkbox = QtWidgets.QCheckBox("Enable Local Hosting?")
+        localHost_layout.addWidget(self.localHost_checkbox)
+
+        layout.addLayout(localHost_layout)
+
         # set starting state
         self.set_connected_state(ConnectionState.disconnected)
 
-        self.hostname_line_edit.setText(config.mqtt_host)
+        self.hostnameSetter(self.hostname_line_edit)
         self.port_line_edit.setText(str(config.mqtt_port))
 
         # set up connections
         self.hostname_line_edit.returnPressed.connect(self.connect_button.click)  # type: ignore
         self.connect_button.clicked.connect(  # type: ignore
             lambda: self.mqtt_client.login(
-                self.hostname_line_edit.text(), int(self.port_line_edit.text())
+                self.localHost_checkbox.isChecked(), self.hostname_line_edit.text(), int(self.port_line_edit.text())
             )
         )
         self.disconnect_button.clicked.connect(self.mqtt_client.logout)  # type: ignore
+        self.localHost_checkbox.stateChanged.connect(lambda: self.hostnameSetter(self.hostname_line_edit))
 
     def set_connected_state(self, connection_state: ConnectionState) -> None:
         """

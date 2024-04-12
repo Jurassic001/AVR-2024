@@ -18,8 +18,7 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- Add ability to switch between stored mqtt host and local host (IP address) to facilitate non-Jetson testing with docker
-    - Make it so setting the local host doesn't overrule the mqtt host defined in `GUI/settings.json`
+- Fix apriltag and simulator docker images so I can test everything on my computer
 
 ### Brainstorming
 
