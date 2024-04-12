@@ -5,7 +5,7 @@
 - If you want to build/run Docker images **NOT** on a Jetson, run this command once first:
 
     ```bash
-    docker run --rm jetson_image --privileged docker.io/multiarch/qemu-user-static --reset -p yes
+    docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
     ```
 <br/>
 
