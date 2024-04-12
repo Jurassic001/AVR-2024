@@ -20,7 +20,7 @@ Documentation is located on the `docs` branch.
 
 - Fix error response from daemon when running certain images <!-- Error response from daemon: error gathering device information while adding custom device "/dev/ttyTHS1": no such file or directory -->
 - Fix start.py not recognizing status image <!-- Might be due to the fact that I'm not running it on the Jetson-->
-- Fix apriltag and simulator docker images not downloading
+- Fix apriltag docker image not downloading
 
 ### Brainstorming
 

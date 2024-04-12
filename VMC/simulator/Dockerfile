@@ -39,6 +39,10 @@ WORKDIR /app/PX4-Autopilot/Tools/setup
 RUN chmod +x ubuntu.sh
 RUN ./ubuntu.sh --no-nuttx
 
+# Replace the faulty empy package with it's older, wiser counterpart (https://stackoverflow.com/questions/77642155/attributeerror-module-object-has-no-attribute-raw-opt/77656642#77656642)
+# We have to do this manually since the PX4 release package hasn't been updated to fix this FATAL ERROR (See my commit msg for more info)
+RUN pip3 install empy==3.3.4
+
 WORKDIR /app/PX4-Autopilot
 
 # just build; don't run; https://github.com/PX4/Firmware/issues/3961

@@ -48,7 +48,7 @@ docker build -t sandbox ./VMC/sandbox/
 
 simulator:
 ```bash
-docker build -t simulator ./VMC/simulator/ # Broken
+docker build -t simulator ./VMC/simulator/
 ```
 
 status:
