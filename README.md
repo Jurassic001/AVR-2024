@@ -18,11 +18,8 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- ~~Add ability to switch between window size options with +/- keys~~
-- ~~Add maximize window option~~
-- ~~Reformat the auton tab so it fits on a maximized screen~~
-- ~~Reformat VMC control page to better support higher numbers of servos~~
-    - ~~Add num_servos setting to settings.json~~
+- Add ability to switch between stored mqtt host and local host (IP address) to facilitate non-Jetson testing with docker
+    - Make it so setting the local host doesn't overrule the mqtt host defined in `GUI/settings.json`
 
 ### Brainstorming
 
