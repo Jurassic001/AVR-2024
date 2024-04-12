@@ -258,7 +258,7 @@ def main(action: str, modules: List[str], local: bool = False, simulation: bool 
     compose_file = prepare_compose_file(local, simulation)
 
     # run docker-compose
-    project_name = "avr2022"
+    project_name = "avr2024"
     if os.name == "nt":
         # for some reason on Windows docker-compose doesn't like upper case???
         project_name = project_name.lower()
