@@ -9,11 +9,13 @@
     ```
 <br/>
 
+<!--
 ## Docker build commands
+start.py build handles these commands for you so ignore this section
 
 apriltag:
 ```bash
-docker build -t apriltag ./VMC/apriltag/ # Broken
+docker build -t apriltag ./VMC/apriltag/
 ```
 
 fcm:
@@ -69,8 +71,8 @@ docker build -t vio ./VMC/vio/
 <br/>
 
 ### Or, if you want to setup all the containers at once, try this command:
-This command will take approx. 45 mins to run. A couple images likely won't build, so keep a close eye on docker desktop.
-<!-- Note that an image failing to build won't interupt other images -->
+These commands will take AT LEAST 45 mins to run.
+Note that an image failing to build won't interupt other images
 ```bash
 docker build -t apriltag ./VMC/apriltag/
 docker build -t fcm ./VMC/fcm/
@@ -87,7 +89,7 @@ echo off
 ```
 
 <br/>
-
+-->
 ## Building and running containers
 
 #### IMPORTANT: Add `--help` to the end of these commands to see command syntax & options/configs
@@ -106,10 +108,8 @@ start.py run
 
 ### Finally open up docker desktop and take a look at your glorious new container
 ### You can also run `app.py` in the GUI folder and connect to your container
-#### That's right, you can connect your computer... to your own computer...
 
 <!-- Might add some example commands here in the future idk
 ## examples
 
 -->
-<!-- Ignore this section it's full of lies
