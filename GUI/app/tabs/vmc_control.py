@@ -3,10 +3,7 @@ from __future__ import annotations
 import functools
 from typing import List, Literal, Tuple
 
-from bell.avr.mqtt.payloads import (
-    AvrPcmSetBaseColorPayload,
-    AvrPcmSetServoOpenClosePayload,
-)
+from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
@@ -76,6 +73,10 @@ class VMCControlWidget(BaseTabWidget):
         servo_all_close_button.clicked.connect(lambda: self.set_servo_all("close"))  # type: ignore
         servo_all_layout.addWidget(servo_all_close_button)
 
+        servo_all_stop_button = QtWidgets.QPushButton("Stop all")
+        servo_all_stop_button.clicked.connect(lambda: self.set_servo_all("stop"))  # type: ignore
+        servo_all_layout.addWidget(servo_all_stop_button)
+
         servos_layout.addLayout(servo_all_layout)
 
         for i in range(config.num_servos):
@@ -101,6 +102,10 @@ class VMCControlWidget(BaseTabWidget):
             servo_close_button.clicked.connect(functools.partial(self.set_servo, i, "close"))  # type: ignore
             servo_layout.addWidget(servo_close_button)
 
+            servo_stop_button = QtWidgets.QPushButton("Stop")
+            servo_stop_button.clicked.connect(functools.partial(self.set_servo, i, "stop"))  # type: ignore
+            servo_layout.addWidget(servo_stop_button)
+
             # Add each row to the servo layout
             servos_layout.addLayout(servo_layout)
 
@@ -119,29 +124,41 @@ class VMCControlWidget(BaseTabWidget):
 
         # layout.addWidget(reset_groupbox, 3, 3, 1, 1)
 
-    def set_servo(self, number: int, action: Literal["open", "close"]) -> None:
+    def set_servo(self, number: int, action: Literal["open", "close", "stop"]) -> None:
         """
         Set a servo state
         """
-        self.send_message(
-            "avr/pcm/set_servo_open_close",
-            AvrPcmSetServoOpenClosePayload(servo=number, action=action),
+        if action == "stop":
+            self.send_message(
+            "avr/pcm/set_servo_abs",
+            AvrPcmSetServoAbsPayload(servo=number, absolute=0),
         )
+        else:
+            self.send_message(
+                "avr/pcm/set_servo_open_close",
+                AvrPcmSetServoOpenClosePayload(servo=number, action=action),
+            )
 
         if action == "open":
             text = "Opened"
             color = "blue"
-        else:
+        elif action == "close":
             text = "Closed"
             color = "chocolate"
+        elif action == "stop":
+            text = "Stopped"
+            color = "red"
+        else:
+            text = "Action Not Recognized"
+            color = "black"
 
         self.servo_states[number].setText(wrap_text(text, color))
 
-    def set_servo_all(self, action: Literal["open", "close"]) -> None:
+    def set_servo_all(self, action: Literal["open", "close", "stop"]) -> None:
         """
         Set all servos to the same state
         """
-        for i in range(self.number_of_servos):
+        for i in range(config.num_servos):
             self.set_servo(i, action)
 
     def set_led(self, color: Tuple[int, int, int, int]) -> None:

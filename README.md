@@ -18,7 +18,10 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- Diagnose sandbox errors?
+- Diagnose sandbox errors
+- ~~Fix error when enabling all servos on VMC control page~~
+- ~~Add stop buttons to VMC control page~~
+- Overhaul the Docker instructions
 
 ### Brainstorming
 
