@@ -82,17 +82,79 @@ RUN gdebi --non-interactive libnvvpi1_1.1.15_arm64.deb \
  && gdebi --non-interactive python-vpi1_1.1.15_arm64.deb \
  && gdebi --non-interactive vpi1-samples_1.1.15_arm64.deb \
  && rm *.deb
-# Download extra cuda kits (I hate it here ._.)
-RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda-cuobjdump/cuda-cuobjdump-10-2_10.2.300-1_arm64.deb
+# Download and install extra cuda kits (I hate it here ._.)
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cuobjdump-10-0_10.0.326-1_arm64.deb
 RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cudart-dev-10-0_10.0.326-1_arm64.deb
-RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda-nvcc/cuda-nvcc-10-2_10.2.300-1_arm64.deb
-RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda-compiler-10-2/cuda-compiler-10-2_10.2.460-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-driver-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-misc-headers-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvcc-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvprune-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-compiler-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvdisasm-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-gdb-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvprof-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-memcheck-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cupti-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-gpu-library-advisor-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvtx-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-command-line-tools-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nsight-compute-addon-l4t-10-0_10.0.326-1_all.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-tools-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvrtc-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvrtc-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cusolver-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cusolver-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cublas-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cublas-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cufft-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-curand-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-curand-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cusparse-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-cusparse-dev-10-0_10.0.326-1_arm64.deb
+
+RUN gdebi --non-interactive cuda-cuobjdump-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-driver-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cudart-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-misc-headers-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvcc-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvprune-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-compiler-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvdisasm-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-gdb-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvprof-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-memcheck-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cupti-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-gpu-library-advisor-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvtx-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-command-line-tools-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nsight-compute-addon-l4t-10-0_10.0.326-1_all.deb
+RUN gdebi --non-interactive cuda-tools-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvrtc-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvrtc-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cusolver-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cusolver-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cublas-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cublas-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cufft-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-curand-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-curand-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cusparse-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-cusparse-dev-10-0_10.0.326-1_arm64.deb
+# ========================================================================
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-npp-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-npp-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvgraph-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-nvgraph-dev-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda-samples/cuda-samples-10-0_10.0.326-1_arm64.deb
+RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-documentation-10-0_10.0.326-1_arm64.deb
 RUN wget https://repo.download.nvidia.com/jetson/common/pool/main/c/cuda/cuda-toolkit-10-0_10.0.326-1_arm64.deb
 
-RUN gdebi --non-interactive cuda-cuobjdump-10-2_10.2.300-1_arm64.deb
-RUN gdebi --non-interactive cuda-cudart-dev-10-0_10.0.326-1_arm64.deb
-RUN gdebi --non-interactive cuda-nvcc-10-2_10.2.300-1_arm64.deb
-RUN gdebi --non-interactive cuda-compiler-10-2_10.2.460-1_arm64.deb
+RUN gdebi --non-interactive cuda-npp-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-npp-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvgraph-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-nvgraph-dev-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-samples-10-0_10.0.326-1_arm64.deb
+RUN gdebi --non-interactive cuda-documentation-10-0_10.0.326-1_arm64.deb
 RUN gdebi --non-interactive cuda-toolkit-10-0_10.0.326-1_arm64.deb
 
 RUN rm *.deb
