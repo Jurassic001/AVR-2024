@@ -29,10 +29,6 @@ class Sandbox(MQTTModule):
             'avr/fcm/events': self.handle_events,
             }
 
-        self.topic_callbacks = {
-            'avr/fcm/landed': self.handle_flightState,
-        }
-        
         self.is_armed: bool = False
         self.pause: bool = False
         self.autonomous: bool = False
@@ -179,10 +175,13 @@ class Sandbox(MQTTModule):
             self.in_air = False
         """
     
+    """
+    Only works with package: bell-avr-libraries > v0.1.13
+
     def handle_flightState(self, payload: str):
-        """ Possible values: "UNKNOWN", "ON_GROUND", "IN_AIR", "TAKING_OFF", "LANDING"
-        """
+        # Possible values: "UNKNOWN", "ON_GROUND", "IN_AIR", "TAKING_OFF", "LANDING"
         self.flightState = payload['landed']
+    """
 
     # ===============
     # Threads
@@ -400,7 +399,7 @@ class Sandbox(MQTTModule):
         """ Arms the drone if it isn't armed already
         """
         if not self.is_armed:
-            self.send_message('avr/fcm/actions/arm', {})
+            self.send_message('avr/fcm/actions/arm', {}) # Might only work with package: bell-avr-libraries > v0.1.13
             self.is_armed = True # Take this line out after testing is completed
 
 
