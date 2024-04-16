@@ -28,6 +28,10 @@ class Sandbox(MQTTModule):
             'avr/sandbox/dev': self.handle_dev,
             'avr/fcm/events': self.handle_events,
             }
+
+        self.topic_callbacks = {
+            'avr/fcm/landed': self.handle_flightState,
+        }
         
         self.is_armed: bool = False
         self.pause: bool = False
@@ -50,6 +54,8 @@ class Sandbox(MQTTModule):
         self.target_range: tuple[int, int] = (30, 40)
         self.targeting_step: int = 7
         self.laser_on: bool = False
+
+        self.flightState: str = "UNKNOWN"
   
         self.sanity: str = 'Gone'
         self.do_pathfinding: bool = False
@@ -164,14 +170,19 @@ class Sandbox(MQTTModule):
                 self.waiting_events.set(self.waiting_events.get()[action].set())
         except Exception as e:
             logger.error(e)
-            
+        """
         if action == 'landed_state_in_air_event':
             self.in_air = True
             self.on_ground = False
         elif action == 'landed_state_on_ground_event':
             self.on_ground = True
             self.in_air = False
-        
+        """
+    
+    def handle_flightState(self, payload: str):
+        """ Possible values: "UNKNOWN", "ON_GROUND", "IN_AIR", "TAKING_OFF", "LANDING"
+        """
+        self.flightState = payload['landed']
 
     # ===============
     # Threads
@@ -299,9 +310,7 @@ class Sandbox(MQTTModule):
             """ tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
             if tag:
                 n, e, d = tag['pos'].values() """
-                
             
-            # Abandon hope all ye who enter (None of this works)
             if not self.recon:
                 continue
             
@@ -338,7 +347,7 @@ class Sandbox(MQTTModule):
     # Drone Control Comands
     # BEWARE! None of this works so proceed with caution
     
-    async def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
+    def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Move the AVR to a specified position on the field
 
         Args:
@@ -370,15 +379,17 @@ class Sandbox(MQTTModule):
             logger.debug('Waiting for move confirm', self.move_complete)
         self.move_complete = False """
     
-    async def takeoff(self, alt: float = 39.3701) -> None:
+    def takeoff(self, alt: float = 39.3701) -> None:
         """ Tell the AVR to takeoff
 
         Args:
             alt (float, optional): Height that the AVR will takeoff to in inches. Defaults to 39.3701 (1 meter)
         """
         self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
+        while self.flightState != "IN_AIR":
+            time.sleep(0.1)
     
-    async def land(self) -> None:
+    def land(self) -> None:
         """ Land the AVR
         """
         #self.move(self.landing_pads[pad])

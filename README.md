@@ -18,7 +18,7 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- Diagnose sandbox errors
+- Move the window resizing buttons to the whole window instead of just the connections page
 - ~~Fix error when enabling all servos on VMC control page~~
 - ~~Add stop buttons to VMC control page~~
 - Overhaul the Docker instructions
