@@ -309,7 +309,6 @@ class Sandbox(MQTTModule):
             """ tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
             if tag:
                 n, e, d = tag['pos'].values() """
-            self.arm()
 
             if not self.recon:
                 continue
@@ -386,8 +385,6 @@ class Sandbox(MQTTModule):
             alt (float, optional): Height that the AVR will takeoff to in inches. Defaults to 39.3701 (1 meter)
         """
         self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
-        while self.flightState != "IN_AIR":
-            time.sleep(0.1)
     
     def land(self) -> None:
         """ Land the AVR
@@ -395,12 +392,14 @@ class Sandbox(MQTTModule):
         #self.move(self.landing_pads[pad])
         self.send_action('land')
     
+    """
+    Only works with package: bell-avr-libraries > v0.1.13
+        
     def arm(self) -> None:
-        """ Arms the drone if it isn't armed already
-        """
+        # Arms the drone if it isn't armed already
         if not self.is_armed:
-            self.send_message('avr/fcm/actions/arm', {}) # Might only work with package: bell-avr-libraries > v0.1.13
-            self.is_armed = True # Take this line out after testing is completed
+            self.send_message('avr/fcm/actions/arm', {})
+    """
 
 
     # ================================

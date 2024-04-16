@@ -104,7 +104,7 @@ class MainWindow(QtWidgets.QWidget):
 
         self.mqtt_connected = False
         self.serial_connected = False
-        self.forceEnableTabs = True
+        self.forceEnableTabs = False
 
         # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size modifier
         self.mainMonitor = QApp.primaryScreen().size()
