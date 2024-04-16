@@ -61,8 +61,20 @@ class VMCTelemetryWidget(BaseTabWidget):
         top_layout.addRow(QtWidgets.QLabel("Battery:"), battery_layout)
 
         # armed row
+        armed_layout = QtWidgets.QHBoxLayout()
+
         self.armed_label = QtWidgets.QLabel("")
-        top_layout.addRow(QtWidgets.QLabel("Armed Status:"), self.armed_label)
+        armed_layout.addWidget(self.armed_label)
+
+        arm_button = QtWidgets.QPushButton("Arm")
+        arm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions/arm', {}))
+        armed_layout.addWidget(arm_button)
+
+        disarm_button = QtWidgets.QPushButton("Disarm")
+        disarm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions/disarm', {}))
+        armed_layout.addWidget(disarm_button)
+
+        top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
         # flight mode row
         self.flight_mode_label = QtWidgets.QLabel("")
@@ -262,7 +274,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         """
         if payload["armed"]:
             color = "Red"
-            text = "Armed (and dangerous)"
+            text = "Armed & Dangerous"
         else:
             color = "DarkGoldenRod"
             text = "Disarmed"

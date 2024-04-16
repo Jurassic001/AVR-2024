@@ -310,7 +310,8 @@ class Sandbox(MQTTModule):
             """ tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
             if tag:
                 n, e, d = tag['pos'].values() """
-            
+            self.arm()
+
             if not self.recon:
                 continue
             
@@ -394,6 +395,13 @@ class Sandbox(MQTTModule):
         """
         #self.move(self.landing_pads[pad])
         self.send_action('land')
+    
+    def arm(self) -> None:
+        """ Arms the drone if it isn't armed already
+        """
+        if not self.is_armed:
+            self.send_message('avr/fcm/actions/arm', {})
+            self.is_armed = True # Take this line out after testing is completed
 
 
     # ================================
