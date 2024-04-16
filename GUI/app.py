@@ -114,6 +114,17 @@ class MainWindow(QtWidgets.QWidget):
         self.curMod = .8
         self.resize(self.mainMonitor.width() * self.curMod, self.mainMonitor.height() * self.curMod)
 
+    def resize_window(self, change: int) -> None:
+        """Internal function for resizing windows with keybinds
+
+        Args:
+            change (int): The change in window scale modifier
+        """
+        if self.curMod + change < .2 or self.curMod + change > 1:
+            return
+        self.curMod += change
+        self.resize(self.mainMonitor.width() * self.curMod, self.mainMonitor.height() * self.curMod)
+
     def build(self) -> None:
         """
         Build the GUI layout
@@ -130,7 +141,7 @@ class MainWindow(QtWidgets.QWidget):
         # connection widget
 
         self.main_connection_widget = MainConnectionWidget(self)
-        self.main_connection_widget.build(self)
+        self.main_connection_widget.build()
         self.main_connection_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(
             self.main_connection_widget, self.main_connection_widget.windowTitle()
@@ -248,6 +259,14 @@ class MainWindow(QtWidgets.QWidget):
         # set initial state
         self.set_mqtt_connected_state(ConnectionState.disconnected)
         self.set_serial_connected_state(ConnectionState.disconnected)
+
+        # =====================================================================
+        # Create keybinds for changing window size
+        shrink_keybind = QtGui.QShortcut(QtGui.QKeySequence("-"), self)
+        shrink_keybind.activated.connect(lambda: self.resize_window(-.10))
+
+        grow_keybind = QtGui.QShortcut(QtGui.QKeySequence("="), self)
+        grow_keybind.activated.connect(lambda: self.resize_window(.10))
 
     def set_mqtt_connected_state(self, connection_state: ConnectionState) -> None:
         self.mqtt_connected = connection_state == ConnectionState.connected

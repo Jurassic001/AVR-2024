@@ -15,20 +15,7 @@ class MainConnectionWidget(BaseTabWidget):
 
         self.setWindowTitle("Connections")
     
-    def resize_window(self, parent: QtWidgets.QWidget, change: int) -> None:
-        """Internal function for resizing windows with keybinds
-
-        Args:
-            parent (QtWidgets.QWidget): The window object, self explanatory
-            change (int): The change in window scale modifier
-        """
-        if parent.curMod + change < .2 or parent.curMod + change > 1:
-            return
-        parent.curMod += change
-        parent.resize(parent.mainMonitor.width() * parent.curMod, parent.mainMonitor.height() * parent.curMod)
-        
-
-    def build(self, parent: QtWidgets.QWidget) -> None:
+    def build(self) -> None:
         """
         Build the GUI layout
         """
@@ -103,11 +90,3 @@ class MainConnectionWidget(BaseTabWidget):
             QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
         )
         layout.addWidget(serial_groupbox)
-
-        # =====================================================================
-        # Create keybinds for changing window size
-        shrink_keybind = QtGui.QShortcut(QtGui.QKeySequence("-"), self)
-        shrink_keybind.activated.connect(lambda: self.resize_window(parent, -.10))
-
-        grow_keybind = QtGui.QShortcut(QtGui.QKeySequence("="), self)
-        grow_keybind.activated.connect(lambda: self.resize_window(parent, .10))
