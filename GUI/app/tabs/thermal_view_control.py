@@ -162,7 +162,7 @@ class JoystickWidget(BaseTabWidget):
 
         self.gimbal_num = 1
         
-        self.gimabal_servos = {1: (2, 3), 2: (4, 8), 3: (9, 10)}
+        self.gimbal_servos = {1: (2, 3), 2: (4, 8), 3: (9, 10)}
 
         # servo declarations
         self.SERVO_ABS_MAX = 2200
@@ -175,24 +175,36 @@ class JoystickWidget(BaseTabWidget):
         return QtCore.QPointF(self.width() / 2, self.height() / 2)
 
     def move_gimbal(self, x_servo_percent: int, y_servo_percent: int) -> None:
+        # Currently unused, possibly depreciated
         self.send_message(
             "avr/pcm/set_servo_pct",
-            AvrPcmSetServoPctPayload(servo=self.gimabal_servos[self.gimbal_num][0], percent=x_servo_percent),
+            AvrPcmSetServoPctPayload(servo=self.gimbal_servos[self.gimbal_num][0], percent=x_servo_percent),
         )
         self.send_message(
             "avr/pcm/set_servo_pct",
-            AvrPcmSetServoPctPayload(servo=self.gimabal_servos[self.gimbal_num][1], percent=y_servo_percent),
+            AvrPcmSetServoPctPayload(servo=self.gimbal_servos[self.gimbal_num][1], percent=y_servo_percent),
         )
 
     def move_gimbal_absolute(self, x_servo_abs: int, y_servo_abs: int) -> None:
-        self.send_message(
-            "avr/pcm/set_servo_abs",
-            AvrPcmSetServoAbsPayload(servo=self.gimabal_servos[self.gimbal_num][0], absolute=x_servo_abs),
-        )
-        self.send_message(
-            "avr/pcm/set_servo_abs",
-            AvrPcmSetServoAbsPayload(servo=self.gimabal_servos[self.gimbal_num][1], absolute=y_servo_abs),
-        )
+        if self.gimbal_num == 0: # Potential Idea: Add a system where any gimbal number outside of the given gimbal numbers would control all gimbals (i.e gimbal number == 4 would control all)
+            for i in range(len(self.gimbal_servos)):
+                self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[i+1][0], absolute=x_servo_abs),
+                )
+                self.send_message(
+                    "avr/pcm/set_servo_abs",
+                    AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[i+1][1], absolute=y_servo_abs),
+                )
+        else:
+            self.send_message(
+                "avr/pcm/set_servo_abs",
+                AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[self.gimbal_num][0], absolute=x_servo_abs),
+            )
+            self.send_message(
+                "avr/pcm/set_servo_abs",
+                AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[self.gimbal_num][1], absolute=y_servo_abs),
+            )
         
     def set_gimbal(self, num):
         self.gimbal_num = num
