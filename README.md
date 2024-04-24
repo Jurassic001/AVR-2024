@@ -18,9 +18,8 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- ~~Fix error when enabling all servos on VMC control page~~
-- ~~Add stop buttons to VMC control page~~
-- Overhaul the Docker instructions
+- Wait for Bell to update the `Bell-AVR-Libraries` package
+- Come up with something to do during the off season
 
 ### Brainstorming
 
@@ -90,26 +89,15 @@ python scripts/install_requirements.py
 ```
 -->
 
-## Developer Setup
-To do development work, you'll want to have Docker setup, along with Python 3.9
-with the `venv` module.
-
-If you want to build/run Docker images not on a Jetson, run
-
-```bash
-docker run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
-```
-
-once first.
-
-Refer to individual module README files for specific instructions.
-
-## Running Containers on a Jetson
-
-If on a Jetson, clone the repository and check out the git branch you want.
-You can now follow the instructions inside
-[VMC/README.md](VMC/README.md) to run the `setup.py`
-script and add `--dev` for development.
+## Development Setup
+### Jetson Development
+Follow the instructions inside
+[VMC/README.md](VMC/README.md) to build & run the AVR software on the Jetson
+<!--
+Added this to the VMC README, which is where it's more relevant
 
 Note, with `start.py` commands, make sure to add `--local` to the command.
 This builds the Docker images locally rather than using prebuilt ones from GitHub CR.
+-->
+### Local Development
+If you want to build/run Docker images not on a Jetson, look at [VMC/Docker_instructions.md](VMC/Docker_instructions.md)

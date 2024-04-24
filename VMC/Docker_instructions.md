@@ -1,4 +1,5 @@
 # Docker Instructions
+### This guide is for building/running Docker containers outside of the Jetson's enviroment
 ## Docker setup
 - First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 - Then, run `pip install docker` if you haven't yet
@@ -11,6 +12,7 @@
 
 <!--
 ## Docker build commands
+
 start.py build handles these commands for you so ignore this section
 
 apriltag:
@@ -92,24 +94,25 @@ echo off
 -->
 ## Building and running containers
 
-#### IMPORTANT: Add `--help` to the end of these commands to see command syntax & options/configs
+Make sure you're in the VMC directory so you can run start.py
 
-### You'll need to build the modules through start.py before running them
+**IMPORTANT**: Add `--help` to the end of these commands to see command syntax & options/configs
+
+### You'll need to build the containers through start.py before running them:
 ```bash
-start.py build
+start.py build {Container Name(s)}
 ```
 
 Note: If you update a VMC module you'll need to rebuild it
 
-### Then run the modules you want
+### Then simulate running the containers you want using this command:
 ```bash
-start.py run
+start.py -s run {Container Name(s)}
 ```
 
-### Finally open up docker desktop and take a look at your glorious new container
-### You can also run `app.py` in the GUI folder and connect to your container
+Finally open up docker desktop and take a look at your glorious new container <br/>
+You can also run `app.py` in the GUI folder and connect to your container <br/>
 
-<!-- Might add some example commands here in the future idk
-## examples
+#### Note that the apriltag container will fail to build, and everything except Sandbox and FCM will fail to simulate properly due to missing peripherals
 
--->
+If you have any questions come to Max

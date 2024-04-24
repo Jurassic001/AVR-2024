@@ -1,4 +1,6 @@
-# AVR-2022
+# AVR-2024/VMC
+<!--
+Once again this stuff is already done for us (setup.py has been run on the drone)
 
 ## Setup
 
@@ -56,13 +58,19 @@ ghcr.io
 ```
 
 This may not be an exhaustive list, as upstream sources may change CDNs or domain names.
-
+-->
 ## Usage
 
-To start the AVR software, just run:
+To build the AVR software on the Jetson, run:
+```bash
+./start.py --local build
+```
+
+#### Note: If you update a VMC module you'll need to rebuild it
+To start the AVR software, run:
 
 ```bash
-./start.py run
+./start.py --local run
 ```
 
 To stop the AVR software hit <kbd>Ctrl</kbd>+<kbd>C</kbd>.
@@ -70,10 +78,12 @@ To stop the AVR software hit <kbd>Ctrl</kbd>+<kbd>C</kbd>.
 Additionally, you can specify specific containers by declaring them as folows:
 
 ```bash
-./start.py run thermal status -m
+./start.py --local run thermal status -m
 ```
 
-this will run all of the minimum modules required for flight (-m = [fcm, fusion, mavp2p, mqtt, vio]) in addition to the thermal & status modules
+this will run all of the minimum modules required for flight `-m = [fcm, fusion, mavp2p, mqtt, vio]` in addition to the thermal & status modules
+<!--
+This scenario likely won't arise and I don't want to confuse and future devs
 
 If you ever need to update the AVR software, run:
 
@@ -83,3 +93,4 @@ git pull
 # Re-run the setup script
 ./setup.py
 ```
+-->
