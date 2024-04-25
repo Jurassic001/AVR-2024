@@ -15,7 +15,7 @@ class MainConnectionWidget(BaseTabWidget):
 
         self.setWindowTitle("Connections")
     
-    def build(self) -> None:
+    def build(self, app: QtWidgets.QWidget) -> None:
         """
         Build the GUI layout
         """
@@ -68,7 +68,7 @@ class MainConnectionWidget(BaseTabWidget):
         mqtt_groupbox.setLayout(mqtt_layout)
 
         self.mqtt_connection_widget = MQTTConnectionWidget(self)
-        self.mqtt_connection_widget.build()
+        self.mqtt_connection_widget.build(app)
         mqtt_layout.addWidget(self.mqtt_connection_widget)
 
         mqtt_groupbox.setSizePolicy(

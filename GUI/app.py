@@ -104,7 +104,6 @@ class MainWindow(QtWidgets.QWidget):
 
         self.mqtt_connected = False
         self.serial_connected = False
-        self.forceEnableTabs = False
 
         # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size modifier
         self.mainMonitor = QApp.primaryScreen().size()
@@ -141,7 +140,7 @@ class MainWindow(QtWidgets.QWidget):
         # connection widget
 
         self.main_connection_widget = MainConnectionWidget(self)
-        self.main_connection_widget.build()
+        self.main_connection_widget.build(self)
         self.main_connection_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(
             self.main_connection_widget, self.main_connection_widget.windowTitle()
@@ -285,8 +284,7 @@ class MainWindow(QtWidgets.QWidget):
         # disable/enable widgets
         for widget in widgets:
             idx = self.tabs.indexOf(widget)
-            if not self.forceEnableTabs:
-                self.tabs.setTabEnabled(idx, self.mqtt_connected)
+            self.tabs.setTabEnabled(idx, self.mqtt_connected)
             if not self.mqtt_connected:
                 self.tabs.setTabToolTip(idx, "MQTT not connected")
             else:
@@ -311,6 +309,23 @@ class MainWindow(QtWidgets.QWidget):
             self.tabs.setTabToolTip(idx, "Serial not connected")
         else:
             self.tabs.setTabToolTip(idx, "")
+    
+    def setActiveTabs(self, enabled: bool) -> None:
+        # make list of widgets that are mqtt connected
+        widgets = [
+            self.mqtt_debug_widget,
+            self.mqtt_logger_widget,
+            self.vmc_control_widget,
+            self.vmc_telemetry_widget,
+            self.thermal_view_control_widget,
+            self.moving_map_widget,
+            self.autonomy_widget,
+        ]
+
+        # disable/enable widgets
+        for widget in widgets:
+            idx = self.tabs.indexOf(widget)
+            self.tabs.setTabEnabled(idx, enabled)
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """

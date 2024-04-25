@@ -137,11 +137,13 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         if self.localHost_checkbox.isChecked():
             # Set the hostLine value to the user's current IP address
             hostLine.setText(socket.gethostbyname(socket.gethostname()))
+            print("Local hosting enabled")
         else:
             # Set the hostLine value to the configured AVR address
             hostLine.setText(config.mqtt_host)
+            print("Local hosting disabled")
 
-    def build(self) -> None:
+    def build(self, app: QtWidgets.QWidget) -> None:
         """
         Build the GUI layout
         """
@@ -176,11 +178,15 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         layout.addLayout(bottom_layout)
 
         # create the local hosting checkbox
-        localHost_layout = QtWidgets.QHBoxLayout()
+        options_layout = QtWidgets.QHBoxLayout()
         self.localHost_checkbox = QtWidgets.QCheckBox("Enable Local Hosting?")
-        localHost_layout.addWidget(self.localHost_checkbox)
+        options_layout.addWidget(self.localHost_checkbox)
 
-        layout.addLayout(localHost_layout)
+        # create the force enable tabs checkbox
+        self.forceEnableTabs_checkbox = QtWidgets.QCheckBox("Force Enable Tabs?")
+        options_layout.addWidget(self.forceEnableTabs_checkbox)
+
+        layout.addLayout(options_layout)
 
         # set starting state
         self.set_connected_state(ConnectionState.disconnected)
@@ -197,6 +203,7 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         )
         self.disconnect_button.clicked.connect(self.mqtt_client.logout)  # type: ignore
         self.localHost_checkbox.stateChanged.connect(lambda: self.hostnameSetter(self.hostname_line_edit))
+        self.forceEnableTabs_checkbox.stateChanged.connect(lambda: app.setActiveTabs(self.forceEnableTabs_checkbox.isChecked()))
 
     def set_connected_state(self, connection_state: ConnectionState) -> None:
         """
