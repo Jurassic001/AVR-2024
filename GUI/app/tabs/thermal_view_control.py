@@ -205,7 +205,12 @@ class JoystickWidget(BaseTabWidget):
                 "avr/pcm/set_servo_abs",
                 AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[self.gimbal_num][1], absolute=y_servo_abs),
             )
-        
+
+    def center_gimbal(self) -> None:
+        self.move_gimbal_absolute(1450, 1450)
+        self.moving_offset = self._center()
+        self.update()
+
     def set_gimbal(self, num):
         self.gimbal_num = num
         print(f"Set gimbal {num} as active")
@@ -411,7 +416,10 @@ class ThermalViewControlWidget(BaseTabWidget):
         
         set_gimbal_button = QtWidgets.QPushButton("Set Gimbal")
         gimbal_picker_layout.addWidget(set_gimbal_button)
-        
+
+        center_gimbal_button = QtWidgets.QPushButton("Center Gimbal")
+        gimbal_picker_layout.addWidget(center_gimbal_button)
+
         joystick_layout.addLayout(gimbal_picker_layout)
 
         laser_toggle_layout = QtWidgets.QHBoxLayout()
@@ -447,6 +455,8 @@ class ThermalViewControlWidget(BaseTabWidget):
         self.joystick.emit_message.connect(self.emit_message.emit)
 
         set_gimbal_button.clicked.connect(lambda: self.joystick.set_gimbal(int(gimbal_picker.text())))
+
+        center_gimbal_button.clicked.connect(lambda: self.joystick.center_gimbal())
 
         fire_laser_button.clicked.connect(  # type: ignore
             lambda: self.send_message("avr/pcm/fire_laser", AvrPcmFireLaserPayload())

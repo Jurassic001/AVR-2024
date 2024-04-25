@@ -326,6 +326,13 @@ class MainWindow(QtWidgets.QWidget):
         for widget in widgets:
             idx = self.tabs.indexOf(widget)
             self.tabs.setTabEnabled(idx, enabled)
+        
+        if enabled:
+            status = "enabled"
+        else:
+            status = "disabled"
+
+        print(f"All tabs {status}")
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
