@@ -208,6 +208,7 @@ class JoystickWidget(BaseTabWidget):
         
     def set_gimbal(self, num):
         self.gimbal_num = num
+        print(f"Set gimbal {num} as active")
 
     def update_servos(self) -> None:
         """
@@ -421,10 +422,12 @@ class ThermalViewControlWidget(BaseTabWidget):
         laser_off_button = QtWidgets.QPushButton("Laser Off")
         laser_toggle_layout.addWidget(laser_off_button)
         
-        fire_laser_button = QtWidgets.QPushButton("Fire Laser")
+        fire_laser_button = QtWidgets.QPushButton("Fire Laser (Pulse)")
         joystick_layout.addWidget(fire_laser_button)
 
         self.laser_toggle_label = QtWidgets.QLabel()
+        self.laser_toggle_label.setText(wrap_text("Laser Off", "red"))
+        self.laser_toggle_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
         self.laser_toggle_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
