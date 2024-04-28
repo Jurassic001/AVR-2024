@@ -18,8 +18,7 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- Wait for Bell to update the `Bell-AVR-Libraries` package
-- Come up with something to do during the off season
+- Add sound playing functionality to the VMC control tab
 
 ### Brainstorming
 

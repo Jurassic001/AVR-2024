@@ -231,7 +231,7 @@ class Sandbox(MQTTModule):
                 self.move_servo(3, turret_angles[1])
                 
     def CIC(self) -> None:
-        logger.debug('CIC Thread: Online')
+        logger.debug('Command, Information, & Control Thread: Online')
         status_thread = Thread(target=self.status)
         status_thread.daemon = True
         status_thread.start()
@@ -426,6 +426,7 @@ class Sandbox(MQTTModule):
         self.send_message(topic, payload)
 
     def sound_laptop(self, id: int, loops: int = 1):
+        # Is this even a real thing that the AVR accepts?
         self.send_message(
             'avr/autonomous/sound',
             {'id': id, 'loops': loops}
