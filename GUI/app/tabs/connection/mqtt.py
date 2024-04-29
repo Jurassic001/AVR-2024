@@ -137,11 +137,9 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         if self.localHost_checkbox.isChecked():
             # Set the hostLine value to the user's current IP address
             hostLine.setText(socket.gethostbyname(socket.gethostname()))
-            print("Local hosting enabled")
         else:
             # Set the hostLine value to the configured AVR address
             hostLine.setText(config.mqtt_host)
-            print("Local hosting disabled")
 
     def build(self, app: QtWidgets.QWidget) -> None:
         """
