@@ -18,7 +18,7 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- Add sound playing functionality to the VMC control tab
+- ~~Add startup sound~~
 
 ### Brainstorming
 
