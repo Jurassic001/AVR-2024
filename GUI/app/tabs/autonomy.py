@@ -433,11 +433,11 @@ class AutonomyWidget(BaseTabWidget):
         
     def process_message(self, topic: str, payload: dict) -> None:
         if topic == "avr/autonomous/sound": # If we're playing a sound
-            self.thread = threading.Thread(target=self.playAudio, args=(payload))
+            payload = json.loads(payload)
+            self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
             self.thread.start()
 
-    def playAudio(self, payload: dict):
-        payload = json.loads(payload)
-        print(f'Playing \"{payload["fileName"]}{payload["ext"]}\" {payload["loops"]} time(s)')
-        for i in range(payload["loops"]):
-            playsound(f'./GUI/assets/sounds/sound_{payload["fileName"]}{payload["ext"]}')
+    def playAudio(self, fileName: str, ext: str, loops: int):
+        print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
+        for i in range(loops):
+            playsound(f'./GUI/assets/sounds/{fileName}{ext}')
