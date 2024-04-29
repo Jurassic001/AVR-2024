@@ -156,7 +156,7 @@ class Sandbox(MQTTModule):
 
         elif payload == 'sound_test':
             logger.debug('Playing sound file: sound_1.WAV')
-            self.sound_laptop(1)
+            self.sound_laptop("sound_1")
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
@@ -244,6 +244,7 @@ class Sandbox(MQTTModule):
             
             # Turns lights on only after fcm has been initialized
             if self.fcm_init and not light_init:
+                self.sound_laptop("startup",".mp3") # Play startup sound
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 for i in range (5, 8):
                     self.send_message(
@@ -269,7 +270,7 @@ class Sandbox(MQTTModule):
             if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
                 for i in range(10):
                     logger.debug('HOT SPOT DETECTED. GO UP')
-                self.sound_laptop(1)
+                self.sound_laptop("sound_1")
                 has_gotten_hot = True
                 self.tag_flashing = True
                 if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
@@ -425,11 +426,18 @@ class Sandbox(MQTTModule):
             payload = AvrPcmSetLaserOffPayload()
         self.send_message(topic, payload)
 
-    def sound_laptop(self, id: int, loops: int = 1):
-        # Is this even a real thing that the AVR accepts?
+    def sound_laptop(self, fileName: str, ext: str = ".WAV", loops: int = 1):
+        """Play a specified audio file from the <GUI/assets/sounds> directory on all connected laptops
+
+        Args:
+            fileName (str): The name of the file.
+            ext (str): The extension of the file. Defaults to ".WAV"
+            loops (int, optional): Number of loops. Currently has no effect. Defaults to 1.
+        """
+        # Plays the sound by publishing the sound topic with the file info as payload, which is processed & handled in autonomy.py
         self.send_message(
             'avr/autonomous/sound',
-            {'id': id, 'loops': loops}
+            {'fileName': fileName, 'ext': ext, 'loops': loops}
         )
     
     

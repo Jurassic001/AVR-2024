@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools, json, os
+import functools, json, os, threading
 from typing import List
 
 from bell.avr.mqtt.payloads import *
@@ -432,9 +432,12 @@ class AutonomyWidget(BaseTabWidget):
         self.spinner_speed_val = int(precent)
         
     def process_message(self, topic: str, payload: dict) -> None:
-        # discard topics we don't recognize
-        if topic != "avr/autonomous/sound":
-            return
-        print('Playing sound')
+        if topic == "avr/autonomous/sound": # If we're playing a sound
+            self.thread = threading.Thread(target=self.playAudio, args=(payload))
+            self.thread.start()
+
+    def playAudio(self, payload: dict):
         payload = json.loads(payload)
-        playsound(f'.\\AVR\\AVR-2022\\GUI\\assets\\sounds\\sound_{payload["id"]}.WAV')
+        print(f'Playing \"{payload["fileName"]}{payload["ext"]}\" {payload["loops"]} time(s)')
+        for i in range(payload["loops"]):
+            playsound(f'./GUI/assets/sounds/sound_{payload["fileName"]}{payload["ext"]}')
