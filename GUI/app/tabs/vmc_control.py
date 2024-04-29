@@ -135,29 +135,6 @@ class VMCControlWidget(BaseTabWidget):
 
         # layout.addWidget(reset_groupbox, 3, 3, 1, 1)
 
-        """
-        Make this work
-
-        # ==============================================
-        # Sound file sections
-        sounds_groupbox = QtWidgets.QGroupBox("Sounds")
-        sounds_layout = QtWidgets.QVBoxLayout()
-        sounds_groupbox.setLayout(sounds_layout)
-
-        """
-        #TO DO:
-        #- Scan thru the assets/sounds directory and for each file create a button to play that sound
-        #- Yeah thats really it
-        """
-
-        # Example:
-        sound1_btn = QtWidgets.QPushButton("sound_1.wav")
-        sound1_btn.clicked.connect(self.playSound_id(1))
-        sounds_layout.addWidget(sound1_btn)
-
-        layout.addWidget(sounds_groupbox, 0, 1, 3, 3)
-        """
-
     def set_servo(self, number: int, action: Literal["open", "close", "stop"]) -> None:
         """
         Set a servo state
@@ -228,14 +205,3 @@ class VMCControlWidget(BaseTabWidget):
             time.sleep(interval)
             colors = tuple(reversed(colors))
         print("Multicolor thread closed")
-
-    # This stuff doesn't work. YET.
-    def playSound_id(self, id: int) -> None:
-        # Plays a sound on the local device
-        print(f'Playing sound_{id}.WAV')
-        playsound(f'.../assets/sounds/sound_{id}.WAV')
-
-    def playSound_str(self, fileName: str) -> None:
-        # Plays a sound on the local device
-        print(f'Playing {fileName}.WAV')
-        playsound(f'.\\AVR\\AVR-2024\\GUI\\assets\\sounds\\{fileName}.WAV')
