@@ -53,11 +53,6 @@ class VMCControlWidget(BaseTabWidget):
         blue_led_button.clicked.connect(lambda: self.set_led((255, 0, 0, 255)))  # type: ignore
         led_layout.addWidget(blue_led_button)
 
-        scots_led_button = QtWidgets.QPushButton("Scots")
-        scots_led_button.setStyleSheet("background-color: rgb(234, 193, 23); color: rgb(0, 0, 128); font: bold 14px")
-        scots_led_button.clicked.connect(lambda: self.set_led((255, 0, 0, 128),(255, 234, 193, 23), .75))
-        led_layout.addWidget(scots_led_button)
-
         clear_led_button = QtWidgets.QPushButton("Clear")
         clear_led_button.setStyleSheet("background-color: white")
         clear_led_button.clicked.connect(lambda: self.set_led((0, 0, 0, 0)))  # type: ignore
@@ -172,36 +167,14 @@ class VMCControlWidget(BaseTabWidget):
         for i in range(config.num_servos):
             self.set_servo(i, action)
 
-    def set_led(self, color1: Tuple[int, int, int, int], color2: Tuple[int, int, int, int] = (0, 0, 0, 0), dur: float = -1) -> None:
-        """ Set the LED strip to one solid color for a set duration or until changed, or set it to alternate between two colors at a specified interval
+    def set_led(self, color1: Tuple[int, int, int, int], dur: float = -1) -> None:
+        """ Set the LED strip to one solid color for a given duration or until changed
 
         Args:
-            color1 (Tuple[int, int, int, int]): WRGB value to set the LED strip to, also the 1st of 2 values if alternating
-            color2 (Tuple[int, int, int, int], optional): 2nd WRGB value to set the LED strip to. Leave blank if you aren't alternating.
-            dur (float, optional): Duration of the temporary color or the interval between alternating colors. Leave blank to set color until changed. Must be specified when alternating colors.
+            color1 (Tuple[int, int, int, int]): WRGB value to set the LED strip as
+            dur (float, optional): Duration of the temporary color. Leave blank to set color until changed
         """
-        self.changingLEDS = color2 != (0, 0, 0, 0)
-        if self.changingLEDS:
-            self.thread = threading.Thread(target=self.set_changing_led, args=(color1, color2, dur))
-            self.thread.start()
+        if dur != -1:
+            self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=color1, time=dur))
         else:
-            if dur != -1:
-                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=color1, time=dur))
-            else:
-                self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=color1))
-    
-    def set_changing_led(self, color1: Tuple[int, int, int, int], color2: Tuple[int, int, int, int], interval: float) -> None:
-        """ Multicolor LED sequence function, intended to be threaded as seen in set_led()
-
-        Args:
-            color1 (Tuple[int, int, int, int]): First color in the set of two
-            color2 (Tuple[int, int, int, int]): Second color in the set of two
-            interval (float): Interval between color alterations
-        """
-        print("Multicolor thread opened")
-        colors: Tuple[Tuple, Tuple] = (color1, color2)
-        while self.changingLEDS and interval != -1:
-            self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=colors[0]))
-            time.sleep(interval)
-            colors = tuple(reversed(colors))
-        print("Multicolor thread closed")
+            self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=color1))

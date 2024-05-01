@@ -65,7 +65,7 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         self.armed_label = QtWidgets.QLabel("")
         armed_layout.addWidget(self.armed_label)
-
+        """
         arm_button = QtWidgets.QPushButton("Arm")
         arm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "arm", 'payload': {}}))
         armed_layout.addWidget(arm_button)
@@ -73,7 +73,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         disarm_button = QtWidgets.QPushButton("Disarm")
         disarm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "disarm", 'payload': {}}))
         armed_layout.addWidget(disarm_button)
-
+        """
         top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
         # flight mode row
