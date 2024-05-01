@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import functools, json, os, threading
+import functools, json, os, playsound
 from typing import List
 
 from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
-
-from playsound import playsound
 
 from ..lib.color import wrap_text
 from ..lib.widgets import DoubleLineEdit
@@ -77,8 +75,9 @@ class AutonomyWidget(BaseTabWidget):
         )
         recon_layout.addWidget(recon_groupbox)
         custom_layout.addWidget(recon_groupbox)
-            # ==========================
-            # Thermal Target Box
+        """
+        # ==========================
+        # Thermal Target Box
         thermal_groupbox = QtWidgets.QGroupBox('Thermal Tracking')
         thermal_layout = QtWidgets.QVBoxLayout()
         thermal_groupbox.setLayout(thermal_layout)
@@ -124,6 +123,7 @@ class AutonomyWidget(BaseTabWidget):
         thermal_layout.addWidget(thermal_groupbox)
         
         custom_layout.addWidget(thermal_groupbox)
+        """
             # ==========================
             # Spintake Box
         spintake_groupbox = QtWidgets.QGroupBox('Spintake')
@@ -434,10 +434,11 @@ class AutonomyWidget(BaseTabWidget):
     def process_message(self, topic: str, payload: dict) -> None:
         if topic == "avr/autonomous/sound": # If we're playing a sound
             payload = json.loads(payload)
-            self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
-            self.thread.start()
+            self.playAudio(payload['fileName'], payload['ext'], payload['loops'])
+            #self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
+            #self.thread.start()
 
     def playAudio(self, fileName: str, ext: str, loops: int):
         print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
         for i in range(loops):
-            playsound(f'./GUI/assets/sounds/{fileName}{ext}')
+            playsound.playsound(f'./GUI/assets/sounds/{fileName}{ext}')

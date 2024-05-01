@@ -37,6 +37,8 @@ class Sandbox(MQTTModule):
         self.show_status: bool = True
         self.recon: bool = False
         self.fcm_init: bool = False
+
+        self.thermalAutoAim: bool = False # Since there is no application for the thermal targeting thread, this boolean prevents it from starting
         
         self.position: list = [0, 0, 0]
         self.start_pos: tuple = (180, 50, 0)
@@ -60,8 +62,8 @@ class Sandbox(MQTTModule):
         
         self.april_tags: list = []
         self.tag_flashing: bool = False
-        self.normal_color: list[int] = [0, 255, 0, 0] # rgba
-        self.flash_color: list[int] = [0, 255, 255, 0] # rgba
+        self.normal_color: list[int] = [0, 78, 205, 196] # wrgb
+        self.flash_color: list[int] = [0, 255, 255, 0] # wrgb
         
         self.threads: dict
         
@@ -166,22 +168,14 @@ class Sandbox(MQTTModule):
                 self.waiting_events.set(self.waiting_events.get()[action].set())
         except Exception as e:
             logger.error(e)
-        """
+
         if action == 'landed_state_in_air_event':
             self.in_air = True
             self.on_ground = False
         elif action == 'landed_state_on_ground_event':
             self.on_ground = True
             self.in_air = False
-        """
-    
-    """
-    Only works with package: bell-avr-libraries > v0.1.13
 
-    def handle_flightState(self, payload: str):
-        # Possible values: "UNKNOWN", "ON_GROUND", "IN_AIR", "TAKING_OFF", "LANDING"
-        self.flightState = payload['landed']
-    """
 
     # ===============
     # Threads
@@ -392,15 +386,6 @@ class Sandbox(MQTTModule):
         """
         #self.move(self.landing_pads[pad])
         self.send_action('land')
-    
-    """
-    Only works with package: bell-avr-libraries > v0.1.13
-        
-    def arm(self) -> None:
-        # Arms the drone if it isn't armed already
-        if not self.is_armed:
-            self.send_message('avr/fcm/actions/arm', {})
-    """
 
 
     # ================================
@@ -465,17 +450,14 @@ class Sandbox(MQTTModule):
 if __name__ == '__main__':
     box = Sandbox()
     
-    #Create Threads
-    targeting_thread = Thread(target=box.targeting)
-    targeting_thread.daemon = True
-    targeting_thread.start()
+    # Create Threads
+    targeting_thread = Thread(target=box.targeting, daemon=True)
+    if box.thermalAutoAim: targeting_thread.start()
     
-    CIC_thread = Thread(target=box.CIC)
-    CIC_thread.daemon = True
+    CIC_thread = Thread(target=box.CIC, daemon=True)
     CIC_thread.start()
     
-    autonomous_thread = Thread(target=box.Autonomous)
-    autonomous_thread.daemon = True
+    autonomous_thread = Thread(target=box.Autonomous, daemon=True)
     autonomous_thread.start()
     
     box.set_threads({'thermal': targeting_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
