@@ -16,7 +16,7 @@ LIGHTGREEN = "\033[1;32m"
 CYAN = "\033[0;36m"
 NC = "\033[0m"  # No Color
 
-AVR_DIR = os.path.join(os.path.expanduser("~"), "AVR-2022")
+AVR_DIR = os.path.join(os.path.expanduser("~"), "AVR-2024")
 
 # fmt: off
 
@@ -63,7 +63,7 @@ def original_user_cmd(username, cmd):
 def main(development):
     if not os.path.isdir(AVR_DIR):
         print(f"AVR repository has not been cloned to {AVR_DIR}")
-        print(f"Do this with 'git clone --recurse-submodules https://github.com/bellflight/AVR-2022 {AVR_DIR}'")
+        print(f"Do this with 'git clone --recurse-submodules https://github.com/Jurassic001/AVR-2024 {AVR_DIR}'")
         sys.exit(1)
 
 
