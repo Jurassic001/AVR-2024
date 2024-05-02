@@ -111,20 +111,9 @@ this will run all of the minimum modules required for flight `-m = [fcm, fusion,
 <br/>
 
 If you made changes to the sandbox module, you can update the container using the following steps: <br/>
-1. Use `git fetch` while in the AVR-2024 repository root to download the changes from GitHub..
+1. Use `git fetch` while in the AVR-2024 repository root to download the changes from GitHub.
 2. Use the stop command to stop all software modules. This is imperative to updating the software.
 3. Use the commands listed in the usage section to build/run every module. Since you stopped every module, you need to restart every module. The terminal should be flooded with feedback from the AVR software.
-
-Here is an all-in-one command for updating all software modules, from the root of the Jetson:
-```bash
-cd AVR-2024
-git fetch
-cd VMC
-./start.py stop -a
-./start.py build -a
-./start.py run -a
-```
-Beware this might not work with your system. Make sure that you understand `./start.py`, docker containers, and the AVR software before running this command, and consult your team captain.
 
 <!--
 ## Misc
