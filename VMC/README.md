@@ -58,9 +58,9 @@ This may not be an exhaustive list, as upstream sources may change CDNs or domai
 ## Usage
 ### Updating AVR Software
 If you made changes to the AVR software, you can update the container using the following steps: <br/>
-1. Use `git fetch` while in the AVR-2024 repository root to download the changes from GitHub
+1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
 2. Re-run the `./setup.py` script
-3. Run `./start.py run -a` to start the updated AVR software
+3. Run `./start.py stop -a`, `./start.py build -a`, and `./start.py run -a`, in that order. For documentation on these commands see below
 <!-- The official AVR documentation on updating your software:
 If you ever need to update the AVR software, run:
 ```bash
@@ -118,5 +118,3 @@ You can specify certain containers by declaring them as folows:
 ./start.py run thermal status -m
 ```
 this will run all of the minimum modules required for flight `-m = [fcm, fusion, mavp2p, mqtt, vio]` in addition to the thermal & status modules.
-
-<br/>
