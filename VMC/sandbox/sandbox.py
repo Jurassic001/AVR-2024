@@ -62,8 +62,8 @@ class Sandbox(MQTTModule):
         
         self.april_tags: list = []
         self.tag_flashing: bool = False
-        self.normal_color: list[int] = [255, 78, 205, 196] # wrgb
-        self.flash_color: list[int] = [255, 255, 0, 0] # wrgb
+        self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb
+        self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
         
         self.threads: dict
         
