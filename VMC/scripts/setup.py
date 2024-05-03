@@ -278,7 +278,7 @@ def main(development):
 
     # make sure at least one settings file exists
     if not development and not any(f.endswith(".conf") for f in os.listdir(zed_settings_dir)):
-        print(f"{RED}EROOR:{NC} ZED settings not found. Your drone will NOT fly. Plug in the ZED camera and try again.")
+        print(f"{RED}ERROR:{NC} ZED settings not found. Your drone will NOT fly. Plug in the ZED camera and try again.")
         sys.exit(1)
 
 
@@ -292,6 +292,7 @@ def main(development):
     if proc.returncode != 0:
         print("Please log into GitHub container registry:")
         subprocess.check_call(["docker", "login", "ghcr.io"])
+    print_bar()
 
     # pull images
     print_title("Pulling images")
@@ -299,6 +300,7 @@ def main(development):
     if development:
         cmd.append("--local")
     subprocess.check_call(cmd)
+    print_bar()
 
     # build images
     print_title("Building images")
@@ -308,13 +310,7 @@ def main(development):
     subprocess.check_call(cmd)
     print_bar()
 
-    # run images
-    print_title("Running images")
-    cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "run", "--all"]
-    if development:
-        cmd.append("--local")
-    subprocess.check_call(cmd)
-    print_bar()
+    # Don't try to run images in this process, it will cause the setup program to lock up
 
 
 
