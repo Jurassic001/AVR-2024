@@ -294,13 +294,23 @@ def main(development):
         subprocess.check_call(["docker", "login", "ghcr.io"])
 
     # pull images
+    print_title("Pulling images")
     cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "pull", "--all"]
     if development:
         cmd.append("--local")
     subprocess.check_call(cmd)
 
     # build images
+    print_title("Building images")
     cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "build", "--all"]
+    if development:
+        cmd.append("--local")
+    subprocess.check_call(cmd)
+    print_bar()
+
+    # run images
+    print_title("Running images")
+    cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "run", "--all"]
     if development:
         cmd.append("--local")
     subprocess.check_call(cmd)
