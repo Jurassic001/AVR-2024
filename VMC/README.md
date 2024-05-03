@@ -59,9 +59,10 @@ This may not be an exhaustive list, as upstream sources may change CDNs or domai
 ### Updating AVR Software
 If you made changes to the AVR software, you can update the container using the following steps: <br/>
 1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
-2. Re-run the `./setup.py` script
-3. Run `./start.py stop -a`, `./start.py build -a`, and `./start.py run -a`, in that order. For documentation on these commands see below
-<!-- The official AVR documentation on updating your software:
+2. Re-run the `./setup.py` script. This will automatically build and run the software modules
+3. When prompted, input `y` to reboot the Jetson
+<!-- Here is the official AVR documentation on updating your software. I've modified the ./setup.py command to build/run all modules instead of just the "normal" modules. I might modify it again in the future so you can select what modules you want to build/run, similar to the way that the start.py command works.
+
 If you ever need to update the AVR software, run:
 ```bash
 # Update the git repo
@@ -84,7 +85,7 @@ To build the AVR software on the Jetson, run:
 ```bash
 ./start.py build -a
 ```
-Note the `-a` option, this means that all modules will be built.
+Note the `-a` option, this means that all modules will be built
 
 <br/>
 
@@ -92,6 +93,7 @@ To start the AVR software, run:
 ```bash
 ./start.py run -a
 ```
+**`setup.py` automatically executes the build and run commands during runtime**
 
 <br/>
 
@@ -99,18 +101,19 @@ To stop the AVR software hit <kbd>Ctrl</kbd>+<kbd>C</kbd>, or run:
 ```bash
 ./start.py stop -a
 ```
-This will stop all active AVR software modules when run. Use caution, the stop command and stop keybind are ever-so-slightly different in their effect.
+This will stop all active AVR software modules <!--Use caution, the stop command and stop keybind are ever-so-slightly different in their effect.-->
 <br/>
 <!--
 **IMPORTANT**: Use `./start.py -h` to see the full start.py syntax
 -->
 ***
 
-### Building from local
-`./start.py` has the option `-l`, or `--local`. This option makes it so that containers will be built/run from the files inside of the VMC folder, instead of using the pre-built containers from GitHub from GitHub. <br/>
+### Making changes to the AVR software
+`./setup.py` has the option `--dev`. This option makes it so that containers will be built/run from the files inside of the VMC folder, instead of using the pre-built containers from GitHub from GitHub. <br/>
 Sandbox is automatically built and run from the local files, so don't worry about that. I've noticed some weird behavior with this option, i.e. the Apriltags module might build locally even when the option isn't used. <br/>
-For the most part you don't really need to use this option, and I personally advise against making any changes to the AVR software modules. <br/>
-Note that you shouldn't overuse this option, only locally build containers that you've made changes to. Locally building containers that you haven't made any changes to will take longer than using pre-build images and could lead to bugs and other issues.
+For the most part you don't really need to use this option, and I personally advise against making any changes to the AVR software modules. <br/><br/>
+`./start.py` also has a similar option, `-l`, or `--local`. If you do modify the AVR software modules (other than sandbox), you should only locally build containers that you've made changes to. Locally building containers that you haven't made any changes to will take longer than using pre-build images and could lead to bugs and other issues. <br/><br/>
+For this reason, I **advise against** using the `--dev` option. Instead, run `./setup.py` normally, and locally build/run the modified software modules using the `./start.py` command after.
 ***
 ### Examples
 You can specify certain containers by declaring them as folows:
