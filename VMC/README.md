@@ -59,8 +59,8 @@ This may not be an exhaustive list, as upstream sources may change CDNs or domai
 ### Updating AVR Software
 If you made changes to the AVR software, you can update the container using the following steps: <br/>
 1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
-2. Re-run the `./setup.py` script. This will automatically build and run the software modules
-3. When prompted, input `y` to reboot the Jetson
+2. Re-run the `./setup.py` script. This will automatically build the software modules. Once this script finishes you can (optionally) reboot your Jetson
+3. Use `./start.py run -a` (documentation below) to run the AVR software
 <!-- Here is the official AVR documentation on updating your software. I've modified the ./setup.py command to build/run all modules instead of just the "normal" modules. I might modify it again in the future so you can select what modules you want to build/run, similar to the way that the start.py command works.
 
 If you ever need to update the AVR software, run:
@@ -93,7 +93,6 @@ To start the AVR software, run:
 ```bash
 ./start.py run -a
 ```
-**`setup.py` automatically executes the build and run commands during runtime**
 
 <br/>
 
