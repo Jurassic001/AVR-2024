@@ -60,8 +60,9 @@ class Sandbox(MQTTModule):
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
         self.waiting_events = ContextVar('test', default={'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event()})
         
-        self.april_tags: list = []
-        self.tag_flashing: bool = False
+        self.cur_apriltag: list = [] # List containing the currently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
+        self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
+        self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing
         self.found_high_tag: bool = False
         self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
@@ -106,38 +107,13 @@ class Sandbox(MQTTModule):
         self.recon = payload['enabled']
                 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
-        if self.tag_flashing:
-            return
-        self.april_tags = payload['tags']
-        apriltag_id = self.april_tags[0]["id"]
-        logger.debug(f'Tag {apriltag_id} found')
+        self.cur_apriltag = payload['tags'] # Add currently detected apriltag info to the list
 
-        # Flash lights if the april tag on the highbuilding during recon is found
-        # if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
-        if apriltag_id != 0 and not self.tag_flashing:
-            self.tag_flashing = True
-            for i in range(3):
-                self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
-                time.sleep(1)
-                # self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.normal_color, time=0.3))
-            self.tag_flashing = False
-            # self.found_high_tag = True
-            # self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
-        
-        # # Warn pilot and flash lights if the hotspot is detected
-        # if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
-        #     for i in range(10):
-        #         logger.debug('HOT SPOT DETECTED. GO UP')
-        #     self.sound_laptop("sound_1")
-        #     has_gotten_hot = True
-        #     self.tag_flashing = True
-        #     if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
-        #         for i in range(3):
-        #             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
-        #             time.sleep(.3)
-        #             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
-        #     self.tag_flashing = False
-        #     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
+        if not payload['tags'][0]['id'] in self.apriltag_ids:
+            # If we haven't detected this apriltag before, add it to a list of detected IDs and queue an LED flash (LED flashing is done in the CIC thread)
+            self.apriltag_ids.append(payload['tags'][0]['id'])
+            self.flash_queue.append(payload['tags'][0]['id'])
+            logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
@@ -260,21 +236,34 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         status_thread.start()
         light_init = False
+        last_flash: dict = {'time': 0, 'iter': 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
             if not self.CIC_loop:
                 continue
             
-            # Turns lights on only after fcm has been initialized
+            # Turning the lights on once the FCM is initialized
             if self.fcm_init and not light_init:
                 self.sound_laptop("startup",".mp3") # Play startup sound
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
-                for i in range (5, 8):
+                for i in range (5, 8): # Opening the sphero holders
                     self.send_message(
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload(servo= i, action= 'open')
                     )
                 light_init = True
-                
+            
+            # Flashing the LEDs when a new apriltag ID is detected
+            if self.flash_queue and time.time() > last_flash['time'] + 1: # Make sure it's been at least one second since the last LED flash
+                self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
+                last_flash['time'] = time.time()
+                logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
+                if last_flash['iter'] > 2:
+                    last_flash['iter'] = 0
+                    del self.flash_queue[0]
+                else:
+                    last_flash['iter'] += 1
+
+            # Don't know what coords this corresponds to but it might be important
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
             else:
@@ -324,7 +313,8 @@ class Sandbox(MQTTModule):
             self.wait_for_event('goto_complete_event')
 
             # Look for april tag 1 and flash led if its found.
-            if next((tag for tag in self.april_tags if tag['id'] == 0), None):
+            # NOTE: This whole section needs rewriting
+            if next((tag for tag in self.cur_apriltag if tag['id'] == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
