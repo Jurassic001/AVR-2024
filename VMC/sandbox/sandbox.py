@@ -117,9 +117,9 @@ class Sandbox(MQTTModule):
         if apriltag_id != 0 and not self.tag_flashing:
             self.tag_flashing = True
             for i in range(3):
-                self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=0.3))
-                # time.sleep(.3)
-                self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.normal_color, time=0.3))
+                self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
+                time.sleep(1)
+                # self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.normal_color, time=0.3))
             self.tag_flashing = False
             # self.found_high_tag = True
             # self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
