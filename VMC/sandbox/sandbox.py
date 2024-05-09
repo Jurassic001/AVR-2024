@@ -108,6 +108,7 @@ class Sandbox(MQTTModule):
         if self.tag_flashing:
             return
         self.april_tags = payload['tags']
+        logger.debug(self.april_tags)
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
@@ -248,32 +249,32 @@ class Sandbox(MQTTModule):
                 light_init = True
                 
             # Flash lights if the april tag on the highbuilding during recon is found
-            if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
+            # if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
+            if self.april_tags['id'] > 0:
                 self.tag_flashing = True
-                logger.debug('Tag found')
+                #logger.debug(f'Tag {self.april_tags["id"]} found')
                 for i in range(3):
-                    #self.send_message('avr/pcm/set_temp_color', {'wrgb': self.flash_color, 'duration': 0.3})
-                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
-                    time.sleep(.3)
-                    self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
+                    self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=0.3))
+                    # time.sleep(.3)
+                    self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.normal_color, time=0.3))
                 self.tag_flashing = False
                 found_high_tag = True
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
+                # self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
             
-            # Warn pilot and flash lights if the hotspot is detected
-            if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
-                for i in range(10):
-                    logger.debug('HOT SPOT DETECTED. GO UP')
-                self.sound_laptop("sound_1")
-                has_gotten_hot = True
-                self.tag_flashing = True
-                if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
-                    for i in range(3):
-                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
-                        time.sleep(.3)
-                        self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
-                self.tag_flashing = False
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
+            # # Warn pilot and flash lights if the hotspot is detected
+            # if not has_gotten_hot and np.any(np.array(self.thermal_grid) >= 27):
+            #     for i in range(10):
+            #         logger.debug('HOT SPOT DETECTED. GO UP')
+            #     self.sound_laptop("sound_1")
+            #     has_gotten_hot = True
+            #     self.tag_flashing = True
+            #     if next((tag for tag in self.april_tags if tag['id'] in range(4, 7)), None):
+            #         for i in range(3):
+            #             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.flash_color))
+            #             time.sleep(.3)
+            #             self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0]*4))
+            #     self.tag_flashing = False
+            #     self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 
             if self.position == (42, 42, 42):
                 self.sanity = "Here"
