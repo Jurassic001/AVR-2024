@@ -35,6 +35,9 @@ class ThermalView(QtWidgets.QWidget):
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
 
+        # whether or not to update the canvas
+        self.update: bool = False
+
         # canvas size
         self.width_ = 300
         self.height_ = self.width_
@@ -103,7 +106,13 @@ class ThermalView(QtWidgets.QWidget):
         self.MINTEMP = self.last_lowest_temp + 0.0
         self.MAXTEMP = self.last_lowest_temp + 15.0
 
+    def toggle_updates(self) -> None:
+        self.update = not self.update
+        self.canvas.clear()
+    
     def update_canvas(self, pixels: List[int]) -> None:
+        if not self.update:
+            return
         float_pixels = [
             map_value(p, self.MINTEMP, self.MAXTEMP, 0, self.COLORDEPTH - 1)
             for p in pixels
@@ -377,14 +386,6 @@ class ThermalViewControlWidget(BaseTabWidget):
 
         set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
         temp_range_layout.addWidget(set_temp_range_button)
-
-        set_temp_range_calibrate_button = QtWidgets.QPushButton(
-            "Auto Calibrate Temp Range"
-        )
-        temp_range_layout.addWidget(set_temp_range_calibrate_button)
-
-        viewer_layout.addLayout(temp_range_layout)
-
         set_temp_range_button.clicked.connect(  # type: ignore
             lambda: self.viewer.set_temp_range(
                 float(self.temp_min_line_edit.text()),
@@ -392,9 +393,15 @@ class ThermalViewControlWidget(BaseTabWidget):
             )
         )
 
-        set_temp_range_calibrate_button.clicked.connect(  # type: ignore
-            lambda: self.calibrate_temp()
-        )
+        set_temp_range_calibrate_button = QtWidgets.QPushButton("Auto Calibrate Temp Range")
+        temp_range_layout.addWidget(set_temp_range_calibrate_button)
+        set_temp_range_calibrate_button.clicked.connect(lambda: self.calibrate_temp())
+
+        toggle_update_thermal_button = QtWidgets.QPushButton("Toggle Thermal View Updates")
+        temp_range_layout.addWidget(toggle_update_thermal_button)
+        toggle_update_thermal_button.clicked.connect(lambda: self.viewer.toggle_updates())
+
+        viewer_layout.addLayout(temp_range_layout)
 
         layout_splitter.addWidget(viewer_groupbox)
 
