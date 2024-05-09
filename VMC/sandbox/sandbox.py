@@ -108,7 +108,7 @@ class Sandbox(MQTTModule):
         if self.tag_flashing:
             return
         self.april_tags = payload['tags']
-        logger.debug(self.april_tags)
+        logger.debug(f'Tag {self.april_tags[0]["id"]} found')
     
     def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
         self.position = [payload['n'], # X
@@ -250,9 +250,8 @@ class Sandbox(MQTTModule):
                 
             # Flash lights if the april tag on the highbuilding during recon is found
             # if not found_high_tag and next((tag for tag in self.april_tags if tag['id'] == 0), None):
-            if self.april_tags['id'] > 0:
+            if self.april_tags[0]['id'] > 0:
                 self.tag_flashing = True
-                #logger.debug(f'Tag {self.april_tags["id"]} found')
                 for i in range(3):
                     self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=0.3))
                     # time.sleep(.3)
