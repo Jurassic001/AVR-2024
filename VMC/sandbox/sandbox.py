@@ -62,7 +62,7 @@ class Sandbox(MQTTModule):
         
         self.cur_apriltag: list = [] # List containing the currently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
-        self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing
+        self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing, along with their in
         self.found_high_tag: bool = False
         self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
@@ -256,8 +256,8 @@ class Sandbox(MQTTModule):
             if self.flash_queue and time.time() > last_flash['time'] + 1: # Make sure it's been at least one second since the last LED flash
                 self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
                 last_flash['time'] = time.time()
-                logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
-                if last_flash['iter'] > 2:
+                # logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
+                if last_flash['iter'] >= 2:
                     last_flash['iter'] = 0
                     del self.flash_queue[0]
                 else:
