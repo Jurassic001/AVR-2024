@@ -45,6 +45,7 @@ class Sandbox(MQTTModule):
         
         self.building_loc: dict[str, tuple[int, int, int]] = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
         self.landing_pads: dict[str, tuple[int, int, int]] = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
+        self.mission_waypoints: list[dict] = []
 
         self.building_drops: dict[int, bool] = {0: False, 1: False, 2: False, 3: False, 4: False, 6: False}
         
@@ -302,8 +303,8 @@ class Sandbox(MQTTModule):
             time.sleep(.5)
 
             logger.debug("Attempting to take off")
-            self.takeoff()
-            self.wait_for_event('landed_state_taking_off_event')
+            self.takeoff(1.5)
+            self.wait_for_event('landed_state_in_air_event')
             logger.debug("Takeoff successful")
 
             """
@@ -340,9 +341,8 @@ class Sandbox(MQTTModule):
             self.recon = False
 
 
-    # ===============
+    # ========================
     # Drone Control Comands
-    # BEWARE! None of this works so proceed with caution
     
     def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Move the AVR to a specified position on the field
@@ -359,7 +359,7 @@ class Sandbox(MQTTModule):
                 relative_pos[i] = self.inchesToMeters(pos[i]) + self.start_pos[i]
             # Reverse the value of the Z coord since the MQTT syntax is <dis_down> for some reason
             relative_pos[2] *= -1
-            # Report the destination (No clue where this prints to) and send the command
+            # Report the destination and send the command
             logger.debug(f'NED: {relative_pos}')
             self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
         else: # Pathfinding process
@@ -376,34 +376,84 @@ class Sandbox(MQTTModule):
             logger.debug('Waiting for move confirm', self.move_complete)
         self.move_complete = False """
     
-    def takeoff(self, alt: float = 39.3701) -> None:
+    def takeoff(self, alt: float = 1.0, isMeters: bool = True) -> None:
         """ Tell the AVR to takeoff
 
         Args:
-            alt (float, optional): Height that the AVR will takeoff to in inches. Defaults to 39.3701 (1 meter)
+            alt (float): Height that the AVR will takeoff to in meters. Defaults to 1.0.
+            isMeters (bool, optional): If the provided measurement is in meters. Defaults to True.
         """
-        self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
+        if isMeters:
+            self.send_action('takeoff', {'alt': alt})
+        else:
+            self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
     
     def land(self) -> None:
         """ Land the AVR
         """
         #self.move(self.landing_pads[pad])
         self.send_action('land')
+    
+
+    # =========================================
+    # Mission and Waypoint commands
+
+    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], isAbs: bool = False) -> None:
+        """Add a waypoint to the mission_waypoints list.
+
+        Args:
+            waypointType (str): Must be one of `goto`, `takeoff`, or `land`
+            coords (tuple[float, float, float]): Waypoint destination coordinates, in meters, as (fwd, right, up).
+            isAbs (bool, optional): If destination coordinates are absolute. Defaults to False (Coordinates are relative by default).
+        """
+        if waypointType not in ['goto', 'takeoff', 'land']: # If we dont recognize the type of the waypoint
+            logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
+            return
+        if isAbs: # If the coordinates are absolute
+            list(coords)
+            for i in range(3):
+                coords[i] += self.start_pos[i]
+        # Add the waypoint to the list of waypoints
+        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1})
+    
+    def clear_mission_waypoints(self) -> None:
+        """Clear the mission_waypoints list.
+        """
+        self.mission_waypoints = []
+
+    def upload_mission(self) -> None:
+        """Upload a mission to the flight controller, mission waypoints are represented in the mission_waypoints list. See the FCM readme and the fcc_control.py file for more details
+        """
+        self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
+        self.clear_mission_waypoints()
+
+    def start_mission(self) -> None:
+        """Start the uploaded mission
+        """
+        self.send_action('start_mission')
 
 
     # ================================
     # Send Message Commands
+
     def move_servo(self, id, angle) -> None:
         self.send_message(
                     "avr/pcm/set_servo_abs",
                     AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
                 )
 
-    def send_action(self, action, payload = {}):
+    def send_action(self, action: str, payload: dict = {}):
+        """Send one of many possible action payloads to the `avr/fcm/actions` MQTT topic.
+
+        Args:
+            action (str): The action you want to send
+            payload (dict, optional): The payload of the action you want to send. Defaults to {}.
+        """
         self.send_message(
             'avr/fcm/actions',
             {'action': action, 'payload': payload}
         )
+
     def set_laser(self, state: bool) -> None:
         self.laser_on = state
         if state:
