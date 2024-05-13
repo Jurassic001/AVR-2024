@@ -289,20 +289,26 @@ class Sandbox(MQTTModule):
         while True:
             if not self.autonomous:
                 continue
-            
+
             """ tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
             if tag:
                 n, e, d = tag['pos'].values() """
 
             if not self.recon:
                 continue
-            
+
+            # Capture home coordinates
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(.5)
-            
+
+            logger.debug("Attempting to take off")
             self.takeoff()
             self.wait_for_event('landed_state_in_air_event')
-            
+            logger.debug("Takeoff successful")
+
+            """
+            NOTE: This is just the auton code from last year
+
             self.move((310, 125, 60*.75)) # Building 5
             self.wait_for_event('goto_complete_event')
             
@@ -322,7 +328,13 @@ class Sandbox(MQTTModule):
             
             self.move((231, 85, 52*.75)) # Fire house
             self.wait_for_event('goto_complete_event')
-            
+            """
+
+            logger.debug("Starting 5 second wait")
+            time.sleep(5)
+            logger.debug("Ending 5 second wait")
+
+            logger.debug("Landing")
             self.land()
             self.recon = False
 
