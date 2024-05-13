@@ -303,7 +303,7 @@ class Sandbox(MQTTModule):
 
             logger.debug("Attempting to take off")
             self.takeoff()
-            self.wait_for_event('landed_state_in_air_event')
+            self.wait_for_event('landed_state_taking_off_event')
             logger.debug("Takeoff successful")
 
             """
@@ -336,6 +336,7 @@ class Sandbox(MQTTModule):
 
             logger.debug("Landing")
             self.land()
+            self.wait_for_event('landed_state_on_ground_event')
             self.recon = False
 
 
