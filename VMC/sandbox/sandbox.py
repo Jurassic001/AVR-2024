@@ -302,10 +302,18 @@ class Sandbox(MQTTModule):
             self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
             time.sleep(.5)
 
-            logger.debug("Attempting to take off")
-            self.takeoff(1.5)
-            self.wait_for_event('landed_state_in_air_event')
-            logger.debug("Takeoff successful")
+            # logger.debug("Attempting to take off")
+            # self.takeoff(1.5)
+            # self.wait_for_event('landed_state_in_air_event')
+            # logger.debug("Takeoff successful")
+
+            # Auton code using mission/waypoint framework instead of "traditional" methods
+            self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 100))
+            self.add_mission_waypoint('goto', (self.position[0]+100, self.position[1], 100))
+            self.add_mission_waypoint('land', (self.position[0], self.position[1], 0))
+            self.upload_mission()
+            time.sleep(5)
+            self.start_mission()
 
             """
             NOTE: This is just the auton code from last year
@@ -320,7 +328,6 @@ class Sandbox(MQTTModule):
             self.wait_for_event('goto_complete_event')
 
             # Look for april tag 1 and flash led if its found.
-            # NOTE: This whole section needs rewriting
             if next((tag for tag in self.cur_apriltag if tag['id'] == 0), None):
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
                 time.sleep(.5)
@@ -331,13 +338,13 @@ class Sandbox(MQTTModule):
             self.wait_for_event('goto_complete_event')
             """
 
-            logger.debug("Starting 5 second wait")
-            time.sleep(5)
-            logger.debug("Ending 5 second wait")
+            # logger.debug("Starting 5 second wait")
+            # time.sleep(5)
+            # logger.debug("Ending 5 second wait")
 
-            logger.debug("Landing")
-            self.land()
-            self.wait_for_event('landed_state_on_ground_event')
+            # logger.debug("Landing")
+            # self.land()
+            # self.wait_for_event('landed_state_on_ground_event')
             self.recon = False
 
 
@@ -402,7 +409,7 @@ class Sandbox(MQTTModule):
         """Add a waypoint to the mission_waypoints list.
 
         Args:
-            waypointType (str): Must be one of `goto`, `takeoff`, or `land`
+            waypointType (str): Must be one of 'goto', 'takeoff', or 'land'
             coords (tuple[float, float, float]): Waypoint destination coordinates, in meters, as (fwd, right, up).
             isAbs (bool, optional): If destination coordinates are absolute. Defaults to False (Coordinates are relative by default).
         """
