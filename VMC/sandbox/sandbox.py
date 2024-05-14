@@ -175,6 +175,7 @@ class Sandbox(MQTTModule):
                 self.waiting_events.set(self.waiting_events.get()[action].set())
         except Exception as e:
             logger.error(e)
+            logger.error(f"Action name: {action}")
 
         if action == 'landed_state_in_air_event':
             self.in_air = True
@@ -307,9 +308,12 @@ class Sandbox(MQTTModule):
             # self.wait_for_event('landed_state_in_air_event')
             # logger.debug("Takeoff successful")
 
+            # attempt to arm drone
+            self.send_action("arm")
+
             # Auton code using mission/waypoint framework instead of "traditional" methods
-            self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 100))
-            self.add_mission_waypoint('goto', (self.position[0]+100, self.position[1], 100))
+            self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1))
+            self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1))
             self.add_mission_waypoint('land', (self.position[0], self.position[1], 0))
             self.upload_mission()
             time.sleep(5)
