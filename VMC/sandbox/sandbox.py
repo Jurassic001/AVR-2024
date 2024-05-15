@@ -16,7 +16,7 @@ class Sandbox(MQTTModule):
         self.topic_map = {
             'avr/thermal/reading': self.handle_thermal,
             'avr/fcm/status': self.handle_status,
-            'avr/autonomous/building/drop': self.handle_drop,
+            'avr/autonomous/building/drop': self.handle_building_drop,
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/recon': self.handle_recon,
             'avr/autonomous/thermal_range': self.handle_thermal_range,
@@ -29,42 +29,44 @@ class Sandbox(MQTTModule):
             'avr/fcm/events': self.handle_events,
             }
 
+        # Assorted booleans
+        self.CIC_loop: bool = True
+        self.show_status: bool = True
         self.pause: bool = False
         self.autonomous: bool = False
         self.auto_target: bool = False
-        self.CIC_loop: bool = True
-        self.show_status: bool = True
         self.recon: bool = False
-        self.fcm_init: bool = False
-
-        self.thermalAutoAim: bool = False # Since there is no application for the thermal targeting thread, this boolean prevents it from starting
+        self.fcm_connected: bool = False
+        self.thermalAutoAim: bool = False
         
+        # Position vars
         self.position: list = [0, 0, 0]
         self.start_pos: tuple = (180, 50, 0)
-        
         self.building_loc: dict[str, tuple[int, int, int]] = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
         self.landing_pads: dict[str, tuple[int, int, int]] = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
-        self.mission_waypoints: list[dict] = []
-
-        self.building_drops: dict[int, bool] = {0: False, 1: False, 2: False, 3: False, 4: False, 6: False}
         
+        # Auton vars
+        self.mission_waypoints: list[dict] = []
+        self.building_drops: list[bool] = [False, False, False, False, False, False]
+        # Advanced Auton vars
+        self.sanity: str = 'Gone'
+        self.do_pathfinding: bool = False
+        self.col_test = collision_dectector((472, 170, 200), 17.3622)
+        
+        # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[int, int] = (30, 40)
         self.targeting_step: int = 7
         self.laser_on: bool = False
   
-        self.sanity: str = 'Gone'
-        self.do_pathfinding: bool = False
-        self.col_test = collision_dectector((472, 170, 200), 17.3622)
-        
-        # Vars containing drone operation details
+        # Flight Controller vars
         self.states: dict[str, str] = {'flightEvent': "UNKNOWN", 'flightMode': "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
         possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "UNKNOWN"]
         possibleModes: list[str] = ["UNKNOWN", "READY", "TAKEOFF", "HOLD", "MISSION", "RETURN_TO_LAUNCH", "LAND", "OFFBOARD", "FOLLOW_ME", "MANUAL", "ALTCTL", "POSCTL", "ACRO", "STABILIZED", "RATTITUDE"]
         self.possibleStates: dict[str, list[str]] = {'flightEvent': possibleEvents, 'flightMode': possibleModes}
         self.isArmed: bool = False
         
-        # Apriltag Instance Vars
+        # Apriltag vars
         self.cur_apriltag: list = [] # List containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
         self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing, along with their in
@@ -82,9 +84,11 @@ class Sandbox(MQTTModule):
         
     def set_threads(self, threads: dict):
         self.threads: dict = threads
-    # ===============
+
+    # ===================
     # Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
+        # Handle the raw data from the thermal camera
         data = payload['data']
         # decode the payload
         base64Decoded = data.encode("utf-8")
@@ -102,10 +106,10 @@ class Sandbox(MQTTModule):
             logger.success(f"Flight Mode Update || Flight Mode: {payload['mode']}")
             self.states['flightMode'] = payload['mode']
         self.isArmed = payload['armed']
-        self.fcm_init = True
+        self.fcm_connected = True
         
-    def handle_drop(self, payload: AvrAutonomousBuildingDropPayload) -> None:
-        self.building_drops[list(self.building_drops.keys())[payload['id']]] = payload['enabled']
+    def handle_building_drop(self, payload: AvrAutonomousBuildingDropPayload) -> None:
+        self.building_drops[payload['id']] = payload['enabled']
     
     def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
         self.autonomous = payload['enabled']
@@ -252,8 +256,8 @@ class Sandbox(MQTTModule):
             if not self.CIC_loop:
                 continue
             
-            # Turning the lights on once the FCM is initialized
-            if self.fcm_init and not light_init:
+            # Turn the lights on once the FCM is initialized
+            if self.fcm_connected and not light_init:
                 self.sound_laptop("startup",".mp3") # Play startup sound
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
                 for i in range (5, 8): # Opening the sphero holders
@@ -297,75 +301,59 @@ class Sandbox(MQTTModule):
     
     def Autonomous(self): # What is this, headache city?
         logger.debug('Autonomous Thread: Online')
+        auton_init: bool = False
         while True:
             if not self.autonomous:
                 continue
-
-            """ tag:dict = next((tag for tag in self.april_tags if str(tag['id']) in building[0] for building in self.building_drops.items() if building[1]))
-            if tag:
-                n, e, d = tag['pos'].values() """
-
-            if not self.recon:
-                continue
-
-            # Capture home coordinates
-            self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
-            time.sleep(.5)
-
-            # logger.debug("Attempting to take off")
-            # self.takeoff(1.5)
-            # self.wait_for_event('landed_state_in_air_event')
-            # logger.debug("Takeoff successful")
-
-            # arm da drone
-            self.setArmed(True)
-
-            # Auton code using mission/waypoint framework instead of "traditional" methods
-            self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1))
-            self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1))
-            self.add_mission_waypoint('land', (self.position[0], self.position[1], 0))
-            self.upload_mission()
-            time.sleep(5)
-            self.start_mission()
-
-            """
-            NOTE: This is just the auton code from last year
-
-            self.move((310, 125, 60*.75)) # Building 5
-            self.wait_for_event('goto_complete_event')
             
-            self.move((356, 53, 85*.75)) # Building 4
-            self.wait_for_event('goto_complete_event')
-            
-            self.move((404, 120, 126*.75)) # Building 1
-            self.wait_for_event('goto_complete_event')
-
-            # Look for april tag 1 and flash led if its found.
-            if next((tag for tag in self.cur_apriltag if tag['id'] == 0), None):
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 255, 0, 0]))
+            # Auton initialization process
+            if not auton_init:
+                self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
                 time.sleep(.5)
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=[0, 0, 0, 255]))
-            time.sleep(1)
-            
-            self.move((231, 85, 52*.75)) # Fire house
-            self.wait_for_event('goto_complete_event')
-            """
+                self.setArmed(True) # Arm da drone
+                auton_init = True
 
-            # logger.debug("Starting 5 second wait")
-            # time.sleep(5)
-            # logger.debug("Ending 5 second wait")
 
-            # logger.debug("Landing")
-            # self.land()
-            # self.wait_for_event('landed_state_on_ground_event')
-            self.recon = False
+            # \\\\\\\\\\ Button-controlled auton //////////
+            # Auton phase 1
+            if self.building_drops[0]:
+                self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1))
+                self.upload_and_engage_mission(3)
+                self.setBuildingDrop(0, False)
+
+            # Auton phase 2
+            if self.building_drops[1]:
+                self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1))
+                self.upload_and_engage_mission(3)
+                self.setBuildingDrop(1, False)
+
+            # Auton phase 3
+            if self.building_drops[2]:
+                self.add_mission_waypoint('land', (self.position[0], self.position[1], 0))
+                self.upload_and_engage_mission(3)
+                self.setBuildingDrop(2, False)
+
+
+            # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
+            if self.recon:
+                self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1)) # takeoff (alt 1 meter??)
+                self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1)) # fwd 1 meter
+                self.add_mission_waypoint('goto', (self.position[0], self.position[1]+1, 1)) # right 1 meter
+                self.add_mission_waypoint('goto', (self.position[0]-1, self.position[1], 1)) # back 1 meter
+                self.add_mission_waypoint('goto', (self.position[0], self.position[1]-1, 1)) # left 1 meter
+                self.add_mission_waypoint('land', (self.position[0], self.position[1], 0)) # land
+                self.upload_and_engage_mission(5)
+
+                self.setRecon(False)
 
 
     # ========================
     # Drone Control Comands
     
     def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
-        """ Move the AVR to a specified position on the field
+        """ Depreciated
+        -
+        Move the AVR to a specified position on the field
 
         Args:
             pos (tuple): Absolute position on the field, in inches, as (x: fwd, y: right, z: up)
@@ -391,13 +379,11 @@ class Sandbox(MQTTModule):
                     time.sleep(.5)
             else: # Path obstructed (?)
                 logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
-                
-        """ while not self.move_complete:
-            logger.debug('Waiting for move confirm', self.move_complete)
-        self.move_complete = False """
     
     def takeoff(self, alt: float = 1.0, isMeters: bool = True) -> None:
-        """ Tell the AVR to takeoff
+        """ Depreciated
+        -
+        Tell the AVR to takeoff
 
         Args:
             alt (float): Height that the AVR will takeoff to in meters. Defaults to 1.0.
@@ -409,14 +395,15 @@ class Sandbox(MQTTModule):
             self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
     
     def land(self) -> None:
-        """ Land the AVR
+        """ Depreciated
+        -
+        Land the AVR
         """
-        #self.move(self.landing_pads[pad])
         self.send_action('land')
     
     def setArmed(self, armed: bool) -> None:
         """Arm or disarm the FCC
-
+        
         Args:
             armed (bool): True to arm the drone, False to disarm
         """
@@ -452,16 +439,26 @@ class Sandbox(MQTTModule):
         """
         self.mission_waypoints = []
 
-    def upload_mission(self) -> None:
+    def upload_and_engage_mission(self, delay: float = -1) -> None:
         """Upload a mission to the flight controller, mission waypoints are represented in the mission_waypoints list. See the FCM readme and the fcc_control.py file for more details
+
+        Args:
+            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. Defaults to -1.
         """
         self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
         self.clear_mission_waypoints()
-
-    def start_mission(self) -> None:
-        """Start the uploaded mission
+        # TODO: If delay is left blank the mission should start as soon as the mission upload completes
         """
+        if delay == -1:
+            # wait until the mission has successfully uploaded
+        """
+        time.sleep(delay)
         self.send_action('start_mission')
+    
+    def wait_until_mission_complete(self):
+        # wait until the current mission has been completed
+        # TODO: Identify the signal that's transmitted upon completing a mission
+        pass
 
 
     # ================================
@@ -508,6 +505,21 @@ class Sandbox(MQTTModule):
             'avr/autonomous/sound',
             {'fileName': fileName, 'ext': ext, 'loops': loops}
         )
+    
+    def setAutonomous(self, isEnabled: bool) -> None:
+        """Broadcast an `enabled` value for the `avr/autonomous/enable` topic. This will update boolean values on both the sandbox and the GUI.
+        """
+        self.send_message('avr/autonomous/enable', AvrAutonomousEnablePayload(enabled=isEnabled))
+    
+    def setRecon(self, isEnabled: bool) -> None:
+        """Broadcast an `enabled` value for the `avr/autonomous/recon` topic. This will update boolean values on both the sandbox and the GUI.
+        """
+        self.send_message('avr/autonomous/recon', {'enabled': isEnabled})
+    
+    def setBuildingDrop(self, building_id: int, isEnabled: bool) -> None:
+        """Broadcast an `id` and `enabled` value for the `avr/autonomous/building/drop` topic. This will update boolean values on both the sandbox and the GUI.
+        """
+        self.send_message('avr/autonomous/building/drop', AvrAutonomousBuildingDropPayload(id=building_id, enabled=isEnabled))
     
     
     # ================================
