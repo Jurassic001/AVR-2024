@@ -60,7 +60,15 @@ class AutonomyWidget(BaseTabWidget):
         recon_groupbox = QtWidgets.QGroupBox('Recon')
         recon_layout = QtWidgets.QVBoxLayout()
         recon_groupbox.setLayout(recon_layout)
-        
+
+        self.recon_label = QtWidgets.QLabel()
+        self.recon_label.setText(wrap_text('Recon Disabled', 'red'))
+        self.recon_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.recon_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+        recon_layout.addWidget(self.recon_label)
+
         custom_recon_go_button = QtWidgets.QPushButton('Go')
         custom_recon_go_button.clicked.connect(lambda: self.set_recon(True))
         recon_layout.addWidget(custom_recon_go_button)
@@ -69,10 +77,6 @@ class AutonomyWidget(BaseTabWidget):
         custom_recon_stop_button.clicked.connect(lambda: self.set_recon(False))
         recon_layout.addWidget(custom_recon_stop_button)
         
-        self.recon_label = QtWidgets.QLabel()
-        self.recon_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
         recon_layout.addWidget(recon_groupbox)
         custom_layout.addWidget(recon_groupbox)
         """
@@ -310,26 +314,10 @@ class AutonomyWidget(BaseTabWidget):
         """
         Set a building state
         """
-        if number == 5:
-            self.send_message(
-                'avr/sandbox/dev',
-                'check'
-            )
-            return
-        
         self.send_message(
             "avr/autonomous/building/drop",
             AvrAutonomousBuildingDropPayload(id=number, enabled=state),
         )
-
-        if state:
-            text = "Drop Enabled"
-            color = "green"
-        else:
-            text = "Drop Disabled"
-            color = "red"
-
-        self.building_states[number].setText(wrap_text(text, color))
 
     def set_building_all(self, state: bool) -> None:
         """
@@ -346,14 +334,6 @@ class AutonomyWidget(BaseTabWidget):
             "avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state)
         )
 
-        if state:
-            text = "Autonomous Enabled"
-            color = "green"
-        else:
-            text = "Autonomous Disabled"
-            color = "red"
-
-        self.autonomous_label.setText(wrap_text(text, color))
         
     def set_recon(self, state: bool) -> None:
         """ Starts AVR Recon. """
@@ -361,14 +341,6 @@ class AutonomyWidget(BaseTabWidget):
             'avr/autonomous/recon', {'enabled': state}
         )
         
-        if state:
-            text = 'Recon Enabled'
-            color = 'green'
-        else:
-            text = 'Recon Disabled'
-            color = 'red'
-            
-        self.recon_label.setText(wrap_text(text, color))
             
     def set_thermal_auto(self, state: bool) -> None:
         """ Starts autonomous thermal targeting. """
@@ -432,11 +404,39 @@ class AutonomyWidget(BaseTabWidget):
         self.spinner_speed_val = int(precent)
         
     def process_message(self, topic: str, payload: dict) -> None:
+        payload = json.loads(payload)
         if topic == "avr/autonomous/sound": # If we're playing a sound
-            payload = json.loads(payload)
             self.playAudio(payload['fileName'], payload['ext'], payload['loops'])
-            #self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
-            #self.thread.start()
+            # self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
+            # self.thread.start()
+        elif topic == "avr/autonomous/recon": # If the value of the recon bool is changing
+            state = payload['enabled']
+            if state:
+                text = 'Recon Enabled'
+                color = 'green'
+            else:
+                text = 'Recon Disabled'
+                color = 'red'
+            self.recon_label.setText(wrap_text(text, color))
+        elif topic == "avr/autonomous/enable": # If the value of the auton bool is changing
+            state = payload['enabled']
+            if state:
+                text = "Autonomous Enabled"
+                color = "green"
+            else:
+                text = "Autonomous Disabled"
+                color = "red"
+            self.autonomous_label.setText(wrap_text(text, color))
+        elif topic == "avr/autonomous/building/drop": # If the value of building drop bools are changing
+            state = payload['enabled']
+            if state:
+                text = "Drop Enabled"
+                color = "green"
+            else:
+                text = "Drop Disabled"
+                color = "red"
+            self.building_states[payload['id']].setText(wrap_text(text, color))
+            
 
     def playAudio(self, fileName: str, ext: str, loops: int):
         print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
