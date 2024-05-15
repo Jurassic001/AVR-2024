@@ -29,7 +29,6 @@ class Sandbox(MQTTModule):
             'avr/fcm/events': self.handle_events,
             }
 
-        self.is_armed: bool = False
         self.pause: bool = False
         self.autonomous: bool = False
         self.auto_target: bool = False
@@ -53,18 +52,22 @@ class Sandbox(MQTTModule):
         self.target_range: tuple[int, int] = (30, 40)
         self.targeting_step: int = 7
         self.laser_on: bool = False
-
-        self.flightState: str = "UNKNOWN"
   
         self.sanity: str = 'Gone'
         self.do_pathfinding: bool = False
         self.col_test = collision_dectector((472, 170, 200), 17.3622)
-        self.waiting_events = ContextVar('test', default={'landed_state_in_air_event': asyncio.Event(), 'landed_state_on_ground_event': asyncio.Event(), 'goto_complete_event': asyncio.Event()})
         
-        self.cur_apriltag: list = [] # List containing the currently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
+        # Vars containing drone operation details
+        self.states: dict[str, str] = {'flightEvent': "UNKNOWN", 'flightMode': "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
+        possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "UNKNOWN"]
+        possibleModes: list[str] = ["UNKNOWN", "READY", "TAKEOFF", "HOLD", "MISSION", "RETURN_TO_LAUNCH", "LAND", "OFFBOARD", "FOLLOW_ME", "MANUAL", "ALTCTL", "POSCTL", "ACRO", "STABILIZED", "RATTITUDE"]
+        self.possibleStates: dict[str, list[str]] = {'flightEvent': possibleEvents, 'flightMode': possibleModes}
+        self.isArmed: bool = False
+        
+        # Apriltag Instance Vars
+        self.cur_apriltag: list = [] # List containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
         self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing, along with their in
-        self.found_high_tag: bool = False
         self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
         
@@ -94,8 +97,11 @@ class Sandbox(MQTTModule):
                 k+=1
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
-        armed = payload['armed']
-        self.is_armed = armed
+        # Set the flight controller's mode and armed status
+        if self.states['flightMode'] != payload['mode']:
+            logger.success(f"Flight Mode Update || Flight Mode: {payload['mode']}")
+            self.states['flightMode'] = payload['mode']
+        self.isArmed = payload['armed']
         self.fcm_init = True
         
     def handle_drop(self, payload: AvrAutonomousBuildingDropPayload) -> None:
@@ -107,8 +113,8 @@ class Sandbox(MQTTModule):
     def handle_recon(self, payload) -> None:
         self.recon = payload['enabled']
                 
-    def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:
-        self.cur_apriltag = payload['tags'] # Add currently detected apriltag info to the list
+    def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None: # This handler is only called when an apriltag is scanned and processed successfully
+        self.cur_apriltag = payload['tags']
 
         if not payload['tags'][0]['id'] in self.apriltag_ids:
             # If we haven't detected this apriltag before, add it to a list of detected IDs and queue an LED flash (LED flashing is done in the CIC thread)
@@ -169,20 +175,23 @@ class Sandbox(MQTTModule):
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
-        action = payload['name']
-        try:
-            if action in self.waiting_events.get().keys():
-                self.waiting_events.set(self.waiting_events.get()[action].set())
-        except Exception as e:
-            logger.error(e)
-            logger.error(f"Action name: {action}")
+        eventName = payload['name']
 
-        if action == 'landed_state_in_air_event':
-            self.in_air = True
-            self.on_ground = False
-        elif action == 'landed_state_on_ground_event':
-            self.on_ground = True
-            self.in_air = False
+        # Handle flight states
+        if eventName == 'landed_state_in_air_event':
+            newState = "IN_AIR"
+        elif eventName == 'landed_state_landing_event':
+            newState = "LANDING"
+        elif eventName == 'landed_state_on_ground_event':
+            newState = "ON_GROUND"
+        elif eventName == 'landed_state_taking_off_event':
+            newState = "TAKING_OFF"
+        else:
+            newState = "UNKNOWN"
+        
+        if newState != self.states['flightEvent']:
+            logger.success(f"Flight State Update || Flight State: {newState}")
+            self.states['flightEvent'] = newState
 
 
     # ===============
@@ -308,8 +317,8 @@ class Sandbox(MQTTModule):
             # self.wait_for_event('landed_state_in_air_event')
             # logger.debug("Takeoff successful")
 
-            # attempt to arm drone
-            self.send_action("arm")
+            # arm da drone
+            self.setArmed(True)
 
             # Auton code using mission/waypoint framework instead of "traditional" methods
             self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1))
@@ -405,6 +414,17 @@ class Sandbox(MQTTModule):
         #self.move(self.landing_pads[pad])
         self.send_action('land')
     
+    def setArmed(self, armed: bool) -> None:
+        """Arm or disarm the FCC
+
+        Args:
+            armed (bool): True to arm the drone, False to disarm
+        """
+        if armed:
+            self.send_action("arm")
+        else:
+            self.send_action("disarm")
+    
 
     # =========================================
     # Mission and Waypoint commands
@@ -492,11 +512,53 @@ class Sandbox(MQTTModule):
     
     # ================================
     # Misc/Helper commands
-    async def wait_for_event(self, event: str):
-        logger.debug(f'Waiting for {event}')
-        await self.waiting_events.get()[event].wait()
-        logger.debug(f'Completed Event: {event}')
-        self.waiting_events.set(self.waiting_events.get()[event].clear())
+    def wait_for_apriltag_id(self, id: int, timeout: float = 5) -> bool:
+        """Wait until a specificied Apriltag ID is detected, or a timeout is reached
+
+        Args:
+            id (int): The ID of the apriltag we're looking for
+            timeout (float): The time in seconds until the wait times out. Defaults to 5.
+
+        Returns:
+            bool: True if the AT was detected, False if timeout was reached
+        """
+        start_time = time.time()
+        while start_time + timeout > time.time():
+            try:
+                if self.cur_apriltag[0]['id'] == id:
+                    return True
+            except: # Catch the IndexError that is thrown if we haven't yet scanned an apriltag (i.e. the list is empty)
+                pass
+            time.sleep(.025) # Given the low FPS of the CSI camera (which scans for apriltags), this sleep command won't lead to skipping over a detected apriltag
+        logger.debug(f'Timeout reached while waiting to detect Apriltag {id}')
+        return False
+
+    def wait_for_state(self, stateKey: str, desiredVal: str, timeout: float = 5) -> bool:
+        """Wait until a desired value is present for a specific key in the states dict
+
+        Args:
+            stateKey (str): The key of the value in the self.states dict that we're waiting for
+            desiredVal (str): The desired value that we're waiting for
+            timeout (float, optional): The time in seconds that we wait for. Defaults to 5.
+
+        Returns:
+            bool: True if desired value is found, False if timeout is reached
+        """
+        try:
+            if desiredVal not in self.possibleStates[stateKey]: # Check to make sure that we're waiting for a valid key that can contain the given value
+                logger.error(f'The given key {stateKey} cannot contain the value {desiredVal}')
+                return False
+        except KeyError as e: # If you get this error it means the key you're looking for doesn't exist
+                logger.error(e)
+                return False
+
+        start_time = time.time()
+        while start_time + timeout > time.time():
+            if self.states[stateKey] == desiredVal:
+                return True
+            time.sleep(.005)
+        logger.debug(f'Timeout reached while waiting for {stateKey} value {desiredVal}')
+        return False
     
     # From Quentin: Bell gives us field dimensions in inches then programs the drone to use meters because fuck you
     def inchesToMeters(self, inches: float) -> float:
