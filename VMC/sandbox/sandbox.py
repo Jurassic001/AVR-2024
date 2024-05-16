@@ -317,31 +317,37 @@ class Sandbox(MQTTModule):
             # \\\\\\\\\\ Button-controlled auton //////////
             # Auton phase 1
             if self.building_drops[0]:
-                self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1))
+                self.add_mission_waypoint('takeoff', (0, 0, 1))
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(0, False)
 
             # Auton phase 2
             if self.building_drops[1]:
-                self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1))
+                self.add_mission_waypoint('goto', (1, 0, 1))
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(1, False)
 
             # Auton phase 3
             if self.building_drops[2]:
-                self.add_mission_waypoint('land', (self.position[0], self.position[1], 0))
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=90)
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(2, False)
+
+            # Auton phase 4
+            if self.building_drops[3]:
+                self.add_mission_waypoint('land', (0, 0, 0))
+                self.upload_and_engage_mission(3)
+                self.setBuildingDrop(3, False)
 
 
             # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
             if self.recon:
-                self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1)) # takeoff (alt 1 meter??)
-                self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1)) # fwd 1 meter
-                self.add_mission_waypoint('goto', (self.position[0], self.position[1]+1, 1)) # right 1 meter
-                self.add_mission_waypoint('goto', (self.position[0]-1, self.position[1], 1)) # back 1 meter
-                self.add_mission_waypoint('goto', (self.position[0], self.position[1]-1, 1)) # left 1 meter
-                self.add_mission_waypoint('land', (self.position[0], self.position[1], 0)) # land
+                self.add_mission_waypoint('takeoff', (0, 0, 1)) # takeoff (alt 1 meter??)
+                self.add_mission_waypoint('goto', (1, 0, 1)) # fwd 1 meter
+                self.add_mission_waypoint('goto', (0, 1, 1)) # right 1 meter
+                self.add_mission_waypoint('goto', (-1, 0, 1)) # back 1 meter
+                self.add_mission_waypoint('goto', (0, -1, 1)) # left 1 meter
+                self.add_mission_waypoint('land', (0, 0, 0)) # land
                 self.upload_and_engage_mission(5)
 
                 self.setRecon(False)
@@ -416,23 +422,23 @@ class Sandbox(MQTTModule):
     # =========================================
     # Mission and Waypoint commands
 
-    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], isAbs: bool = False) -> None:
+    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], yaw_angle: float = float("nan"), goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
         """Add a waypoint to the mission_waypoints list.
+        NOTE: At this time I am assuming that coordinates are relative to current position
 
         Args:
-            waypointType (str): Must be one of 'goto', 'takeoff', or 'land'
-            coords (tuple[float, float, float]): Waypoint destination coordinates, in meters, as (fwd, right, up).
-            isAbs (bool, optional): If destination coordinates are absolute. Defaults to False (Coordinates are relative by default).
+            waypointType (str): Must be one of `goto`, `takeoff`, or `land`
+            coords (tuple[float, float, float]): Waypoint destination coordinates, in meters, as (fwd, right, up)
+            yaw_angle (float, optional): Heading that the drone will turn to. Defaults to float("nan"), which will maintain the current heading mode (most likely straight forward)
+            goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
+            goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
         """
-        if waypointType not in ['goto', 'takeoff', 'land']: # If we dont recognize the type of the waypoint
+        if waypointType not in ['goto', 'takeoff', 'land']:
+            # If we dont recognize the type of the waypoint throw an error and skip the waypoint
             logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
             return
-        if isAbs: # If the coordinates are absolute
-            list(coords)
-            for i in range(3):
-                coords[i] += self.start_pos[i]
         # Add the waypoint to the list of waypoints
-        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1})
+        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
     
     def clear_mission_waypoints(self) -> None:
         """Clear the mission_waypoints list.
