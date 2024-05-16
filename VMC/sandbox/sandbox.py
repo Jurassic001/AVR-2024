@@ -441,7 +441,7 @@ class Sandbox(MQTTModule):
         self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
     
     def clear_mission_waypoints(self) -> None:
-        """Clear the mission_waypoints list.
+        """Clear the mission_waypoints list
         """
         self.mission_waypoints = []
 
@@ -460,7 +460,7 @@ class Sandbox(MQTTModule):
         """
         time.sleep(delay)
         self.send_action('start_mission')
-    
+
     def wait_until_mission_complete(self):
         # wait until the current mission has been completed
         # TODO: Identify the signal that's transmitted upon completing a mission
@@ -513,17 +513,17 @@ class Sandbox(MQTTModule):
         )
     
     def setAutonomous(self, isEnabled: bool) -> None:
-        """Broadcast an `enabled` value for the `avr/autonomous/enable` topic. This will update boolean values on both the sandbox and the GUI.
+        """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/enable', AvrAutonomousEnablePayload(enabled=isEnabled))
     
     def setRecon(self, isEnabled: bool) -> None:
-        """Broadcast an `enabled` value for the `avr/autonomous/recon` topic. This will update boolean values on both the sandbox and the GUI.
+        """Broadcast given boolean for topic `avr/autonomous/recon`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/recon', {'enabled': isEnabled})
     
     def setBuildingDrop(self, building_id: int, isEnabled: bool) -> None:
-        """Broadcast an `id` and `enabled` value for the `avr/autonomous/building/drop` topic. This will update boolean values on both the sandbox and the GUI.
+        """Broadcast given int and boolean for topic `avr/autonomous/building/drop`, in the `id` and `enabled` payloads, respectively. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/building/drop', AvrAutonomousBuildingDropPayload(id=building_id, enabled=isEnabled))
     

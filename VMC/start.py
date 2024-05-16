@@ -57,14 +57,18 @@ def apriltag_service(compose_services: dict) -> None:
 def fcm_service(compose_services: dict, local: bool = False, simulation=False) -> None:
     fcm_data = {
         "depends_on": ["mqtt", "mavp2p" if not simulation else "simulator"],
+        "build": os.path.join(THIS_DIR, "fcm"),
         "restart": "unless-stopped",
         "network_mode": "host"
     }
 
+    """
+    NOTE: FCM must always build locally since I've modified the fcc_control.py file
     if local:
         fcm_data["build"] = os.path.join(THIS_DIR, "fcm")
     else:
         fcm_data["image"] = f"{IMAGE_BASE}fcm:latest"
+    """
 
     compose_services["fcm"] = fcm_data
 
