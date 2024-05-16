@@ -311,7 +311,7 @@ class MainWindow(QtWidgets.QWidget):
             self.tabs.setTabToolTip(idx, "")
     
     def setActiveTabs(self, enabled: bool) -> None:
-        # make list of widgets that are mqtt connected
+        # Set all MQTT enabled tabs to either active or inactive. PCC tester requires serial to be enabled
         widgets = [
             self.mqtt_debug_widget,
             self.mqtt_logger_widget,
