@@ -534,7 +534,7 @@ class ControlManager(FCMMQTTModule):
         """
         mission_plan = await self.build(kwargs["waypoints"])
         await self.upload(mission_plan)
-        await self.set_geofence({"min_lat": 0, "min_lon": 0, "max_lat": 0, "max_lon": 0}) # Setup a generic geofence because the world is my oyster
+        await self.set_geofence(min_lat=0, min_lon=0, max_lat=0, max_lon=0) # Setup a generic geofence because the world is my oyster
         await self.set_arm() # Arm the drone (Doesn't do anything if the drone is already armed)
 
     @async_try_except(reraise=True)
