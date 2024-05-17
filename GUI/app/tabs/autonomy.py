@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools, json, os, playsound
+import functools, json, os, playsound, threading
 from typing import List
 
 from bell.avr.mqtt.payloads import *
@@ -52,30 +52,29 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
         
         # ==========================
-        # Recon, Thermal autoaim, spintake, Sphero controls
+        # Recon, Thermal autoaim, Spintake, Sphero controls, and Testing boxes
+
         custom_layout = QtWidgets.QHBoxLayout()
         
-            # ==========================
-            # Recon Box
+        # ==========================
+        # Recon Box
         recon_groupbox = QtWidgets.QGroupBox('Recon')
         recon_layout = QtWidgets.QVBoxLayout()
         recon_groupbox.setLayout(recon_layout)
 
-        self.recon_label = QtWidgets.QLabel()
-        self.recon_label.setText(wrap_text('Recon Disabled', 'red'))
-        self.recon_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
+        self.recon_label = QtWidgets.QLabel(wrap_text('Recon Disabled', 'red'))
         self.recon_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
         recon_layout.addWidget(self.recon_label)
 
-        custom_recon_go_button = QtWidgets.QPushButton('Go')
+        custom_recon_go_button = QtWidgets.QPushButton('Enable')
         custom_recon_go_button.clicked.connect(lambda: self.set_recon(True))
         recon_layout.addWidget(custom_recon_go_button)
         
-        custom_recon_stop_button = QtWidgets.QPushButton('Pause')
+        custom_recon_stop_button = QtWidgets.QPushButton('Disable')
         custom_recon_stop_button.clicked.connect(lambda: self.set_recon(False))
         recon_layout.addWidget(custom_recon_stop_button)
+        
+        recon_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Ignored))
         
         recon_layout.addWidget(recon_groupbox)
         custom_layout.addWidget(recon_groupbox)
@@ -124,18 +123,22 @@ class AutonomyWidget(BaseTabWidget):
         self.thermal_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
+        self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
+        thermal_layout.addWidget(self.thermal_label)
+
         thermal_layout.addWidget(thermal_groupbox)
         
         custom_layout.addWidget(thermal_groupbox)
         """
-            # ==========================
-            # Spintake Box
+        # ==========================
+        # Spintake Box
         spintake_groupbox = QtWidgets.QGroupBox('Spintake')
         spintake_layout = QtWidgets.QVBoxLayout()
         spintake_groupbox.setLayout(spintake_layout)
         spintake_groupbox.setMaximumWidth(300)
-                # ==========================
-                # Spintake Spinner Box
+
+        # ==========================
+        # Spintake Spinner Box
         spintake_spinner_groupbox = QtWidgets.QGroupBox('Spinner')
         spintake_spinner_layout = QtWidgets.QVBoxLayout()
         spintake_spinner_groupbox.setLayout(spintake_spinner_layout)
@@ -170,8 +173,9 @@ class AutonomyWidget(BaseTabWidget):
         )
         spintake_spinner_layout.addWidget(spintake_spinner_groupbox)
         spintake_layout.addWidget(spintake_spinner_groupbox)
-                # ==========================
-                # Spintake Bottom Box
+
+        # ==========================
+        # Spintake Bottom Box
         spintake_bottom_groupbox = QtWidgets.QGroupBox('Bottom')
         spintake_bottom_layout = QtWidgets.QVBoxLayout()
         spintake_bottom_groupbox.setLayout(spintake_bottom_layout)
@@ -188,17 +192,12 @@ class AutonomyWidget(BaseTabWidget):
         self.spintake_bottom_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
-        spintake_bottom_layout.addWidget(spintake_bottom_groupbox)
         spintake_layout.addWidget(spintake_bottom_groupbox)
-                # ==========================
-        self.spintake_label = QtWidgets.QLabel()
-        self.spintake_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        spintake_layout.addWidget(spintake_groupbox)
+
         custom_layout.addWidget(spintake_groupbox)
-            # ==========================
-            # Sphero Holder Box
+
+        # ==========================
+        # Sphero Holder Box
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
         sphero_layout = QtWidgets.QGridLayout()
         sphero_groupbox.setLayout(sphero_layout)
@@ -247,21 +246,44 @@ class AutonomyWidget(BaseTabWidget):
         sphero_all_layout.addWidget(sphero_stop_button1, 1, 2)
         sphero_layout.addWidget(sphero_all_groupbox, 1, 0, 1, 3)
         
-        self.sphero_label = QtWidgets.QLabel()
-        self.sphero_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
         custom_layout.addWidget(sphero_groupbox)
-            
-            
-            # ==========================
-        self.custom_label = QtWidgets.QLabel()
-        self.custom_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
         
-        custom_layout.addWidget(self.custom_label)
-        layout.addLayout(custom_layout, 1, 0, 1, 1)
+        # ==================================
+        # Testing box
+        testing_groupbox = QtWidgets.QGroupBox("Testing")
+        testing_layout = QtWidgets.QVBoxLayout()
+        testing_groupbox.setLayout(testing_layout)
+
+        self.testing_items: list[str] = ['takeoff', 'sound'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_states: dict[str, QtWidgets.QLabel] = {}
+
+        # Create a name label, state label, and on/off buttons for each test
+        for str in self.testing_items:
+            test_layout = QtWidgets.QHBoxLayout()
+
+            test_name = QtWidgets.QLabel(f"{str.title()} test")
+            test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            test_layout.addWidget(test_name)
+            
+            building_state = QtWidgets.QLabel(wrap_text("Inactive", "red"))
+            building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            test_layout.addWidget(building_state)
+            self.testing_states.update({str: building_state}) # Add the state label to this dict so we can modify it
+            
+            building_enable_button = QtWidgets.QPushButton("Activate Test")
+            test_layout.addWidget(building_enable_button)
+            building_enable_button.clicked.connect(functools.partial(self.set_test, str, True))
+
+            building_disable_button = QtWidgets.QPushButton("Deactivate Test")
+            test_layout.addWidget(building_disable_button)
+            building_disable_button.clicked.connect(functools.partial(self.set_test, str, False))
+
+            testing_layout.addLayout(test_layout)
+
+        custom_layout.addWidget(testing_groupbox)
+
+
+        layout.addLayout(custom_layout, 1, 0, 1, 1) # Finalize second row
 
         # ==========================
         # Buildings
@@ -398,6 +420,9 @@ class AutonomyWidget(BaseTabWidget):
             'avr/autonomous/thermal_range',
             {'range': (lower, upper, step)}
         )
+    
+    def set_test(self, test_name: str, test_state: bool) -> None:
+        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
         
     def set_spinner_speed(self, precent: float) -> None:
         print(precent)
@@ -406,9 +431,8 @@ class AutonomyWidget(BaseTabWidget):
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
         if topic == "avr/autonomous/sound": # If we're playing a sound
-            self.playAudio(payload['fileName'], payload['ext'], payload['loops'])
-            # self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
-            # self.thread.start()
+            self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
+            self.thread.start()
         elif topic == "avr/autonomous/recon": # If the value of the recon bool is changing
             state = payload['enabled']
             if state:
@@ -436,6 +460,16 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Drop Disabled"
                 color = "red"
             self.building_states[payload['id']].setText(wrap_text(text, color))
+        elif topic == 'avr/sandbox/test': # If we're activating or deactivating a test
+            name = payload['testName']
+            state = payload['testState']
+            if state:
+                text = "Active"
+                color = "green"
+            else:
+                text = "Inactive"
+                color = "red"
+            self.testing_states[name].setText(wrap_text(text, color))
             
 
     def playAudio(self, fileName: str, ext: str, loops: int):

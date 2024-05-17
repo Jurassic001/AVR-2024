@@ -25,7 +25,7 @@ class Sandbox(MQTTModule):
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fusion/position/ned': self.handle_pos,
-            'avr/sandbox/dev': self.handle_dev,
+            'avr/sandbox/test': self.handle_testing,
             'avr/fcm/events': self.handle_events,
             }
 
@@ -159,23 +159,19 @@ class Sandbox(MQTTModule):
         # NOTE Check if direction is based on drone start or global
         self.position = [payload['n'], payload['e'], payload['d']]
         
-    def handle_dev(self, payload: dict):
-        if payload == 'test_flight':
-            async def tester():
-                logger.debug('Test Flight Starting...')
-                self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
-                logger.debug('Home Captured')
-                asyncio.create_task(self.takeoff())
-                await self.wait_for_event('landed_state_in_air_event')
-                logger.debug('Takeoff Done')
-                asyncio.create_task(self.land())
-                await self.wait_for_event('landed_state_on_ground_event')
-                logger.debug('Landed')
-            asyncio.run(tester())
-
-        elif payload == 'sound_test':
-            logger.debug('Playing sound file: sound_1.WAV')
+    def handle_testing(self, payload: str):
+        name = payload['testName']
+        state = payload['testState']
+        if not state: # If a test is being deactivated then we don't need to worry about it
+            return
+        elif name == 'takeoff':
+            self.add_mission_waypoint('takeoff', (0, 0, 1))
+            self.add_mission_waypoint('land', (0, 0, 1))
+            self.upload_and_engage_mission(3)
+        elif name == 'sound':
             self.sound_laptop("sound_1")
+        
+        self.setTest(name, not state) # Once the test has been run, mark it as inactive
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
@@ -527,6 +523,8 @@ class Sandbox(MQTTModule):
         """
         self.send_message('avr/autonomous/building/drop', AvrAutonomousBuildingDropPayload(id=building_id, enabled=isEnabled))
     
+    def setTest(self, test_name: str, test_state: bool) -> None:
+        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
     
     # ================================
     # Misc/Helper commands
