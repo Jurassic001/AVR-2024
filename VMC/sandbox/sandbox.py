@@ -167,7 +167,7 @@ class Sandbox(MQTTModule):
         elif name == 'takeoff':
             self.add_mission_waypoint('takeoff', (0, 0, 1))
             self.add_mission_waypoint('land', (0, 0, 1))
-            self.upload_and_engage_mission(1)
+            self.upload_and_engage_mission(5)
         elif name == 'sound':
             self.sound_laptop("sound_1")
         elif name == 'arm':
@@ -321,25 +321,25 @@ class Sandbox(MQTTModule):
             # Auton phase 1
             if self.building_drops[0]:
                 self.add_mission_waypoint('takeoff', (0, 0, 1))
-                self.upload_and_engage_mission(1)
+                self.upload_and_engage_mission(3)
                 self.setBuildingDrop(0, False)
 
             # Auton phase 2
             if self.building_drops[1]:
                 self.add_mission_waypoint('goto', (1, 0, 1))
-                self.upload_and_engage_mission(1)
+                self.upload_and_engage_mission(3)
                 self.setBuildingDrop(1, False)
 
             # Auton phase 3
             if self.building_drops[2]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=90)
-                self.upload_and_engage_mission(1)
+                self.upload_and_engage_mission(3)
                 self.setBuildingDrop(2, False)
 
             # Auton phase 4
             if self.building_drops[3]:
                 self.add_mission_waypoint('land', (0, 0, 0))
-                self.upload_and_engage_mission(1)
+                self.upload_and_engage_mission(3)
                 self.setBuildingDrop(3, False)
 
 
@@ -351,7 +351,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint('goto', (-1, 0, 1)) # back 1 meter
                 self.add_mission_waypoint('goto', (0, -1, 1)) # left 1 meter
                 self.add_mission_waypoint('land', (0, 0, 0)) # land
-                self.upload_and_engage_mission(1)
+                self.upload_and_engage_mission(5)
 
                 self.setRecon(False)
 
@@ -462,6 +462,8 @@ class Sandbox(MQTTModule):
             # wait until the mission has successfully uploaded
         """
         time.sleep(delay)
+        self.setArmed(True) # Arm the drone just before the mission begins
+        time.sleep(0.1)
         self.send_action('start_mission')
 
     def wait_until_mission_complete(self):
