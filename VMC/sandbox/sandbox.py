@@ -167,11 +167,18 @@ class Sandbox(MQTTModule):
         elif name == 'takeoff':
             self.add_mission_waypoint('takeoff', (0, 0, 1))
             self.add_mission_waypoint('land', (0, 0, 1))
-            self.upload_and_engage_mission(3)
+            self.upload_and_engage_mission(1)
         elif name == 'sound':
             self.sound_laptop("sound_1")
+        elif name == 'arm':
+            self.setArmed(True)
+        elif name == 'disarm':
+            self.setArmed(False)
+        elif name == 'Zero NED':
+            self.send_message('avr/fcm/capture_home', {})
         
-        self.setTest(name, not state) # Once the test has been run, mark it as inactive
+        # Once the test has been run, mark it as inactive
+        self.send_message('avr/sandbox/test', {'testName': name, 'testState': False})
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
@@ -297,42 +304,42 @@ class Sandbox(MQTTModule):
     
     def Autonomous(self): # What is this, headache city?
         logger.debug('Autonomous Thread: Online')
-        auton_init: bool = False
+        # auton_init: bool = False
         while True:
             if not self.autonomous:
                 continue
             
-            # Auton initialization process
-            if not auton_init:
-                self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
-                time.sleep(.5)
-                self.setArmed(True) # Arm da drone
-                auton_init = True
+            # # Auton initialization process
+            # if not auton_init:
+            #     self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
+            #     time.sleep(.5)
+            #     self.setArmed(True) # Arm da drone
+            #     auton_init = True
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
             # Auton phase 1
             if self.building_drops[0]:
                 self.add_mission_waypoint('takeoff', (0, 0, 1))
-                self.upload_and_engage_mission(3)
+                self.upload_and_engage_mission(1)
                 self.setBuildingDrop(0, False)
 
             # Auton phase 2
             if self.building_drops[1]:
                 self.add_mission_waypoint('goto', (1, 0, 1))
-                self.upload_and_engage_mission(3)
+                self.upload_and_engage_mission(1)
                 self.setBuildingDrop(1, False)
 
             # Auton phase 3
             if self.building_drops[2]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=90)
-                self.upload_and_engage_mission(3)
+                self.upload_and_engage_mission(1)
                 self.setBuildingDrop(2, False)
 
             # Auton phase 4
             if self.building_drops[3]:
                 self.add_mission_waypoint('land', (0, 0, 0))
-                self.upload_and_engage_mission(3)
+                self.upload_and_engage_mission(1)
                 self.setBuildingDrop(3, False)
 
 
@@ -344,7 +351,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint('goto', (-1, 0, 1)) # back 1 meter
                 self.add_mission_waypoint('goto', (0, -1, 1)) # left 1 meter
                 self.add_mission_waypoint('land', (0, 0, 0)) # land
-                self.upload_and_engage_mission(5)
+                self.upload_and_engage_mission(1)
 
                 self.setRecon(False)
 
@@ -459,7 +466,7 @@ class Sandbox(MQTTModule):
 
     def wait_until_mission_complete(self):
         # wait until the current mission has been completed
-        # TODO: Identify the signal that's transmitted upon completing a mission
+        # TODO: Identify the signal that's transmitted upon completing a mission (Theory: It's the hold mode)
         pass
 
 
@@ -467,10 +474,7 @@ class Sandbox(MQTTModule):
     # Send Message Commands
 
     def move_servo(self, id, angle) -> None:
-        self.send_message(
-                    "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
-                )
+        self.send_message("avr/pcm/set_servo_abs",AvrPcmSetServoAbsPayload(servo=id, absolute=angle))
 
     def send_action(self, action: str, payload: dict = {}):
         """Send one of many possible action payloads to the `avr/fcm/actions` MQTT topic.
@@ -479,10 +483,7 @@ class Sandbox(MQTTModule):
             action (str): The action you want to send
             payload (dict, optional): The payload of the action you want to send. Defaults to {}.
         """
-        self.send_message(
-            'avr/fcm/actions',
-            {'action': action, 'payload': payload}
-        )
+        self.send_message('avr/fcm/actions', {'action': action, 'payload': payload})
 
     def set_laser(self, state: bool) -> None:
         self.laser_on = state
@@ -503,10 +504,7 @@ class Sandbox(MQTTModule):
             loops (int, optional): Number of loops. Currently has no effect. Defaults to 1.
         """
         # Plays the sound by publishing the sound topic with the file info as payload, which is processed & handled in autonomy.py
-        self.send_message(
-            'avr/autonomous/sound',
-            {'fileName': fileName, 'ext': ext, 'loops': loops}
-        )
+        self.send_message('avr/autonomous/sound', {'fileName': fileName, 'ext': ext, 'loops': loops})
     
     def setAutonomous(self, isEnabled: bool) -> None:
         """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
@@ -522,9 +520,7 @@ class Sandbox(MQTTModule):
         """Broadcast given int and boolean for topic `avr/autonomous/building/drop`, in the `id` and `enabled` payloads, respectively. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/building/drop', AvrAutonomousBuildingDropPayload(id=building_id, enabled=isEnabled))
-    
-    def setTest(self, test_name: str, test_state: bool) -> None:
-        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
+
     
     # ================================
     # Misc/Helper commands

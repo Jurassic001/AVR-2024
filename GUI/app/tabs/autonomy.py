@@ -254,7 +254,7 @@ class AutonomyWidget(BaseTabWidget):
         testing_layout = QtWidgets.QVBoxLayout()
         testing_groupbox.setLayout(testing_layout)
 
-        self.testing_items: list[str] = ['takeoff', 'sound'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_items: list[str] = ['takeoff', 'sound', 'arm', 'disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
         self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test
@@ -265,18 +265,19 @@ class AutonomyWidget(BaseTabWidget):
             test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             test_layout.addWidget(test_name)
             
-            building_state = QtWidgets.QLabel(wrap_text("Inactive", "red"))
+            building_state = QtWidgets.QLabel() # Only show the state of the test if it's active
             building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             test_layout.addWidget(building_state)
             self.testing_states.update({str: building_state}) # Add the state label to this dict so we can modify it
             
-            building_enable_button = QtWidgets.QPushButton("Activate Test")
+            building_enable_button = QtWidgets.QPushButton("Execute Test")
             test_layout.addWidget(building_enable_button)
             building_enable_button.clicked.connect(functools.partial(self.set_test, str, True))
 
-            building_disable_button = QtWidgets.QPushButton("Deactivate Test")
-            test_layout.addWidget(building_disable_button)
-            building_disable_button.clicked.connect(functools.partial(self.set_test, str, False))
+            # Deactivating the test partway through wouldn't do anything, so this button is useless
+            # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
+            # test_layout.addWidget(building_disable_button)
+            # building_disable_button.clicked.connect(functools.partial(self.set_test, str, False))
 
             testing_layout.addLayout(test_layout)
 
@@ -331,15 +332,20 @@ class AutonomyWidget(BaseTabWidget):
             buildings_layout.addLayout(building_layout)
         layout.addWidget(buildings_groupbox, 2, 0, 4, 1)
 
+
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ MESSAGING FUNCTIONS //////////////////////////////
+    """
+    NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
+    the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server.
+    """
+    # ================
+    # Auton messengers
     def set_building(self, number: int, state: bool) -> None:
         # sourcery skip: assign-if-exp
         """
         Set a building state
         """
-        self.send_message(
-            "avr/autonomous/building/drop",
-            AvrAutonomousBuildingDropPayload(id=number, enabled=state),
-        )
+        self.send_message("avr/autonomous/building/drop", AvrAutonomousBuildingDropPayload(id=number, enabled=state))
 
     def set_building_all(self, state: bool) -> None:
         """
@@ -352,18 +358,17 @@ class AutonomyWidget(BaseTabWidget):
         """
         Set autonomous mode
         """
-        self.send_message(
-            "avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state)
-        )
+        self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state))
 
-        
     def set_recon(self, state: bool) -> None:
         """ Starts AVR Recon. """
-        self.send_message(
-            'avr/autonomous/recon', {'enabled': state}
-        )
-        
-            
+        self.send_message('avr/autonomous/recon', {'enabled': state})
+    
+    def set_test(self, test_name: str, test_state: bool) -> None:
+        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
+
+    # ==========================
+    # Thermal autoaim messengers
     def set_thermal_auto(self, state: bool) -> None:
         """ Starts autonomous thermal targeting. """
         self.send_message(
@@ -378,9 +383,17 @@ class AutonomyWidget(BaseTabWidget):
             color = 'red'
             
         self.thermal_label.setText(wrap_text(text, color))
-    
+
+    def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
+        config.temp_range = (lower, upper, step)
+        self.send_message(
+            'avr/autonomous/thermal_range',
+            {'range': (lower, upper, step)}
+        )
+
+    # ===================
+    # Spintake messengers
     def set_spintake_spinner(self, state: bool) -> None:
-        """ [Place Holder] """
         vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
         if state:
             self.send_message(
@@ -399,35 +412,28 @@ class AutonomyWidget(BaseTabWidget):
         "avr/pcm/set_servo_open_close",
         AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
         )
-        
+
+    def set_spinner_speed(self, precent: float) -> None:
+        print(precent)
+        self.spinner_speed_val = int(precent)
+    
+    # =======================
+    # Sphero holder messenger
     def set_sphero_holder(self, door: int, open_close: str) -> None:
         """ Open sphero gates. \n\n`door` = 0 opens/closes all.  """
         if door == 0:
             for i in range (5, 8):
-                self.send_message( #Open: 41
+                self.send_message(
                 "avr/pcm/set_servo_open_close",
                 AvrPcmSetServoOpenClosePayload(servo= i, action= open_close)
                 )
         else:
-            self.send_message( #Open: 41
+            self.send_message(
                 "avr/pcm/set_servo_open_close",
                 AvrPcmSetServoOpenClosePayload(servo= 4+door, action= open_close)
             )
-        
-    def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
-        config.temp_range = (lower, upper, step)
-        self.send_message(
-            'avr/autonomous/thermal_range',
-            {'range': (lower, upper, step)}
-        )
-    
-    def set_test(self, test_name: str, test_state: bool) -> None:
-        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
-        
-    def set_spinner_speed(self, precent: float) -> None:
-        print(precent)
-        self.spinner_speed_val = int(precent)
-        
+
+    # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
         if topic == "avr/autonomous/sound": # If we're playing a sound
@@ -464,15 +470,13 @@ class AutonomyWidget(BaseTabWidget):
             name = payload['testName']
             state = payload['testState']
             if state:
-                text = "Active"
-                color = "green"
+                self.testing_states[name].setText(wrap_text("Executing...", "red"))
             else:
-                text = "Inactive"
-                color = "red"
-            self.testing_states[name].setText(wrap_text(text, color))
+                self.testing_states[name].setText("")
             
-
+    # Laptop audio handler
     def playAudio(self, fileName: str, ext: str, loops: int):
         print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
+        # TODO: Make it so user volume is set to 25% when a sound is played
         for i in range(loops):
             playsound.playsound(f'./GUI/assets/sounds/{fileName}{ext}')
