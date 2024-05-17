@@ -534,8 +534,8 @@ class ControlManager(FCMMQTTModule):
         """
         mission_plan = await self.build(kwargs["waypoints"])
         await self.upload(mission_plan)
-        await self.set_geofence(min_lat=-90, min_lon=-180, max_lat=90, max_lon=180) # Set a geofence that encompasses the entire earth (the world is my oyster)
-        await self.set_arm() # Arm the drone (Doesn't do anything if the drone is already armed)
+        # Removed the set_geofence because QGC should handle that stuff
+        # await self.set_geofence(min_lat=-90, min_lon=-180, max_lat=90, max_lon=180)
 
     @async_try_except(reraise=True)
     async def start_mission(self) -> None:

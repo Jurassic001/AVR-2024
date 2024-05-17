@@ -164,10 +164,12 @@ class Sandbox(MQTTModule):
         state = payload['testState']
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
-        elif name == 'takeoff':
+        elif name == 'upload flight test':
             self.add_mission_waypoint('takeoff', (0, 0, 1))
             self.add_mission_waypoint('land', (0, 0, 1))
-            self.upload_and_engage_mission(5)
+            self.upload_and_engage_mission(3)
+        elif name == 'start flight test':
+            self.start_mission()
         elif name == 'sound':
             self.sound_laptop("sound_1")
         elif name == 'arm':
@@ -462,8 +464,12 @@ class Sandbox(MQTTModule):
             # wait until the mission has successfully uploaded
         """
         time.sleep(delay)
-        self.setArmed(True) # Arm the drone just before the mission begins
-        time.sleep(0.1)
+        # self.start_mission()
+    
+    def start_mission(self) -> None:
+        """Arms the drone & starts the uploaded mission
+        """
+        # self.setArmed(True)
         self.send_action('start_mission')
 
     def wait_until_mission_complete(self):
