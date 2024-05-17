@@ -103,7 +103,7 @@ class Sandbox(MQTTModule):
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         # Set the flight controller's mode and armed status
         if self.states['flightMode'] != payload['mode']:
-            logger.success(f"Flight Mode Update || Flight Mode: {payload['mode']}")
+            logger.debug(f"Flight Mode Update || Flight Mode: {payload['mode']}")
             self.states['flightMode'] = payload['mode']
         self.isArmed = payload['armed']
         self.fcm_connected = True
@@ -190,7 +190,7 @@ class Sandbox(MQTTModule):
             newState = "UNKNOWN"
         
         if newState != self.states['flightEvent']:
-            logger.success(f"Flight State Update || Flight State: {newState}")
+            logger.debug(f"Flight State Update || Flight State: {newState}")
             self.states['flightEvent'] = newState
 
 
