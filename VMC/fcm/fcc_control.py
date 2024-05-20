@@ -442,17 +442,6 @@ class ControlManager(FCMMQTTModule):
                 param2 = float("nan")  # empty
                 param3 = float("nan")  # empty
 
-                # <temp>
-                try:
-                    await self.drone.param.set_float_param("MIS_TAKEOFF_ALT", 1.0)
-                except Exception as e:
-                    logger.error(e)
-                    try:
-                        await self.drone.action.set_takeoff_altitude(1.0)
-                    except Exception as e:
-                        logger.error(e)
-                # </temp>
-
             elif waypoint_type == "goto":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
                 command = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT

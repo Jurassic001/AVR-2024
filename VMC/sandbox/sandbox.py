@@ -165,9 +165,7 @@ class Sandbox(MQTTModule):
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
         elif name == 'upload flight test':
-            self.add_mission_waypoint('goto', (0, 0, 1))
-            self.add_mission_waypoint('goto', (1, 0, 1))
-            self.add_mission_waypoint('land', (1, 0, 0))
+            self.add_mission_waypoint('goto', (0, 0, 0)) # Petty test
             self.upload_and_engage_mission(3)
         elif name == 'start flight test':
             self.start_mission()
@@ -322,29 +320,28 @@ class Sandbox(MQTTModule):
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # Auton phase 1
+            # goto -> land test
             if self.building_drops[0]:
                 self.add_mission_waypoint('goto', (0, 0, 1))
-                self.add_mission_waypoint('goto', (1, 0, 1))
-                self.add_mission_waypoint('goto', (1, 0, 0))
+                self.add_mission_waypoint('land', (0, 0, 0))
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(0, False)
 
-            # Auton phase 2
+            # goto -> goto test
             if self.building_drops[1]:
-                self.add_mission_waypoint('goto', (1, 0, 1))
+                self.add_mission_waypoint('goto', (0, 0, 1))
+                self.add_mission_waypoint('goto', (0, 0, 0))
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(1, False)
 
-            # Auton phase 3
+            # Old fashioned takeoff test
             if self.building_drops[2]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=90)
-                self.upload_and_engage_mission(3)
+                self.takeoff()
                 self.setBuildingDrop(2, False)
 
-            # Auton phase 4
+            # Yaw test
             if self.building_drops[3]:
-                self.add_mission_waypoint('land', (0, 0, 0))
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=90)
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(3, False)
 
@@ -458,22 +455,24 @@ class Sandbox(MQTTModule):
         """Upload a mission to the flight controller, mission waypoints are represented in the mission_waypoints list. See the FCM readme and the fcc_control.py file for more details
 
         Args:
-            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. Defaults to -1.
+            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. If not specified, the mission will start as soon as the upload completes.
         """
         self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
         self.clear_mission_waypoints()
-        # TODO: If delay is left blank the mission should start as soon as the mission upload completes
-        """
+        # If delay is left blank the mission should start as soon as the mission upload completes
         if delay == -1:
-            # wait until the mission has successfully uploaded
-        """
-        time.sleep(delay)
-        # self.start_mission()
+            while self.states['flightEvent'] != 'mission_upload_success_event':
+                pass
+            time.sleep(.1)
+        else:
+            time.sleep(delay)
+        self.start_mission()
     
     def start_mission(self) -> None:
         """Arms the drone & starts the uploaded mission
         """
-        # self.setArmed(True)
+        self.setArmed(True)
+        time.sleep(.1)
         self.send_action('start_mission')
 
     def wait_until_mission_complete(self):
