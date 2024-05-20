@@ -256,7 +256,7 @@ class AutonomyWidget(BaseTabWidget):
         testing_layout = QtWidgets.QVBoxLayout()
         testing_groupbox.setLayout(testing_layout)
 
-        self.testing_items: list[str] = ['upload flight test', 'start flight test', 'sound', 'arm', 'disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_items: list[str] = ['sound', 'arm', 'disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
         self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test

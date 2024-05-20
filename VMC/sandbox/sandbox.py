@@ -164,13 +164,6 @@ class Sandbox(MQTTModule):
         state = payload['testState']
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
-        elif name == 'upload flight test':
-            # Test automatically uploading and starting mission with one command
-            self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-            self.add_mission_waypoint('land', (0, 0, 0))
-            self.upload_and_engage_mission()
-        elif name == 'start flight test':
-            self.start_mission()
         elif name == 'sound':
             self.sound_laptop("sound_1")
         elif name == 'arm':
@@ -308,21 +301,19 @@ class Sandbox(MQTTModule):
     
     def Autonomous(self): # What is this, headache city?
         logger.debug('Autonomous Thread: Online')
-        # auton_init: bool = False
+        auton_init: bool = False
         while True:
             if not self.autonomous:
                 continue
             
-            # # Auton initialization process
-            # if not auton_init:
-            #     self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
-            #     time.sleep(.5)
-            #     self.setArmed(True) # Arm da drone
-            #     auton_init = True
+            # Auton initialization process
+            if not auton_init:
+                self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
+                auton_init = True
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # takeoff -> go fwd -> go fwd, turn around -> land test
+            # takeoff -> go fwd -> go fwd, turn around -> land
             if self.building_drops[0]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
@@ -331,14 +322,7 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission(5)
                 self.setBuildingDrop(0, False)
 
-            # goto -> land test
-            if self.building_drops[1]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('land', (0, 0, 0))
-                self.upload_and_engage_mission(5)
-                self.setBuildingDrop(1, False)
-
-            # takeoff -> go fwd -> go fwd, turn around -> land test (No delay between upload, arm, and start)
+            # takeoff -> go fwd -> go fwd, turn around -> land (No delay between upload, arm, and start)
             if self.building_drops[2]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
@@ -347,9 +331,18 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
                 self.setBuildingDrop(2, False)
 
-            # Yaw test
+            # takeoff -> go fwd (higher degree of accuracy) -> turn around (higher degree of accuracy) -> land
+            if self.building_drops[2]:
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, acceptanceRad=.01)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=180, acceptanceRad=.01)
+                self.add_mission_waypoint('land', (1, 0, 0))
+                self.upload_and_engage_mission(5)
+                self.setBuildingDrop(2, False)
+
+            # takeoff and hold yaw
             if self.building_drops[3]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=90)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(3, False)
 
@@ -472,7 +465,7 @@ class Sandbox(MQTTModule):
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay == -1:
-            while self.states['flightEvent'] != 'request_upload_mission_completed_event':
+            while self.states['flightEvent'] != 'mission_upload_success_event':
                 pass
             time.sleep(.1)
         else:
