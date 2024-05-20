@@ -165,8 +165,10 @@ class Sandbox(MQTTModule):
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
         elif name == 'upload flight test':
-            self.add_mission_waypoint('goto', (0, 0, 0)) # Petty test
-            self.upload_and_engage_mission(3)
+            # Test automatically uploading and starting mission with one command
+            self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+            self.add_mission_waypoint('land', (0, 0, 0))
+            self.upload_and_engage_mission()
         elif name == 'start flight test':
             self.start_mission()
         elif name == 'sound':
@@ -320,18 +322,19 @@ class Sandbox(MQTTModule):
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # goto -> land test
+            # goto -> go forward -> land test
             if self.building_drops[0]:
-                self.add_mission_waypoint('goto', (0, 0, 1))
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0)
                 self.add_mission_waypoint('land', (0, 0, 0))
-                self.upload_and_engage_mission(3)
+                self.upload_and_engage_mission(5)
                 self.setBuildingDrop(0, False)
 
-            # goto -> goto test
+            # goto -> land test
             if self.building_drops[1]:
-                self.add_mission_waypoint('goto', (0, 0, 1))
-                self.add_mission_waypoint('goto', (0, 0, 0))
-                self.upload_and_engage_mission(3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.add_mission_waypoint('land', (0, 0, 0))
+                self.upload_and_engage_mission(5)
                 self.setBuildingDrop(1, False)
 
             # Old fashioned takeoff test
@@ -423,6 +426,9 @@ class Sandbox(MQTTModule):
             self.send_action("arm")
         else:
             self.send_action("disarm")
+        
+        while self.isArmed != armed: # Wait until the drone is in the requested state
+            time.sleep(.01)
     
 
     # =========================================
@@ -461,7 +467,7 @@ class Sandbox(MQTTModule):
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay == -1:
-            while self.states['flightEvent'] != 'mission_upload_success_event':
+            while self.states['flightEvent'] != 'request_upload_mission_completed_event':
                 pass
             time.sleep(.1)
         else:
