@@ -37,6 +37,8 @@ class LogFileViewWidget(QtWidgets.QTreeView):
         # open files on double click
         self.doubleClicked.connect(lambda index: os.startfile(self.filesystem_model.filePath(index)))  # type: ignore
 
+        self.setColumnWidth(0, 400) # Increase the width of the 'name' column
+
     def contextMenuEvent(self, event: QtGui.QContextMenuEvent) -> None:
         # override the normal right click event.
         menu = QtWidgets.QMenu(self)

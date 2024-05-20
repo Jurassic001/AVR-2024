@@ -228,6 +228,7 @@ class ControlManager(FCMMQTTModule):
             "goto_location_ned": self.goto_location_ned,
             "upload_mission": self.build_and_upload,
             "start_mission": self.start_mission,
+            "set_geofence": self.set_geofence,
         }
 
         dispatcher = DispatcherManager()
@@ -433,7 +434,6 @@ class ControlManager(FCMMQTTModule):
             param1 = None
             param2 = None
             param3 = None
-            param4 = None
 
             if waypoint_type == "takeoff":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_TAKEOFF
@@ -441,15 +441,13 @@ class ControlManager(FCMMQTTModule):
                 param1 = 0  # pitch
                 param2 = float("nan")  # empty
                 param3 = float("nan")  # empty
-                param4 = float("nan")  # yaw angle. NaN uses current yaw heading mode
 
             elif waypoint_type == "goto":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
                 command = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
-                param1 = 0  # hold time
-                param2 = 0  # accepteance radius
-                param3 = 0  # pass radius, 0 goes straight through / is ignored if hold time > 0
-                param4 = float("nan")  # yaw angle. NaN uses current yaw heading mode
+                param1 = waypoint['holdTime']  # hold time
+                param2 = waypoint['acceptRadius']  # acceptance radius
+                param3 = 0  # 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.
 
             elif waypoint_type == "land":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_LAND
@@ -459,7 +457,12 @@ class ControlManager(FCMMQTTModule):
                 # precision landing mode
                 param2 = mavutil.mavlink.PRECISION_LAND_MODE_DISABLED
                 param3 = float("nan")  # empty
-                param4 = float("nan")  # yaw angle. NaN uses current yaw heading mode
+
+            try:
+                yaw_angle = waypoint['yaw']
+            except KeyError as e:
+                logger.error(e)
+                yaw_angle = float("nan")
 
             # https://mavlink.io/en/messages/common.html#MAV_FRAME
             frame = mavutil.mavlink.MAV_FRAME_GLOBAL_INT
@@ -497,7 +500,7 @@ class ControlManager(FCMMQTTModule):
                     param1=param1,
                     param2=param2,
                     param3=param3,
-                    param4=param4,
+                    param4=yaw_angle,
                     x=x,
                     y=y,
                     z=z,
@@ -532,6 +535,8 @@ class ControlManager(FCMMQTTModule):
         """
         mission_plan = await self.build(kwargs["waypoints"])
         await self.upload(mission_plan)
+        # Removed the set_geofence because QGC should handle that stuff
+        # await self.set_geofence(min_lat=-90, min_lon=-180, max_lat=90, max_lon=180)
 
     @async_try_except(reraise=True)
     async def start_mission(self) -> None:
@@ -544,15 +549,15 @@ class ControlManager(FCMMQTTModule):
         await self.drone.mission_raw.start_mission()
 
     @async_try_except(reraise=True)
-    async def set_geofence(self, **kwargs) -> None:
+    async def set_geofence(self, points: dict[str, int]) -> None:
         """
         Creates and uploads an inclusive geofence given min/max lat/lon.
         """
 
-        min_lat = kwargs["min_lat"]
-        min_lon = kwargs["min_lon"]
-        max_lat = kwargs["max_lat"]
-        max_lon = kwargs["max_lon"]
+        min_lat = points["min_lat"]
+        min_lon = points["min_lon"]
+        max_lat = points["max_lat"]
+        max_lon = points["max_lon"]
 
         logger.info(
             f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"

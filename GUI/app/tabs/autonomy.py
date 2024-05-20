@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools, json, os, playsound
+import functools, json, os, playsound, threading
 from typing import List
 
 from bell.avr.mqtt.payloads import *
@@ -20,6 +20,8 @@ class AutonomyWidget(BaseTabWidget):
         self.spinner_speed_val = 1070
         self.setWindowTitle("Autonomy")
         self.spin_stop_val = 1472
+
+        self.audioIsPlaying: bool = False
 
     def build(self) -> None:
         """
@@ -52,30 +54,29 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
         
         # ==========================
-        # Recon, Thermal autoaim, spintake, Sphero controls
+        # Recon, Thermal autoaim, Spintake, Sphero controls, and Testing boxes
+
         custom_layout = QtWidgets.QHBoxLayout()
         
-            # ==========================
-            # Recon Box
+        # ==========================
+        # Recon Box
         recon_groupbox = QtWidgets.QGroupBox('Recon')
         recon_layout = QtWidgets.QVBoxLayout()
         recon_groupbox.setLayout(recon_layout)
 
-        self.recon_label = QtWidgets.QLabel()
-        self.recon_label.setText(wrap_text('Recon Disabled', 'red'))
-        self.recon_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
+        self.recon_label = QtWidgets.QLabel(wrap_text('Recon Disabled', 'red'))
         self.recon_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
         recon_layout.addWidget(self.recon_label)
 
-        custom_recon_go_button = QtWidgets.QPushButton('Go')
+        custom_recon_go_button = QtWidgets.QPushButton('Enable')
         custom_recon_go_button.clicked.connect(lambda: self.set_recon(True))
         recon_layout.addWidget(custom_recon_go_button)
         
-        custom_recon_stop_button = QtWidgets.QPushButton('Pause')
+        custom_recon_stop_button = QtWidgets.QPushButton('Disable')
         custom_recon_stop_button.clicked.connect(lambda: self.set_recon(False))
         recon_layout.addWidget(custom_recon_stop_button)
+        
+        recon_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Ignored))
         
         recon_layout.addWidget(recon_groupbox)
         custom_layout.addWidget(recon_groupbox)
@@ -124,18 +125,22 @@ class AutonomyWidget(BaseTabWidget):
         self.thermal_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
+        self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
+        thermal_layout.addWidget(self.thermal_label)
+
         thermal_layout.addWidget(thermal_groupbox)
         
         custom_layout.addWidget(thermal_groupbox)
         """
-            # ==========================
-            # Spintake Box
+        # ==========================
+        # Spintake Box
         spintake_groupbox = QtWidgets.QGroupBox('Spintake')
         spintake_layout = QtWidgets.QVBoxLayout()
         spintake_groupbox.setLayout(spintake_layout)
         spintake_groupbox.setMaximumWidth(300)
-                # ==========================
-                # Spintake Spinner Box
+
+        # ==========================
+        # Spintake Spinner Box
         spintake_spinner_groupbox = QtWidgets.QGroupBox('Spinner')
         spintake_spinner_layout = QtWidgets.QVBoxLayout()
         spintake_spinner_groupbox.setLayout(spintake_spinner_layout)
@@ -170,8 +175,9 @@ class AutonomyWidget(BaseTabWidget):
         )
         spintake_spinner_layout.addWidget(spintake_spinner_groupbox)
         spintake_layout.addWidget(spintake_spinner_groupbox)
-                # ==========================
-                # Spintake Bottom Box
+
+        # ==========================
+        # Spintake Bottom Box
         spintake_bottom_groupbox = QtWidgets.QGroupBox('Bottom')
         spintake_bottom_layout = QtWidgets.QVBoxLayout()
         spintake_bottom_groupbox.setLayout(spintake_bottom_layout)
@@ -188,17 +194,12 @@ class AutonomyWidget(BaseTabWidget):
         self.spintake_bottom_label.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
-        spintake_bottom_layout.addWidget(spintake_bottom_groupbox)
         spintake_layout.addWidget(spintake_bottom_groupbox)
-                # ==========================
-        self.spintake_label = QtWidgets.QLabel()
-        self.spintake_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        spintake_layout.addWidget(spintake_groupbox)
+
         custom_layout.addWidget(spintake_groupbox)
-            # ==========================
-            # Sphero Holder Box
+
+        # ==========================
+        # Sphero Holder Box
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
         sphero_layout = QtWidgets.QGridLayout()
         sphero_groupbox.setLayout(sphero_layout)
@@ -247,21 +248,45 @@ class AutonomyWidget(BaseTabWidget):
         sphero_all_layout.addWidget(sphero_stop_button1, 1, 2)
         sphero_layout.addWidget(sphero_all_groupbox, 1, 0, 1, 3)
         
-        self.sphero_label = QtWidgets.QLabel()
-        self.sphero_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
         custom_layout.addWidget(sphero_groupbox)
-            
-            
-            # ==========================
-        self.custom_label = QtWidgets.QLabel()
-        self.custom_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
         
-        custom_layout.addWidget(self.custom_label)
-        layout.addLayout(custom_layout, 1, 0, 1, 1)
+        # ==================================
+        # Testing box
+        testing_groupbox = QtWidgets.QGroupBox("Testing")
+        testing_layout = QtWidgets.QVBoxLayout()
+        testing_groupbox.setLayout(testing_layout)
+
+        self.testing_items: list[str] = ['sound', 'arm', 'disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_states: dict[str, QtWidgets.QLabel] = {}
+
+        # Create a name label, state label, and on/off buttons for each test
+        for str in self.testing_items:
+            test_layout = QtWidgets.QHBoxLayout()
+
+            test_name = QtWidgets.QLabel(f"{str.title()} test")
+            test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            test_layout.addWidget(test_name)
+            
+            building_state = QtWidgets.QLabel() # Only show the state of the test if it's active
+            building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            test_layout.addWidget(building_state)
+            self.testing_states.update({str: building_state}) # Add the state label to this dict so we can modify it
+            
+            building_enable_button = QtWidgets.QPushButton("Execute Test")
+            test_layout.addWidget(building_enable_button)
+            building_enable_button.clicked.connect(functools.partial(self.set_test, str, True))
+
+            # Deactivating the test partway through wouldn't do anything, so this button is useless
+            # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
+            # test_layout.addWidget(building_disable_button)
+            # building_disable_button.clicked.connect(functools.partial(self.set_test, str, False))
+
+            testing_layout.addLayout(test_layout)
+
+        custom_layout.addWidget(testing_groupbox)
+
+
+        layout.addLayout(custom_layout, 1, 0, 1, 1) # Finalize second row
 
         # ==========================
         # Buildings
@@ -309,15 +334,20 @@ class AutonomyWidget(BaseTabWidget):
             buildings_layout.addLayout(building_layout)
         layout.addWidget(buildings_groupbox, 2, 0, 4, 1)
 
+
+    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ MESSAGING FUNCTIONS //////////////////////////////
+    """
+    NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
+    the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server.
+    """
+    # ================
+    # Auton messengers
     def set_building(self, number: int, state: bool) -> None:
         # sourcery skip: assign-if-exp
         """
         Set a building state
         """
-        self.send_message(
-            "avr/autonomous/building/drop",
-            AvrAutonomousBuildingDropPayload(id=number, enabled=state),
-        )
+        self.send_message("avr/autonomous/building/drop", AvrAutonomousBuildingDropPayload(id=number, enabled=state))
 
     def set_building_all(self, state: bool) -> None:
         """
@@ -330,18 +360,17 @@ class AutonomyWidget(BaseTabWidget):
         """
         Set autonomous mode
         """
-        self.send_message(
-            "avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state)
-        )
+        self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state))
 
-        
     def set_recon(self, state: bool) -> None:
         """ Starts AVR Recon. """
-        self.send_message(
-            'avr/autonomous/recon', {'enabled': state}
-        )
-        
-            
+        self.send_message('avr/autonomous/recon', {'enabled': state})
+    
+    def set_test(self, test_name: str, test_state: bool) -> None:
+        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
+
+    # ==========================
+    # Thermal autoaim messengers
     def set_thermal_auto(self, state: bool) -> None:
         """ Starts autonomous thermal targeting. """
         self.send_message(
@@ -356,9 +385,17 @@ class AutonomyWidget(BaseTabWidget):
             color = 'red'
             
         self.thermal_label.setText(wrap_text(text, color))
-    
+
+    def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
+        config.temp_range = (lower, upper, step)
+        self.send_message(
+            'avr/autonomous/thermal_range',
+            {'range': (lower, upper, step)}
+        )
+
+    # ===================
+    # Spintake messengers
     def set_spintake_spinner(self, state: bool) -> None:
-        """ [Place Holder] """
         vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
         if state:
             self.send_message(
@@ -377,38 +414,36 @@ class AutonomyWidget(BaseTabWidget):
         "avr/pcm/set_servo_open_close",
         AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
         )
-        
+
+    def set_spinner_speed(self, precent: float) -> None:
+        print(precent)
+        self.spinner_speed_val = int(precent)
+    
+    # =======================
+    # Sphero holder messenger
     def set_sphero_holder(self, door: int, open_close: str) -> None:
         """ Open sphero gates. \n\n`door` = 0 opens/closes all.  """
         if door == 0:
             for i in range (5, 8):
-                self.send_message( #Open: 41
+                self.send_message(
                 "avr/pcm/set_servo_open_close",
                 AvrPcmSetServoOpenClosePayload(servo= i, action= open_close)
                 )
         else:
-            self.send_message( #Open: 41
+            self.send_message(
                 "avr/pcm/set_servo_open_close",
                 AvrPcmSetServoOpenClosePayload(servo= 4+door, action= open_close)
             )
-        
-    def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
-        config.temp_range = (lower, upper, step)
-        self.send_message(
-            'avr/autonomous/thermal_range',
-            {'range': (lower, upper, step)}
-        )
-        
-    def set_spinner_speed(self, precent: float) -> None:
-        print(precent)
-        self.spinner_speed_val = int(precent)
-        
+
+    # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
         if topic == "avr/autonomous/sound": # If we're playing a sound
-            self.playAudio(payload['fileName'], payload['ext'], payload['loops'])
-            # self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
-            # self.thread.start()
+            if self.audioIsPlaying:
+                return # Only one sound can be played at a time
+            self.audioIsPlaying = True
+            self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
+            self.thread.start()
         elif topic == "avr/autonomous/recon": # If the value of the recon bool is changing
             state = payload['enabled']
             if state:
@@ -436,9 +471,18 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Drop Disabled"
                 color = "red"
             self.building_states[payload['id']].setText(wrap_text(text, color))
+        elif topic == 'avr/sandbox/test': # If we're activating or deactivating a test
+            name = payload['testName']
+            state = payload['testState']
+            if state:
+                self.testing_states[name].setText(wrap_text("Executing...", "red"))
+            else:
+                self.testing_states[name].setText("")
             
-
+    # Laptop audio handler
     def playAudio(self, fileName: str, ext: str, loops: int):
-        print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
+        # print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
+        print(f'Playing {fileName}{ext}')
         for i in range(loops):
             playsound.playsound(f'./GUI/assets/sounds/{fileName}{ext}')
+        self.audioIsPlaying = False

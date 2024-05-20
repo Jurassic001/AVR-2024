@@ -25,7 +25,7 @@ class Sandbox(MQTTModule):
             'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fusion/position/ned': self.handle_pos,
-            'avr/sandbox/dev': self.handle_dev,
+            'avr/sandbox/test': self.handle_testing,
             'avr/fcm/events': self.handle_events,
             }
 
@@ -103,7 +103,7 @@ class Sandbox(MQTTModule):
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         # Set the flight controller's mode and armed status
         if self.states['flightMode'] != payload['mode']:
-            logger.success(f"Flight Mode Update || Flight Mode: {payload['mode']}")
+            logger.debug(f"Flight Mode Update || Flight Mode: {payload['mode']}")
             self.states['flightMode'] = payload['mode']
         self.isArmed = payload['armed']
         self.fcm_connected = True
@@ -159,23 +159,22 @@ class Sandbox(MQTTModule):
         # NOTE Check if direction is based on drone start or global
         self.position = [payload['n'], payload['e'], payload['d']]
         
-    def handle_dev(self, payload: dict):
-        if payload == 'test_flight':
-            async def tester():
-                logger.debug('Test Flight Starting...')
-                self.send_message('avr/fcm/capture_home', {}) # Zero NED pos
-                logger.debug('Home Captured')
-                asyncio.create_task(self.takeoff())
-                await self.wait_for_event('landed_state_in_air_event')
-                logger.debug('Takeoff Done')
-                asyncio.create_task(self.land())
-                await self.wait_for_event('landed_state_on_ground_event')
-                logger.debug('Landed')
-            asyncio.run(tester())
-
-        elif payload == 'sound_test':
-            logger.debug('Playing sound file: sound_1.WAV')
+    def handle_testing(self, payload: str):
+        name = payload['testName']
+        state = payload['testState']
+        if not state: # If a test is being deactivated then we don't need to worry about it
+            return
+        elif name == 'sound':
             self.sound_laptop("sound_1")
+        elif name == 'arm':
+            self.set_armed(True)
+        elif name == 'disarm':
+            self.set_armed(False)
+        elif name == 'Zero NED':
+            self.send_message('avr/fcm/capture_home', {})
+        
+        # Once the test has been run, mark it as inactive
+        self.send_message('avr/sandbox/test', {'testName': name, 'testState': False})
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
@@ -194,7 +193,7 @@ class Sandbox(MQTTModule):
             newState = "UNKNOWN"
         
         if newState != self.states['flightEvent']:
-            logger.success(f"Flight State Update || Flight State: {newState}")
+            logger.debug(f"Flight State Update || Flight State: {newState}")
             self.states['flightEvent'] = newState
 
 
@@ -256,15 +255,16 @@ class Sandbox(MQTTModule):
             if not self.CIC_loop:
                 continue
             
-            # Turn the lights on once the FCM is initialized
+            # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
                 self.sound_laptop("startup",".mp3") # Play startup sound
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
-                for i in range (5, 8): # Opening the sphero holders
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color)) # Turn on the lights
+                """for i in range (5, 8): # Opening the sphero holders
                     self.send_message(
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload(servo= i, action= 'open')
-                    )
+                    )"""
+                self.set_geofence(200000000, 850000000, 400000000, 1050000000) # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
             
             # Flashing the LEDs when a new apriltag ID is detected
@@ -283,7 +283,6 @@ class Sandbox(MQTTModule):
                 self.sanity = "Here"
             else:
                 self.sanity = 'Gone'
-
 
     def status(self):
         """ Shows the stats of the threads.
@@ -309,46 +308,61 @@ class Sandbox(MQTTModule):
             # Auton initialization process
             if not auton_init:
                 self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
-                time.sleep(.5)
-                self.setArmed(True) # Arm da drone
                 auton_init = True
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # Auton phase 1
+            # takeoff -> go fwd -> go fwd, turn around -> land
             if self.building_drops[0]:
-                self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1))
-                self.upload_and_engage_mission(3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('land', (2, 0, 0))
+                self.upload_and_engage_mission(5)
                 self.setBuildingDrop(0, False)
 
-            # Auton phase 2
+            # takeoff -> go fwd -> go fwd, turn around -> land (No delay between upload, arm, and start)
             if self.building_drops[1]:
-                self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1))
-                self.upload_and_engage_mission(3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('land', (2, 0, 0))
+                self.upload_and_engage_mission()
                 self.setBuildingDrop(1, False)
 
-            # Auton phase 3
+            # takeoff -> go fwd (higher degree of accuracy) -> turn around (higher degree of accuracy) -> land
             if self.building_drops[2]:
-                self.add_mission_waypoint('land', (self.position[0], self.position[1], 0))
-                self.upload_and_engage_mission(3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, acceptanceRad=.01)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=180, acceptanceRad=.01)
+                self.add_mission_waypoint('land', (1, 0, 0))
+                self.upload_and_engage_mission(5)
                 self.setBuildingDrop(2, False)
+
+            # takeoff and hold yaw
+            if self.building_drops[3]:
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.upload_and_engage_mission(3)
+                self.setBuildingDrop(3, False)
 
 
             # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
             if self.recon:
-                self.add_mission_waypoint('takeoff', (self.position[0], self.position[1], 1)) # takeoff (alt 1 meter??)
-                self.add_mission_waypoint('goto', (self.position[0]+1, self.position[1], 1)) # fwd 1 meter
-                self.add_mission_waypoint('goto', (self.position[0], self.position[1]+1, 1)) # right 1 meter
-                self.add_mission_waypoint('goto', (self.position[0]-1, self.position[1], 1)) # back 1 meter
-                self.add_mission_waypoint('goto', (self.position[0], self.position[1]-1, 1)) # left 1 meter
-                self.add_mission_waypoint('land', (self.position[0], self.position[1], 0)) # land
+                self.add_mission_waypoint('goto', (0, 0, 1)) # takeoff
+                self.add_mission_waypoint('goto', (1, 0, 1)) # fwd 1 meter
+                self.add_mission_waypoint('goto', (1, 1, 1)) # right 1 meter
+                self.add_mission_waypoint('goto', (0, 1, 1)) # back 1 meter
+                self.add_mission_waypoint('goto', (0, 0, 1)) # left 1 meter
+                self.add_mission_waypoint('land', (0, 0, 0)) # land
                 self.upload_and_engage_mission(5)
+
+                self.wait_for_state('flightMode', "MISSION") # Wait until the mission has started
 
                 self.setRecon(False)
 
 
     # ========================
-    # Drone Control Comands
+    # Drone Control Comands (Mostly depreciated)
     
     def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Depreciated
@@ -401,7 +415,66 @@ class Sandbox(MQTTModule):
         """
         self.send_action('land')
     
-    def setArmed(self, armed: bool) -> None:
+
+    # =========================================
+    # Mission and Waypoint commands
+
+    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
+        """Add a waypoint to the mission_waypoints list.
+
+        Args:
+            waypointType (str): Must be one of `goto` or `land`
+            coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
+            yaw_angle (float, optional): Heading that the drone will turn to. Defaults to 0, which is straight forward from start
+            goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
+            goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
+        """
+        if waypointType not in ['goto', 'land']:
+            if waypointType == 'takeoff': # Convert takeoff waypoints to goto waypoints
+                waypointType = 'goto'
+            else:
+                # If we dont recognize the type of the waypoint throw an error and skip the waypoint
+                logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
+                return
+        # Add the waypoint to the list of waypoints
+        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
+    
+    def clear_mission_waypoints(self) -> None:
+        """Clear the mission_waypoints list
+        """
+        self.mission_waypoints = []
+
+    def upload_and_engage_mission(self, delay: float = float("NaN")) -> None:
+        """Upload a mission to the flight controller, mission waypoints are represented in the self.mission_waypoints list.
+
+        Args:
+            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. If not specified, the mission will start as soon as the upload completes.
+        """
+        self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
+        self.clear_mission_waypoints()
+        # If delay is left blank the mission should start as soon as the mission upload completes
+        if delay == float("NaN"):
+            while self.states['flightEvent'] not in ['mission_upload_success_event', 'request_upload_mission_completed_event']:
+                time.sleep(.01)
+        else:
+            time.sleep(delay)
+        self.start_mission()
+    
+    def start_mission(self) -> None:
+        """Arms the drone & starts the uploaded mission
+        """
+        self.set_armed(True)
+        time.sleep(.1)
+        self.send_action('start_mission')
+
+
+    # ================================
+    # Send Message Commands
+
+    def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
+        self.send_action('set_geofence', {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
+    
+    def set_armed(self, armed: bool) -> None:
         """Arm or disarm the FCC
         
         Args:
@@ -411,64 +484,12 @@ class Sandbox(MQTTModule):
             self.send_action("arm")
         else:
             self.send_action("disarm")
-    
-
-    # =========================================
-    # Mission and Waypoint commands
-
-    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], isAbs: bool = False) -> None:
-        """Add a waypoint to the mission_waypoints list.
-
-        Args:
-            waypointType (str): Must be one of 'goto', 'takeoff', or 'land'
-            coords (tuple[float, float, float]): Waypoint destination coordinates, in meters, as (fwd, right, up).
-            isAbs (bool, optional): If destination coordinates are absolute. Defaults to False (Coordinates are relative by default).
-        """
-        if waypointType not in ['goto', 'takeoff', 'land']: # If we dont recognize the type of the waypoint
-            logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
-            return
-        if isAbs: # If the coordinates are absolute
-            list(coords)
-            for i in range(3):
-                coords[i] += self.start_pos[i]
-        # Add the waypoint to the list of waypoints
-        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1})
-    
-    def clear_mission_waypoints(self) -> None:
-        """Clear the mission_waypoints list.
-        """
-        self.mission_waypoints = []
-
-    def upload_and_engage_mission(self, delay: float = -1) -> None:
-        """Upload a mission to the flight controller, mission waypoints are represented in the mission_waypoints list. See the FCM readme and the fcc_control.py file for more details
-
-        Args:
-            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. Defaults to -1.
-        """
-        self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
-        self.clear_mission_waypoints()
-        # TODO: If delay is left blank the mission should start as soon as the mission upload completes
-        """
-        if delay == -1:
-            # wait until the mission has successfully uploaded
-        """
-        time.sleep(delay)
-        self.send_action('start_mission')
-    
-    def wait_until_mission_complete(self):
-        # wait until the current mission has been completed
-        # TODO: Identify the signal that's transmitted upon completing a mission
-        pass
-
-
-    # ================================
-    # Send Message Commands
+        
+        while self.isArmed != armed: # Wait until the drone is in the requested state
+            time.sleep(.01)
 
     def move_servo(self, id, angle) -> None:
-        self.send_message(
-                    "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo= id, absolute= angle)
-                )
+        self.send_message("avr/pcm/set_servo_abs",AvrPcmSetServoAbsPayload(servo=id, absolute=angle))
 
     def send_action(self, action: str, payload: dict = {}):
         """Send one of many possible action payloads to the `avr/fcm/actions` MQTT topic.
@@ -477,10 +498,7 @@ class Sandbox(MQTTModule):
             action (str): The action you want to send
             payload (dict, optional): The payload of the action you want to send. Defaults to {}.
         """
-        self.send_message(
-            'avr/fcm/actions',
-            {'action': action, 'payload': payload}
-        )
+        self.send_message('avr/fcm/actions', {'action': action, 'payload': payload})
 
     def set_laser(self, state: bool) -> None:
         self.laser_on = state
@@ -501,26 +519,23 @@ class Sandbox(MQTTModule):
             loops (int, optional): Number of loops. Currently has no effect. Defaults to 1.
         """
         # Plays the sound by publishing the sound topic with the file info as payload, which is processed & handled in autonomy.py
-        self.send_message(
-            'avr/autonomous/sound',
-            {'fileName': fileName, 'ext': ext, 'loops': loops}
-        )
+        self.send_message('avr/autonomous/sound', {'fileName': fileName, 'ext': ext, 'loops': loops})
     
     def setAutonomous(self, isEnabled: bool) -> None:
-        """Broadcast an `enabled` value for the `avr/autonomous/enable` topic. This will update boolean values on both the sandbox and the GUI.
+        """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/enable', AvrAutonomousEnablePayload(enabled=isEnabled))
     
     def setRecon(self, isEnabled: bool) -> None:
-        """Broadcast an `enabled` value for the `avr/autonomous/recon` topic. This will update boolean values on both the sandbox and the GUI.
+        """Broadcast given boolean for topic `avr/autonomous/recon`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/recon', {'enabled': isEnabled})
     
     def setBuildingDrop(self, building_id: int, isEnabled: bool) -> None:
-        """Broadcast an `id` and `enabled` value for the `avr/autonomous/building/drop` topic. This will update boolean values on both the sandbox and the GUI.
+        """Broadcast given int and boolean for topic `avr/autonomous/building/drop`, in the `id` and `enabled` payloads, respectively. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/building/drop', AvrAutonomousBuildingDropPayload(id=building_id, enabled=isEnabled))
-    
+
     
     # ================================
     # Misc/Helper commands

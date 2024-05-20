@@ -55,6 +55,7 @@ def apriltag_service(compose_services: dict) -> None:
 
 
 def fcm_service(compose_services: dict, local: bool = False, simulation=False) -> None:
+    local = True # FCM will always build locally since I've modified the fcc_control.py file
     fcm_data = {
         "depends_on": ["mqtt", "mavp2p" if not simulation else "simulator"],
         "restart": "unless-stopped",
