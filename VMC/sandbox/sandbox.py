@@ -168,9 +168,6 @@ class Sandbox(MQTTModule):
             self.add_mission_waypoint('takeoff', (0, 0, 1))
             self.add_mission_waypoint('land', (0, 0, 1))
             self.upload_and_engage_mission(3)
-            # temp:
-            time.sleep(5)
-            self.set_geofence(200000000, 900000000, 400000000, 1000000000)
         elif name == 'start flight test':
             self.start_mission()
         elif name == 'sound':
@@ -264,15 +261,16 @@ class Sandbox(MQTTModule):
             if not self.CIC_loop:
                 continue
             
-            # Turn the lights on once the FCM is initialized
+            # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
                 self.sound_laptop("startup",".mp3") # Play startup sound
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color))
-                for i in range (5, 8): # Opening the sphero holders
+                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color)) # Turn on the lights
+                """for i in range (5, 8): # Opening the sphero holders
                     self.send_message(
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload(servo= i, action= 'open')
-                    )
+                    )"""
+                self.set_geofence(200000000, 850000000, 400000000, 1050000000) # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
             
             # Flashing the LEDs when a new apriltag ID is detected
