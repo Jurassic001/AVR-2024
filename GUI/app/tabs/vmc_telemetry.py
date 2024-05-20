@@ -355,9 +355,17 @@ class VMCTelemetryWidget(BaseTabWidget):
         """
         Update euler attitude information
         """
-        self.att_r_line_edit.setText(str(payload["roll"]))
-        self.att_p_line_edit.setText(str(payload["pitch"]))
+        pitch = payload["pitch"]
+        roll = payload["roll"]
+        
+        self.att_p_line_edit.setText(str(pitch))
+        self.att_r_line_edit.setText(str(roll))
         self.att_y_line_edit.setText(str(payload["yaw"]))
+
+        if pitch < -10 or pitch > 10:
+            self.send_message('avr/autonomous/sound', {'fileName': 'pull_up', 'ext': '.mp3', 'loops': 1})
+        if roll < -5 or roll > 10:
+            self.send_message('avr/autonomous/sound', {'fileName': 'bank_angle', 'ext': '.mp3', 'loops': 1})
 
     # def update_auaternion_attitude(self, payload: AvrFcmAttitudeQuaternionMessage) -> None:
     #     """
