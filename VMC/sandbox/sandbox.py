@@ -165,8 +165,9 @@ class Sandbox(MQTTModule):
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
         elif name == 'upload flight test':
-            self.add_mission_waypoint('takeoff', (0, 0, 1))
-            self.add_mission_waypoint('land', (0, 0, 1))
+            self.add_mission_waypoint('goto', (0, 0, 1))
+            self.add_mission_waypoint('goto', (1, 0, 1))
+            self.add_mission_waypoint('land', (1, 0, 0))
             self.upload_and_engage_mission(3)
         elif name == 'start flight test':
             self.start_mission()
@@ -323,7 +324,9 @@ class Sandbox(MQTTModule):
             # \\\\\\\\\\ Button-controlled auton //////////
             # Auton phase 1
             if self.building_drops[0]:
-                self.add_mission_waypoint('takeoff', (0, 0, 1))
+                self.add_mission_waypoint('goto', (0, 0, 1))
+                self.add_mission_waypoint('goto', (1, 0, 1))
+                self.add_mission_waypoint('goto', (1, 0, 0))
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(0, False)
 
@@ -344,21 +347,6 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint('land', (0, 0, 0))
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(3, False)
-
-
-
-            # Auton TAKEOFF TO 3 METERS (Building 5 button)
-            if self.building_drops[5]:
-                self.add_mission_waypoint('takeoff', (0, 0, 3))
-                self.add_mission_waypoint('land', (0, 0, 0))
-                self.setBuildingDrop(4, False)
-
-            # Auton GOTO BEFORE TAKEOFF (Building 6 button)
-            if self.building_drops[5]:
-                self.add_mission_waypoint('goto', (0, 0, 0)) # Might change acceptance radius??
-                self.add_mission_waypoint('takeoff', (0, 0, 1))
-                self.add_mission_waypoint('land', (0, 0, 0))
-                self.setBuildingDrop(5, False)
 
 
             # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
