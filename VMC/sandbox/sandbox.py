@@ -346,6 +346,21 @@ class Sandbox(MQTTModule):
                 self.setBuildingDrop(3, False)
 
 
+
+            # Auton TAKEOFF TO 3 METERS (Building 5 button)
+            if self.building_drops[5]:
+                self.add_mission_waypoint('takeoff', (0, 0, 3))
+                self.add_mission_waypoint('land', (0, 0, 0))
+                self.setBuildingDrop(4, False)
+
+            # Auton GOTO BEFORE TAKEOFF (Building 6 button)
+            if self.building_drops[5]:
+                self.add_mission_waypoint('goto', (0, 0, 0)) # Might change acceptance radius??
+                self.add_mission_waypoint('takeoff', (0, 0, 1))
+                self.add_mission_waypoint('land', (0, 0, 0))
+                self.setBuildingDrop(5, False)
+
+
             # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
             if self.recon:
                 self.add_mission_waypoint('takeoff', (0, 0, 1)) # takeoff (alt 1 meter??)
