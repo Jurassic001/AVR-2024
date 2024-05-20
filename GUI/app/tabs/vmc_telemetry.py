@@ -3,14 +3,7 @@ from __future__ import annotations
 import json
 from typing import Dict
 
-from bell.avr.mqtt.payloads import (
-    AvrFcmAttitudeEulerPayload,
-    AvrFcmBatteryPayload,
-    AvrFcmGpsInfoPayload,
-    AvrFcmLocationGlobalPayload,
-    AvrFcmLocationLocalPayload,
-    AvrFcmStatusPayload,
-)
+from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import smear_color, wrap_text
@@ -65,7 +58,7 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         self.armed_label = QtWidgets.QLabel("")
         armed_layout.addWidget(self.armed_label)
-        """
+        
         arm_button = QtWidgets.QPushButton("Arm")
         arm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "arm", 'payload': {}}))
         armed_layout.addWidget(arm_button)
@@ -73,7 +66,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         disarm_button = QtWidgets.QPushButton("Disarm")
         disarm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "disarm", 'payload': {}}))
         armed_layout.addWidget(disarm_button)
-        """
+        
         top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
         # flight mode row
@@ -95,33 +88,65 @@ class VMCTelemetryWidget(BaseTabWidget):
         bottom_left_layout = QtWidgets.QFormLayout()
         bottom_left_groupbox.setLayout(bottom_left_layout)
 
-        # xyz row
+        # FCM xyz row
         loc_xyz_layout = QtWidgets.QHBoxLayout()
 
-        self.loc_x_line_edit = DisplayLineEdit("")
-        loc_xyz_layout.addWidget(self.loc_x_line_edit)
+        self.fcm_x_line_edit = DisplayLineEdit("")
+        loc_xyz_layout.addWidget(self.fcm_x_line_edit)
 
-        self.loc_y_line_edit = DisplayLineEdit("")
-        loc_xyz_layout.addWidget(self.loc_y_line_edit)
+        self.fcm_y_line_edit = DisplayLineEdit("")
+        loc_xyz_layout.addWidget(self.fcm_y_line_edit)
 
-        self.loc_z_line_edit = DisplayLineEdit("")
-        loc_xyz_layout.addWidget(self.loc_z_line_edit)
+        self.fcm_z_line_edit = DisplayLineEdit("")
+        loc_xyz_layout.addWidget(self.fcm_z_line_edit)
 
         bottom_left_layout.addRow(
-            QtWidgets.QLabel("Local NED (x, y, z):"), loc_xyz_layout
+            QtWidgets.QLabel("FCM Local (x, y, z):"), loc_xyz_layout
+        )
+
+        # FUS NED row
+        fus_xyz_layout = QtWidgets.QHBoxLayout()
+
+        self.fus_x_line_edit = DisplayLineEdit("")
+        fus_xyz_layout.addWidget(self.fus_x_line_edit)
+
+        self.fus_y_line_edit = DisplayLineEdit("")
+        fus_xyz_layout.addWidget(self.fus_y_line_edit)
+
+        self.fus_z_line_edit = DisplayLineEdit("")
+        fus_xyz_layout.addWidget(self.fus_z_line_edit)
+
+        bottom_left_layout.addRow(
+            QtWidgets.QLabel("FUS Local (n, e, d):"), fus_xyz_layout
+        )
+
+        # VIO NED row
+        vio_xyz_layout = QtWidgets.QHBoxLayout()
+
+        self.vio_x_line_edit = DisplayLineEdit("")
+        vio_xyz_layout.addWidget(self.vio_x_line_edit)
+
+        self.vio_y_line_edit = DisplayLineEdit("")
+        vio_xyz_layout.addWidget(self.vio_y_line_edit)
+
+        self.vio_z_line_edit = DisplayLineEdit("")
+        vio_xyz_layout.addWidget(self.vio_z_line_edit)
+
+        bottom_left_layout.addRow(
+            QtWidgets.QLabel("VIO Local (n, e, d):"), vio_xyz_layout
         )
 
         # lat, lon, alt row
         loc_lla_layout = QtWidgets.QHBoxLayout()
 
-        self.loc_lat_line_edit = DisplayLineEdit("", round_digits=8)
-        loc_lla_layout.addWidget(self.loc_lat_line_edit)
+        self.glo_lat_line_edit = DisplayLineEdit("", round_digits=8)
+        loc_lla_layout.addWidget(self.glo_lat_line_edit)
 
-        self.loc_lon_line_edit = DisplayLineEdit("", round_digits=8)
-        loc_lla_layout.addWidget(self.loc_lon_line_edit)
+        self.glo_lon_line_edit = DisplayLineEdit("", round_digits=8)
+        loc_lla_layout.addWidget(self.glo_lon_line_edit)
 
-        self.loc_alt_line_edit = DisplayLineEdit("")
-        loc_lla_layout.addWidget(self.loc_alt_line_edit)
+        self.glo_alt_line_edit = DisplayLineEdit("")
+        loc_lla_layout.addWidget(self.glo_alt_line_edit)
 
         bottom_left_layout.addRow(
             QtWidgets.QLabel("Global (lat, lon, alt):"), loc_lla_layout
@@ -137,16 +162,16 @@ class VMCTelemetryWidget(BaseTabWidget):
         # euler row
         att_rpy_layout = QtWidgets.QHBoxLayout()
 
-        self.att_r_line_edit = DisplayLineEdit("")
-        att_rpy_layout.addWidget(self.att_r_line_edit)
-
         self.att_p_line_edit = DisplayLineEdit("")
         att_rpy_layout.addWidget(self.att_p_line_edit)
+
+        self.att_r_line_edit = DisplayLineEdit("")
+        att_rpy_layout.addWidget(self.att_r_line_edit)
 
         self.att_y_line_edit = DisplayLineEdit("")
         att_rpy_layout.addWidget(self.att_y_line_edit)
 
-        bottom_right_layout.addRow(QtWidgets.QLabel("Euler (r, p , y)"), att_rpy_layout)
+        bottom_right_layout.addRow(QtWidgets.QLabel("Euler (pitch, roll, yaw)"), att_rpy_layout)
 
         # auaternion row
         # quaternion_layout = QtWidgets.QHBoxLayout()
@@ -189,13 +214,17 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.topic_status_map["avr/fcm"] = fcc_status
         module_status_layout.addWidget(fcc_status)
 
-        # pcc_status = StatusLabel("PCM")
-        # self.topic_status_map["avr/pcm"] = pcc_status
-        # status_layout.addWidget(pcc_status)
+        pcc_status = StatusLabel("PCM")
+        self.topic_status_map["avr/pcm"] = pcc_status
+        module_status_layout.addWidget(pcc_status)
 
         vio_status = StatusLabel("VIO")
         self.topic_status_map["avr/vio"] = vio_status
         module_status_layout.addWidget(vio_status)
+
+        therm_status = StatusLabel("THERMAL")
+        self.topic_status_map["avr/thermal"] = therm_status
+        module_status_layout.addWidget(therm_status)
 
         at_status = StatusLabel("AT")
         self.topic_status_map["avr/apriltag"] = at_status
@@ -216,13 +245,21 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.flight_mode_label.setText("")
 
         # position
-        self.loc_x_line_edit.setText("")
-        self.loc_y_line_edit.setText("")
-        self.loc_z_line_edit.setText("")
+        self.fcm_x_line_edit.setText("")
+        self.fcm_y_line_edit.setText("")
+        self.fcm_z_line_edit.setText("")
 
-        self.loc_lat_line_edit.setText("")
-        self.loc_lon_line_edit.setText("")
-        self.loc_alt_line_edit.setText("")
+        self.fus_x_line_edit.setText("")
+        self.fus_y_line_edit.setText("")
+        self.fus_z_line_edit.setText("")
+
+        self.vio_x_line_edit.setText("")
+        self.vio_y_line_edit.setText("")
+        self.vio_z_line_edit.setText("")
+
+        self.glo_lat_line_edit.setText("")
+        self.glo_lon_line_edit.setText("")
+        self.glo_alt_line_edit.setText("")
 
         self.att_r_line_edit.setText("")
         self.att_p_line_edit.setText("")
@@ -276,27 +313,43 @@ class VMCTelemetryWidget(BaseTabWidget):
             color = "Red"
             text = "Armed & Dangerous"
         else:
-            color = "DarkGoldenRod"
+            color = "Green"
             text = "Disarmed"
 
         self.armed_label.setText(wrap_text(text, color))
         self.flight_mode_label.setText(payload["mode"])
 
-    def update_local_location(self, payload: AvrFcmLocationLocalPayload) -> None:
+    def update_local_FCM_location(self, payload: AvrFcmLocationLocalPayload) -> None:
         """
-        Update local location information
+        Update local location information reported by the Flight Control Module
         """
-        self.loc_x_line_edit.setText(str(payload["dX"]))
-        self.loc_y_line_edit.setText(str(payload["dY"]))
-        self.loc_z_line_edit.setText(str(payload["dZ"]))
+        self.fcm_x_line_edit.setText(str(payload["dX"]))
+        self.fcm_y_line_edit.setText(str(payload["dY"]))
+        self.fcm_z_line_edit.setText(str(payload["dZ"]))
+    
+    def update_local_FUS_location(self, payload: AvrFusionPositionNedPayload) -> None:
+        """
+        Update local location information reported by the Fusion module
+        """
+        self.fus_x_line_edit.setText(str(payload["n"]))
+        self.fus_y_line_edit.setText(str(payload["e"]))
+        self.fus_z_line_edit.setText(str(payload["d"]))
+
+    def update_local_VIO_location(self, payload: AvrVioPositionNedPayload) -> None:
+        """
+        Update local location information reported by the Tracking camera
+        """
+        self.vio_x_line_edit.setText(str(payload["n"]))
+        self.vio_y_line_edit.setText(str(payload["e"]))
+        self.vio_z_line_edit.setText(str(payload["d"]))
 
     def update_global_location(self, payload: AvrFcmLocationGlobalPayload) -> None:
         """
         Update global location information
         """
-        self.loc_lat_line_edit.setText(str(payload["lat"]))
-        self.loc_lon_line_edit.setText(str(payload["lon"]))
-        self.loc_alt_line_edit.setText(str(payload["alt"]))
+        self.glo_lat_line_edit.setText(str(payload["lat"]))
+        self.glo_lon_line_edit.setText(str(payload["lon"]))
+        self.glo_alt_line_edit.setText(str(payload["alt"]))
 
     def update_euler_attitude(self, payload: AvrFcmAttitudeEulerPayload) -> None:
         """
@@ -323,7 +376,9 @@ class VMCTelemetryWidget(BaseTabWidget):
             "avr/fcm/gps_info": self.update_satellites,
             "avr/fcm/battery": self.update_battery,
             "avr/fcm/status": self.update_status,
-            "avr/fcm/location/local": self.update_local_location,
+            "avr/fcm/location/local": self.update_local_FCM_location,
+            "avr/fusion/position/ned": self.update_local_FUS_location,
+            "avr/vio/position/ned": self.update_local_VIO_location,
             "avr/fcm/location/global": self.update_global_location,
             "avr/fcm/attitude/euler": self.update_euler_attitude,
         }

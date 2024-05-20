@@ -21,6 +21,8 @@ class AutonomyWidget(BaseTabWidget):
         self.setWindowTitle("Autonomy")
         self.spin_stop_val = 1472
 
+        self.audioIsPlaying: bool = False
+
     def build(self) -> None:
         """
         Build the GUI layout
@@ -437,6 +439,9 @@ class AutonomyWidget(BaseTabWidget):
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
         if topic == "avr/autonomous/sound": # If we're playing a sound
+            if self.audioIsPlaying:
+                return # Only one sound can be played at a time
+            self.audioIsPlaying = True
             self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
             self.thread.start()
         elif topic == "avr/autonomous/recon": # If the value of the recon bool is changing
@@ -476,7 +481,8 @@ class AutonomyWidget(BaseTabWidget):
             
     # Laptop audio handler
     def playAudio(self, fileName: str, ext: str, loops: int):
-        print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
-        # TODO: Make it so user volume is set to 25% when a sound is played
+        # print(f'Playing \"{fileName}{ext}\" {loops} time(s)')
+        print(f'Playing {fileName}{ext}')
         for i in range(loops):
             playsound.playsound(f'./GUI/assets/sounds/{fileName}{ext}')
+        self.audioIsPlaying = False

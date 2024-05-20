@@ -18,7 +18,9 @@ Documentation is located on the `docs` branch.
 
 ## To do
 
-- ~~Add startup sound~~
+- Complete an autonomous flight test (takeoff, go forward, land)
+- Complete an autonomous flight that moves the drone along a predetermined path, with turns and holds at several points along the path
+- Complete an autonomous flight that involves scanning several apriltags while moving along a predetermined flight path
 
 ### Brainstorming
 
