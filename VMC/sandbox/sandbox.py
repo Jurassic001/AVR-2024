@@ -168,6 +168,9 @@ class Sandbox(MQTTModule):
             self.add_mission_waypoint('takeoff', (0, 0, 1))
             self.add_mission_waypoint('land', (0, 0, 1))
             self.upload_and_engage_mission(3)
+            # temp:
+            time.sleep(5)
+            self.set_geofence(200000000, 900000000, 400000000, 1000000000)
         elif name == 'start flight test':
             self.start_mission()
         elif name == 'sound':
@@ -480,6 +483,9 @@ class Sandbox(MQTTModule):
 
     # ================================
     # Send Message Commands
+
+    def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
+        self.send_action('set_geofence', {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
 
     def move_servo(self, id, angle) -> None:
         self.send_message("avr/pcm/set_servo_abs",AvrPcmSetServoAbsPayload(servo=id, absolute=angle))

@@ -228,6 +228,7 @@ class ControlManager(FCMMQTTModule):
             "goto_location_ned": self.goto_location_ned,
             "upload_mission": self.build_and_upload,
             "start_mission": self.start_mission,
+            "set_geofence": self.set_geofence,
         }
 
         dispatcher = DispatcherManager()
@@ -548,15 +549,15 @@ class ControlManager(FCMMQTTModule):
         await self.drone.mission_raw.start_mission()
 
     @async_try_except(reraise=True)
-    async def set_geofence(self, **kwargs) -> None:
+    async def set_geofence(self, points: dict[str, int]) -> None:
         """
         Creates and uploads an inclusive geofence given min/max lat/lon.
         """
 
-        min_lat = kwargs["min_lat"]
-        min_lon = kwargs["min_lon"]
-        max_lat = kwargs["max_lat"]
-        max_lon = kwargs["max_lon"]
+        min_lat = points["min_lat"]
+        min_lon = points["min_lon"]
+        max_lat = points["max_lat"]
+        max_lon = points["max_lon"]
 
         logger.info(
             f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"
