@@ -322,11 +322,12 @@ class Sandbox(MQTTModule):
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # goto -> go forward -> land test
+            # takeoff -> go fwd -> go fwd, turn around -> land test
             if self.building_drops[0]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('land', (0, 0, 0))
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('land', (2, 0, 0))
                 self.upload_and_engage_mission(5)
                 self.setBuildingDrop(0, False)
 
@@ -337,9 +338,13 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission(5)
                 self.setBuildingDrop(1, False)
 
-            # Old fashioned takeoff test
+            # takeoff -> go fwd -> go fwd, turn around -> land test (No delay between upload, arm, and start)
             if self.building_drops[2]:
-                self.takeoff()
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('land', (2, 0, 0))
+                self.upload_and_engage_mission()
                 self.setBuildingDrop(2, False)
 
             # Yaw test
