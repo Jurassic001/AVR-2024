@@ -167,9 +167,9 @@ class Sandbox(MQTTModule):
         elif name == 'sound':
             self.sound_laptop("sound_1")
         elif name == 'arm':
-            self.setArmed(True)
+            self.set_armed(True)
         elif name == 'disarm':
-            self.setArmed(False)
+            self.set_armed(False)
         elif name == 'Zero NED':
             self.send_message('avr/fcm/capture_home', {})
         
@@ -284,7 +284,6 @@ class Sandbox(MQTTModule):
             else:
                 self.sanity = 'Gone'
 
-
     def status(self):
         """ Shows the stats of the threads.
         """
@@ -323,13 +322,13 @@ class Sandbox(MQTTModule):
                 self.setBuildingDrop(0, False)
 
             # takeoff -> go fwd -> go fwd, turn around -> land (No delay between upload, arm, and start)
-            if self.building_drops[2]:
+            if self.building_drops[1]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
                 self.add_mission_waypoint('land', (2, 0, 0))
                 self.upload_and_engage_mission()
-                self.setBuildingDrop(2, False)
+                self.setBuildingDrop(1, False)
 
             # takeoff -> go fwd (higher degree of accuracy) -> turn around (higher degree of accuracy) -> land
             if self.building_drops[2]:
@@ -349,19 +348,21 @@ class Sandbox(MQTTModule):
 
             # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
             if self.recon:
-                self.add_mission_waypoint('takeoff', (0, 0, 1)) # takeoff (alt 1 meter??)
+                self.add_mission_waypoint('goto', (0, 0, 1)) # takeoff
                 self.add_mission_waypoint('goto', (1, 0, 1)) # fwd 1 meter
-                self.add_mission_waypoint('goto', (0, 1, 1)) # right 1 meter
-                self.add_mission_waypoint('goto', (-1, 0, 1)) # back 1 meter
-                self.add_mission_waypoint('goto', (0, -1, 1)) # left 1 meter
+                self.add_mission_waypoint('goto', (1, 1, 1)) # right 1 meter
+                self.add_mission_waypoint('goto', (0, 1, 1)) # back 1 meter
+                self.add_mission_waypoint('goto', (0, 0, 1)) # left 1 meter
                 self.add_mission_waypoint('land', (0, 0, 0)) # land
                 self.upload_and_engage_mission(5)
+
+                self.wait_for_state('flightMode', "MISSION") # Wait until the mission has started
 
                 self.setRecon(False)
 
 
     # ========================
-    # Drone Control Comands
+    # Drone Control Comands (Mostly depreciated)
     
     def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
         """ Depreciated
@@ -414,7 +415,66 @@ class Sandbox(MQTTModule):
         """
         self.send_action('land')
     
-    def setArmed(self, armed: bool) -> None:
+
+    # =========================================
+    # Mission and Waypoint commands
+
+    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
+        """Add a waypoint to the mission_waypoints list.
+
+        Args:
+            waypointType (str): Must be one of `goto` or `land`
+            coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
+            yaw_angle (float, optional): Heading that the drone will turn to. Defaults to 0, which is straight forward from start
+            goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
+            goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
+        """
+        if waypointType not in ['goto', 'land']:
+            if waypointType == 'takeoff': # Convert takeoff waypoints to goto waypoints
+                waypointType = 'goto'
+            else:
+                # If we dont recognize the type of the waypoint throw an error and skip the waypoint
+                logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
+                return
+        # Add the waypoint to the list of waypoints
+        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
+    
+    def clear_mission_waypoints(self) -> None:
+        """Clear the mission_waypoints list
+        """
+        self.mission_waypoints = []
+
+    def upload_and_engage_mission(self, delay: float = float("NaN")) -> None:
+        """Upload a mission to the flight controller, mission waypoints are represented in the self.mission_waypoints list.
+
+        Args:
+            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. If not specified, the mission will start as soon as the upload completes.
+        """
+        self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
+        self.clear_mission_waypoints()
+        # If delay is left blank the mission should start as soon as the mission upload completes
+        if delay == float("NaN"):
+            while self.states['flightEvent'] not in ['mission_upload_success_event', 'request_upload_mission_completed_event']:
+                time.sleep(.01)
+        else:
+            time.sleep(delay)
+        self.start_mission()
+    
+    def start_mission(self) -> None:
+        """Arms the drone & starts the uploaded mission
+        """
+        self.set_armed(True)
+        time.sleep(.1)
+        self.send_action('start_mission')
+
+
+    # ================================
+    # Send Message Commands
+
+    def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
+        self.send_action('set_geofence', {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
+    
+    def set_armed(self, armed: bool) -> None:
         """Arm or disarm the FCC
         
         Args:
@@ -427,69 +487,6 @@ class Sandbox(MQTTModule):
         
         while self.isArmed != armed: # Wait until the drone is in the requested state
             time.sleep(.01)
-    
-
-    # =========================================
-    # Mission and Waypoint commands
-
-    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], yaw_angle: float = float("nan"), goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
-        """Add a waypoint to the mission_waypoints list.
-        NOTE: At this time I am assuming that coordinates are relative to current position
-
-        Args:
-            waypointType (str): Must be one of `goto`, `takeoff`, or `land`
-            coords (tuple[float, float, float]): Waypoint destination coordinates, in meters, as (fwd, right, up)
-            yaw_angle (float, optional): Heading that the drone will turn to. Defaults to float("nan"), which will maintain the current heading mode (most likely straight forward)
-            goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
-            goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
-        """
-        if waypointType not in ['goto', 'takeoff', 'land']:
-            # If we dont recognize the type of the waypoint throw an error and skip the waypoint
-            logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
-            return
-        # Add the waypoint to the list of waypoints
-        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
-    
-    def clear_mission_waypoints(self) -> None:
-        """Clear the mission_waypoints list
-        """
-        self.mission_waypoints = []
-
-    def upload_and_engage_mission(self, delay: float = -1) -> None:
-        """Upload a mission to the flight controller, mission waypoints are represented in the mission_waypoints list. See the FCM readme and the fcc_control.py file for more details
-
-        Args:
-            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. If not specified, the mission will start as soon as the upload completes.
-        """
-        self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
-        self.clear_mission_waypoints()
-        # If delay is left blank the mission should start as soon as the mission upload completes
-        if delay == -1:
-            while self.states['flightEvent'] != 'mission_upload_success_event':
-                pass
-            time.sleep(.1)
-        else:
-            time.sleep(delay)
-        self.start_mission()
-    
-    def start_mission(self) -> None:
-        """Arms the drone & starts the uploaded mission
-        """
-        self.setArmed(True)
-        time.sleep(.1)
-        self.send_action('start_mission')
-
-    def wait_until_mission_complete(self):
-        # wait until the current mission has been completed
-        # TODO: Identify the signal that's transmitted upon completing a mission (Theory: It's the hold mode)
-        pass
-
-
-    # ================================
-    # Send Message Commands
-
-    def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
-        self.send_action('set_geofence', {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
 
     def move_servo(self, id, angle) -> None:
         self.send_message("avr/pcm/set_servo_abs",AvrPcmSetServoAbsPayload(servo=id, absolute=angle))
