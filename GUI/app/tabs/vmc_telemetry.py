@@ -21,6 +21,8 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         self.setWindowTitle("VMC Telemetry")
 
+        self.last_velo: tuple[float, float, float] = (0.0, 0.0, 0.0)
+
     def build(self) -> None:
         """
         Build the GUI layout
@@ -66,6 +68,11 @@ class VMCTelemetryWidget(BaseTabWidget):
         disarm_button = QtWidgets.QPushButton("Disarm")
         disarm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "disarm", 'payload': {}}))
         armed_layout.addWidget(disarm_button)
+
+        kill_button = QtWidgets.QPushButton("Kill")
+        # kill_button.setStyleSheet("font: bold")
+        kill_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "kill", 'payload': {}}))
+        armed_layout.addWidget(kill_button)
         
         top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
@@ -155,7 +162,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         bottom_layout.addWidget(bottom_left_groupbox)
 
         # bottom-right quadrant
-        bottom_right_groupbox = QtWidgets.QGroupBox("Attitude")
+        bottom_right_groupbox = QtWidgets.QGroupBox("Velocity & Attitude")
         bottom_right_layout = QtWidgets.QFormLayout()
         bottom_right_groupbox.setLayout(bottom_right_layout)
 
@@ -173,24 +180,20 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         bottom_right_layout.addRow(QtWidgets.QLabel("Euler (pitch, roll, yaw)"), att_rpy_layout)
 
-        # auaternion row
-        # quaternion_layout = QtWidgets.QHBoxLayout()
+        # velocity row
+        fcm_vel_layout = QtWidgets.QHBoxLayout()
 
-        # self.att_w_line_edit = DisplayLineEdit("")
-        # quaternion_layout.addWidget(self.att_w_line_edit)
+        self.vel_x_line_edit = DisplayLineEdit("")
+        fcm_vel_layout.addWidget(self.vel_x_line_edit)
 
-        # self.att_x_line_edit = DisplayLineEdit("")
-        # quaternion_layout.addWidget(self.att_x_line_edit)
+        self.vel_y_line_edit = DisplayLineEdit("")
+        fcm_vel_layout.addWidget(self.vel_y_line_edit)
 
-        # self.att_y_line_edit = DisplayLineEdit("")
-        # quaternion_layout.addWidget(self.att_y_line_edit)
+        self.vel_z_line_edit = DisplayLineEdit("")
+        fcm_vel_layout.addWidget(self.vel_z_line_edit)
 
-        # self.att_z_line_edit = DisplayLineEdit("")
-        # quaternion_layout.addWidget(self.att_z_line_edit)
+        bottom_right_layout.addRow(QtWidgets.QLabel("Velocity (fwd, right, up)"), fcm_vel_layout)
 
-        # bottom_right_layout.addRow(
-        #     QtWidgets.QLabel("Quaternion (w, x, y, z):"), quaternion_layout
-        # )
 
         bottom_layout.addWidget(bottom_right_groupbox)
 
@@ -264,6 +267,10 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.att_r_line_edit.setText("")
         self.att_p_line_edit.setText("")
         self.att_y_line_edit.setText("")
+
+        self.vel_x_line_edit.setText("")
+        self.vel_y_line_edit.setText("")
+        self.vel_z_line_edit.setText("")
 
     def update_satellites(self, payload: AvrFcmGpsInfoPayload) -> None:
         """
@@ -366,15 +373,24 @@ class VMCTelemetryWidget(BaseTabWidget):
             self.send_message('avr/autonomous/sound', {'fileName': 'pull_up', 'ext': '.mp3', 'loops': 1})
         if roll < -5 or roll > 5:
             self.send_message('avr/autonomous/sound', {'fileName': 'bank_angle', 'ext': '.mp3', 'loops': 1})
+    
+    def update_FCM_velocity(self, payload: AvrFcmVelocityPayload) -> None:
+        """
+        Update velocity information reported by the Flight Control Module
+        """
+        x_velo = payload["vX"]
+        y_velo = payload["vY"]
+        z_velo = payload["vZ"]
 
-    # def update_auaternion_attitude(self, payload: AvrFcmAttitudeQuaternionMessage) -> None:
-    #     """
-    #     Update euler attitude information
-    #     """
-    #     self.att_w_line_edit.setText(str(payload["w"]))
-    #     self.att_x_line_edit.setText(str(payload["x"]))
-    #     self.att_y_line_edit.setText(str(payload["y"]))
-    #     self.att_z_line_edit.setText(str(payload["z"]))
+        self.vel_x_line_edit.setText(str(x_velo))
+        self.vel_y_line_edit.setText(str(y_velo))
+        self.vel_z_line_edit.setText(str(z_velo))
+
+        # TODO: if velocity drops from a nonzero number straight to zero with no/slight gradient (indicating that the killswitch was triggered) play the kill_active sound.
+        # NOTE: determine if the velocity value is based on motor speed or actual drone velocity at that time
+
+        # self.send_message('avr/autonomous/sound', {'fileName': 'kill_active', 'ext': '.mp3', 'loops': 1})
+
 
     def process_message(self, topic: str, payload: str) -> None:
         """
@@ -389,6 +405,7 @@ class VMCTelemetryWidget(BaseTabWidget):
             "avr/vio/position/ned": self.update_local_VIO_location,
             "avr/fcm/location/global": self.update_global_location,
             "avr/fcm/attitude/euler": self.update_euler_attitude,
+            "avr/fcm/velocity": self.update_FCM_velocity,
         }
 
         # discard topics we don't recognize

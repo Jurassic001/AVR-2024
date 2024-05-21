@@ -22,9 +22,10 @@ class Sandbox(MQTTModule):
             'avr/autonomous/thermal_range': self.handle_thermal_range,
             'avr/autonomous/thermal_targeting': self.handle_thermal_tracker,
             'avr/apriltags/visible': self.handle_apriltags,
-            'avr/vio/position/ned': self.handle_vio_position,
             'avr/sandbox/user_in': self.handle_user_in,
-            'avr/fusion/position/ned': self.handle_pos,
+            'avr/fcm/location/local': self.handle_fcm_pos,
+            'avr/fusion/position/ned': self.handle_fus_pos,
+            'avr/fcm/attitude/euler': self.handle_attitude,
             'avr/sandbox/test': self.handle_testing,
             'avr/fcm/events': self.handle_events,
             }
@@ -40,10 +41,13 @@ class Sandbox(MQTTModule):
         self.thermalAutoAim: bool = False
         
         # Position vars
-        self.position: list = [0, 0, 0]
-        self.start_pos: tuple = (180, 50, 0)
+        self.fcm_position: list = [0, 0, 0]
+        self.fus_position: list = [0, 0, 0]
+        self.attitude: dict[str, float] = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
+        self.start_pos: tuple = (0, 0, 0) # In meters
+        self.landing_pads: dict[str, tuple[float, float, float]] = {'start': (0.0, 0.0, 0.0), 'end': (0.0, 0.0, 0.0)} # This is in meters, so compare to FCM coords, not Fusion coords
+        # NOTE these numbers are old, and in inches:
         self.building_loc: dict[str, tuple[int, int, int]] = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
-        self.landing_pads: dict[str, tuple[int, int, int]] = {'ground': (180, 50, 12), 'building': (231, 85, 42)}
         
         # Auton vars
         self.mission_waypoints: list[dict] = []
@@ -125,11 +129,6 @@ class Sandbox(MQTTModule):
             self.apriltag_ids.append(payload['tags'][0]['id'])
             self.flash_queue.append(payload['tags'][0]['id'])
             logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
-    
-    def handle_vio_position(self, payload: AvrVioPositionNedPayload) -> None:
-        self.position = [payload['n'], # X
-                         payload['e'], # Y
-                         payload['d']] # Z
         
     def handle_user_in(self, payload: dict) -> None:
         try:
@@ -154,11 +153,18 @@ class Sandbox(MQTTModule):
         self.target_range = payload['range'][0:2]
         logger.debug(self.target_range)
         self.targeting_step = int(payload['range'][2])
-        
-    def handle_pos(self, payload: AvrFusionPositionNedPayload):
-        # NOTE Check if direction is based on drone start or global
-        self.position = [payload['n'], payload['e'], payload['d']]
-        
+
+    def handle_fcm_pos(self, payload: AvrFcmLocationLocalPayload) -> None:
+        self.fcm_position = [payload['dX'], payload['dY'], payload['dZ']*-1]
+    
+    def handle_fus_pos(self, payload: AvrFusionPositionNedPayload) -> None:
+        self.fus_position = [payload['n'], payload['e'], payload['d']*-1]
+    
+    def handle_attitude(self, payload: AvrFcmAttitudeEulerPayload) -> None:
+        self.attitude["pitch"] = payload["pitch"]
+        self.attitude["roll"] = payload["roll"]
+        self.attitude["yaw"] = payload["yaw"]
+
     def handle_testing(self, payload: str):
         name = payload['testName']
         state = payload['testState']
@@ -277,9 +283,18 @@ class Sandbox(MQTTModule):
                     del self.flash_queue[0]
                 else:
                     last_flash['iter'] += 1
+            
+            # Process to detect if we're too low outside of a landing area and sound an alarm
+            if self.fcm_position[2] < 1.0 and self.isArmed: # if we're lower than 1 meter and the drone is armed
+                for key in self.landing_pads.keys(): # for each landing pad in the dict of landing pads
+                    for i in range(2): # compare current x/y with landing pad x/y
+                        if (self.fcm_position[i] > self.landing_pads[key][i] + .2) or (self.fcm_position[i] < self.landing_pads[key][i] - .2):
+                            # if not within .2 meters of a landing pad, play warning sound
+                            self.sound_laptop("pull_up", ".mp3")
+                            break
 
             # Don't know what coords this corresponds to but it might be important
-            if self.position == (42, 42, 42):
+            if self.fus_position == (42, 42, 42):
                 self.sanity = "Here"
             else:
                 self.sanity = 'Gone'
@@ -374,7 +389,7 @@ class Sandbox(MQTTModule):
             heading (float, optional): Heading that the drone will face while moving (?) as a decimal (?). Defaults to 0.
             pathing (bool, optional): If the AVR will attempt to path around buildings (?). Defaults to False.
         """
-        if not pathing or not self.col_test.path_check(self.position, pos):
+        if not pathing or not self.col_test.path_check(self.fus_position, pos):
             relative_pos = [0, 0, 0]
             for i in range(3):
                 # Get the relative coords of the destination by adding the absolute position to the starting position
@@ -387,12 +402,12 @@ class Sandbox(MQTTModule):
         else: # Pathfinding process
             if self.do_pathfinding:
                 # Paths points along the way to the target destination (?)
-                pathed_positions = self.col_test.path_find(self.position, pos)
+                pathed_positions = self.col_test.path_find(self.fus_position, pos)
                 for p_pos in pathed_positions:
-                    self.move(self.position, p_pos)
+                    self.move(self.fus_position, p_pos)
                     time.sleep(.5)
             else: # Path obstructed (?)
-                logger.debug(f'[({self.position})->({pos})] Path obstructed. Movment command canceled.')
+                logger.debug(f'[({self.fus_position})->({pos})] Path obstructed. Movment command canceled.')
     
     def takeoff(self, alt: float = 1.0, isMeters: bool = True) -> None:
         """ Depreciated
