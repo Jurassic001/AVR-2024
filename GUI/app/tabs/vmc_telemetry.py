@@ -370,9 +370,9 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.att_y_line_edit.setText(str(payload["yaw"]))
 
         if pitch < -10 or pitch > 10:
-            self.send_message('avr/autonomous/sound', {'fileName': 'pull_up', 'ext': '.mp3', 'loops': 1})
+            self.send_message('avr/autonomous/sound', {"fileName": "pull_up", "ext": ".mp3", "loops": 1})
         if roll < -5 or roll > 5:
-            self.send_message('avr/autonomous/sound', {'fileName': 'bank_angle', 'ext': '.mp3', 'loops': 1})
+            self.send_message('avr/autonomous/sound', {"fileName": "bank_angle", "ext": ".mp3", "loops": 1})
     
     def update_FCM_velocity(self, payload: AvrFcmVelocityPayload) -> None:
         """
