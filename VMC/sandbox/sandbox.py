@@ -265,11 +265,14 @@ class Sandbox(MQTTModule):
             if self.fcm_connected and not light_init:
                 self.sound_laptop("startup",".mp3") # Play startup sound
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color)) # Turn on the lights
-                """for i in range (5, 8): # Opening the sphero holders
+                """
+                FROM LAST YEAR
+                for i in range (5, 8): # Opening the sphero holders
                     self.send_message(
                     "avr/pcm/set_servo_open_close",
                     AvrPcmSetServoOpenClosePayload(servo= i, action= 'open')
-                    )"""
+                    )
+                """
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000) # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
             
@@ -374,61 +377,6 @@ class Sandbox(MQTTModule):
                 self.wait_for_state('flightMode', "MISSION") # Wait until the mission has started
 
                 self.setRecon(False)
-
-
-    # ========================
-    # Drone Control Comands (Mostly depreciated)
-    
-    def move(self, pos: tuple, heading: float = 0, pathing: bool = False) -> None:
-        """ Depreciated
-        -
-        Move the AVR to a specified position on the field
-
-        Args:
-            pos (tuple): Absolute position on the field, in inches, as (x: fwd, y: right, z: up)
-            heading (float, optional): Heading that the drone will face while moving (?) as a decimal (?). Defaults to 0.
-            pathing (bool, optional): If the AVR will attempt to path around buildings (?). Defaults to False.
-        """
-        if not pathing or not self.col_test.path_check(self.fus_position, pos):
-            relative_pos = [0, 0, 0]
-            for i in range(3):
-                # Get the relative coords of the destination by adding the absolute position to the starting position
-                relative_pos[i] = self.inchesToMeters(pos[i]) + self.start_pos[i]
-            # Reverse the value of the Z coord since the MQTT syntax is <dis_down> for some reason
-            relative_pos[2] *= -1
-            # Report the destination and send the command
-            logger.debug(f'NED: {relative_pos}')
-            self.send_action('goto_location_ned', {'n': relative_pos[0], 'e': relative_pos[1], 'd': relative_pos[2], 'heading': heading})
-        else: # Pathfinding process
-            if self.do_pathfinding:
-                # Paths points along the way to the target destination (?)
-                pathed_positions = self.col_test.path_find(self.fus_position, pos)
-                for p_pos in pathed_positions:
-                    self.move(self.fus_position, p_pos)
-                    time.sleep(.5)
-            else: # Path obstructed (?)
-                logger.debug(f'[({self.fus_position})->({pos})] Path obstructed. Movment command canceled.')
-    
-    def takeoff(self, alt: float = 1.0, isMeters: bool = True) -> None:
-        """ Depreciated
-        -
-        Tell the AVR to takeoff
-
-        Args:
-            alt (float): Height that the AVR will takeoff to in meters. Defaults to 1.0.
-            isMeters (bool, optional): If the provided measurement is in meters. Defaults to True.
-        """
-        if isMeters:
-            self.send_action('takeoff', {'alt': alt})
-        else:
-            self.send_action('takeoff', {'alt': round(self.inchesToMeters(alt), 1)})
-    
-    def land(self) -> None:
-        """ Depreciated
-        -
-        Land the AVR
-        """
-        self.send_action('land')
     
 
     # =========================================
