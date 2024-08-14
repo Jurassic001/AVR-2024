@@ -368,11 +368,6 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.att_p_line_edit.setText(str(pitch))
         self.att_r_line_edit.setText(str(roll))
         self.att_y_line_edit.setText(str(payload["yaw"]))
-
-        if pitch < -10 or pitch > 10:
-            self.send_message('avr/autonomous/sound', {"fileName": "pull_up", "ext": ".mp3", "loops": 1})
-        if roll < -5 or roll > 5:
-            self.send_message('avr/autonomous/sound', {"fileName": "bank_angle", "ext": ".mp3", "loops": 1})
     
     def update_FCM_velocity(self, payload: AvrFcmVelocityPayload) -> None:
         """
@@ -385,11 +380,6 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.vel_x_line_edit.setText(str(x_velo))
         self.vel_y_line_edit.setText(str(y_velo))
         self.vel_z_line_edit.setText(str(z_velo))
-
-        # TODO: if velocity drops from a nonzero number straight to zero with no/slight gradient (indicating that the killswitch was triggered) play the kill_active sound.
-        # NOTE: determine if the velocity value is based on motor speed or actual drone velocity at that time
-
-        # self.send_message('avr/autonomous/sound', {'fileName': 'kill_active', 'ext': '.mp3', 'loops': 1})
 
 
     def process_message(self, topic: str, payload: str) -> None:

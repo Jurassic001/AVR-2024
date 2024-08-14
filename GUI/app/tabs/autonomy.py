@@ -21,7 +21,6 @@ class AutonomyWidget(BaseTabWidget):
         self.setWindowTitle("Autonomy")
         self.spin_stop_val = 1472
 
-        self.audioIsPlaying: bool = False
 
     def build(self) -> None:
         """
@@ -438,12 +437,29 @@ class AutonomyWidget(BaseTabWidget):
     # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
-        if topic == "avr/autonomous/sound": # If we're playing a sound
-            if self.audioIsPlaying:
-                return # Only one sound can be played at a time
-            self.audioIsPlaying = True
-            self.thread = threading.Thread(target=self.playAudio, args=(payload['fileName'], payload['ext'], payload['loops']))
-            self.thread.start()
+        if topic == "avr/autonomous/sound" or "avr/fcm/attitude/euler": # If we're playing a sound
+            try: # Check to see if the audio thread is active
+                if self.audio_thread.is_alive():
+                    return
+            except:
+                pass
+            if topic == "avr/fcm/attitude/euler":
+                pitch = payload["pitch"]
+                roll = payload["roll"]
+                if pitch < -10 or pitch > 10:
+                    fileName = "pull_up"
+                    ext = ".mp3"
+                    loops = 1
+                elif roll < -5 or roll > 5:
+                    fileName = "bank_angle"
+                    ext = ".mp3"
+                    loops = 1
+            else:
+                fileName = payload['fileName']
+                ext = payload['ext']
+                loops = payload['loops']
+            self.audio_thread = threading.Thread(target=self.playAudio, args=(fileName, ext, loops))
+            self.audio_thread.start()
         elif topic == "avr/autonomous/recon": # If the value of the recon bool is changing
             state = payload['enabled']
             if state:
@@ -485,4 +501,3 @@ class AutonomyWidget(BaseTabWidget):
         print(f'Playing {fileName}{ext}')
         for i in range(loops):
             playsound.playsound(f'./GUI/assets/sounds/{fileName}{ext}')
-        self.audioIsPlaying = False

@@ -288,7 +288,7 @@ class Sandbox(MQTTModule):
                     for i in range(2): # compare current x/y with landing pad x/y
                         if (self.fcm_position[i] > self.landing_pads[key][i] + .2) or (self.fcm_position[i] < self.landing_pads[key][i] - .2):
                             # if not within .2 meters of a landing pad, play warning sound
-                            self.sound_laptop("pull_up", ".mp3")
+                            self.sound_laptop("too_low", ".mp3")
                             break
 
     def status(self):
@@ -346,9 +346,17 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission(5)
                 self.setBuildingDrop(2, False)
 
-            # takeoff and hold yaw
+            # takeoff, move in a square, land - while using system yaw heading mode
             if self.building_drops[3]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=float('nan'))
+                self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=float('nan'))
+                self.add_mission_waypoint('goto', (0, 1, 1), yaw_angle=float('nan'))
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=float('nan'))
+                self.add_mission_waypoint('land', (0, 0, 0), yaw_angle=0)
+                # float('nan') # Use the current system yaw heading mode to set the yaw angle
+                # PX4 Discussion: https://discuss.px4.io/t/mpc-yaw-mode-0-vs-3/21162
+                # MAVLINK msgs: https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(3, False)
 
