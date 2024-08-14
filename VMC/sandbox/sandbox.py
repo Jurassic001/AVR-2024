@@ -16,12 +16,12 @@ class Sandbox(MQTTModule):
         self.topic_map = {
             'avr/thermal/reading': self.handle_thermal,
             'avr/fcm/status': self.handle_status,
-            'avr/autonomous/building/drop': self.handle_building_drop,
+            'avr/autonomous/building/drop': self.handle_building_drop, # replace this with "avr positions"
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/recon': self.handle_recon,
             'avr/autonomous/thermal_range': self.handle_thermal_range,
             'avr/autonomous/thermal_targeting': self.handle_thermal_tracker,
-            'avr/apriltags/visible': self.handle_apriltags,
+            # 'avr/apriltags/visible': self.handle_apriltags,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fcm/location/local': self.handle_fcm_pos,
             'avr/fusion/position/ned': self.handle_fus_pos,
@@ -46,18 +46,12 @@ class Sandbox(MQTTModule):
         self.attitude: dict[str, float] = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
         self.start_pos: tuple = (0, 0, 0) # In meters
         self.landing_pads: dict[str, tuple[float, float, float]] = {'start': (0.0, 0.0, 0.0), 'end': (0.0, 0.0, 0.0)} # This is in meters, so compare to FCM coords, not Fusion coords
-        # NOTE these numbers are old, and in inches:
-        self.building_loc: dict[str, tuple[int, int, int]] = {'Building 0': (404, 120, 55), 'Building 1': (404, 45, 55), 'Building 2': (356, 177, 69), 'Building 3': (356, 53, 69), 'Building 4': (310, 125, 121), 'Building 5': (310, 50, 121)}
         
         # Auton vars
         self.mission_waypoints: list[dict] = []
-        self.building_drops: list[bool] = [False, False, False, False, False, False]
-        # Advanced Auton vars
-        self.sanity: str = 'Gone'
-        self.do_pathfinding: bool = False
-        self.col_test = collision_dectector((472, 170, 200), 17.3622)
+        self.building_drops: list[bool] = [False, False, False, False, False, False] # needs to be refactored entirely to account for new competition format
         
-        # Thermal tracking vars
+        # Thermal tracking vars (DEPRECIATED)
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[int, int] = (30, 40)
         self.targeting_step: int = 7
@@ -70,7 +64,7 @@ class Sandbox(MQTTModule):
         self.possibleStates: dict[str, list[str]] = {'flightEvent': possibleEvents, 'flightMode': possibleModes}
         self.isArmed: bool = False
         
-        # Apriltag vars
+        # Apriltag vars (DEPRECIATED)
         self.cur_apriltag: list = [] # List containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
         self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing, along with their in
@@ -78,12 +72,6 @@ class Sandbox(MQTTModule):
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
         
         self.threads: dict
-        
-        # Only turn on if using home field
-        homefield_test: bool = False
-        if homefield_test:
-            self.start_pos = (231, 85, 52)
-            self.building_loc = {building: tuple(list(loc)[2]*.75) for building, loc in self.building_loc.items()}
         
         
     def set_threads(self, threads: dict):
@@ -121,6 +109,9 @@ class Sandbox(MQTTModule):
     def handle_recon(self, payload) -> None:
         self.recon = payload['enabled']
                 
+    """
+    NOTE: Apriltag handler (DEPRECIATED)
+    
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None: # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload['tags']
 
@@ -128,7 +119,8 @@ class Sandbox(MQTTModule):
             # If we haven't detected this apriltag before, add it to a list of detected IDs and queue an LED flash (LED flashing is done in the CIC thread)
             self.apriltag_ids.append(payload['tags'][0]['id'])
             self.flash_queue.append(payload['tags'][0]['id'])
-            logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
+            logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")\
+    """
         
     def handle_user_in(self, payload: dict) -> None:
         try:
@@ -256,7 +248,7 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         status_thread.start()
         light_init = False
-        last_flash: dict = {'time': 0, 'iter': 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
+        # (DEPRECIATED) last_flash: dict = {'time': 0, 'iter': 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
             if not self.CIC_loop:
                 continue
@@ -276,6 +268,9 @@ class Sandbox(MQTTModule):
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000) # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
             
+            """
+            NOTE: Apriltag LED flash process (DEPRECIATED)
+            
             # Flashing the LEDs when a new apriltag ID is detected
             if self.flash_queue and time.time() > last_flash['time'] + 1: # Make sure it's been at least one second since the last LED flash
                 self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
@@ -286,7 +281,7 @@ class Sandbox(MQTTModule):
                     del self.flash_queue[0]
                 else:
                     last_flash['iter'] += 1
-            
+            """
             # Process to detect if we're too low outside of a landing area and sound an alarm
             if self.fcm_position[2] < 1.0 and self.isArmed: # if we're lower than 1 meter and the drone is armed
                 for key in self.landing_pads.keys(): # for each landing pad in the dict of landing pads
@@ -295,12 +290,6 @@ class Sandbox(MQTTModule):
                             # if not within .2 meters of a landing pad, play warning sound
                             self.sound_laptop("pull_up", ".mp3")
                             break
-
-            # Don't know what coords this corresponds to but it might be important
-            if self.fus_position == (42, 42, 42):
-                self.sanity = "Here"
-            else:
-                self.sanity = 'Gone'
 
     def status(self):
         """ Shows the stats of the threads.
@@ -313,10 +302,10 @@ class Sandbox(MQTTModule):
                 time.sleep(0.5)
                 self.send_message(
                     'avr/sandbox/CIC',
-                    {'Thermal Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Sanity': self.sanity, 'Laser': onoff[self.laser_on]}
+                    {'Thermal Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Laser': onoff[self.laser_on]}
                 )
     
-    def Autonomous(self): # What is this, headache city?
+    def Autonomous(self):
         logger.debug('Autonomous Thread: Online')
         auton_init: bool = False
         while True:

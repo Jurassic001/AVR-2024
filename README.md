@@ -20,12 +20,8 @@ Documentation is located on the `docs` branch.
 
 - ~~Complete an autonomous flight test (takeoff, go forward, land)~~
 - Complete an autonomous flight that moves the drone along a predetermined path, with turns and holds at several points along the path
-- Complete an autonomous flight that involves scanning several apriltags while moving along a predetermined flight path
-
-### Brainstorming
-
-- Change auto-aim logic to use real math (need a cheeky distance sensor)
-- Add support for multiple lasers in auto-aim (need to factor in laser position for auto aim calcs)
+- Remove all apriltag-related code, in order to streamline operations (Including the apriltag module, see start.py)
+- Remove laser targeting code and GUI elements
 
 ## Repo Setup
 <!--

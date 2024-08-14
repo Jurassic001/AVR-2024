@@ -304,7 +304,10 @@ if __name__ == "__main__":
     check_sudo()
 
     min_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio"]
+    # OLD norm_modules:
     norm_modules = min_modules + ["apriltag", "pcm", "status", "thermal"]
+    # NEW norm_modules
+    # norm_modules = min_modules + ["pcm", "status", "thermal"]
     all_modules = norm_modules + ["sandbox"]
 
 
