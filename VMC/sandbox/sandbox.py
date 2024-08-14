@@ -308,45 +308,47 @@ class Sandbox(MQTTModule):
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # takeoff -> go fwd -> go fwd, turn around -> land
+            # simple path using mission commands
             if self.building_drops[0]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('land', (1, 0, 0))
                 self.upload_and_engage_mission(5)
                 self.setBuildingDrop(0, False)
 
-            # takeoff -> go fwd -> go fwd, turn around -> land (No delay between upload, arm, and start)
+            # start with a mission waypoint, then use goto ned commands
             if self.building_drops[1]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
-                self.add_mission_waypoint('land', (2, 0, 0))
-                self.upload_and_engage_mission()
+                self.upload_and_engage_mission(5)
+                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
+                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 180})
+                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 180})
+                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
                 self.setBuildingDrop(1, False)
 
-            # takeoff -> go fwd (higher degree of accuracy) -> turn around (higher degree of accuracy) -> land
+            # using goto_ned commands
             if self.building_drops[2]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, acceptanceRad=.01)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=180, acceptanceRad=.01)
-                self.add_mission_waypoint('land', (1, 0, 0))
-                self.upload_and_engage_mission(5)
+                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
+                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
+                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 180})
+                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 180})
+                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
                 self.setBuildingDrop(2, False)
 
             # takeoff, move in a square, land - while using system yaw heading mode
             if self.building_drops[3]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=float('nan'))
-                self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=float('nan'))
-                self.add_mission_waypoint('goto', (0, 1, 1), yaw_angle=float('nan'))
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=float('nan'))
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=float("NaN"))
+                self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=float("NaN"))
+                self.add_mission_waypoint('goto', (0, 1, 1), yaw_angle=float("NaN"))
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=float("NaN"))
                 self.add_mission_waypoint('land', (0, 0, 0), yaw_angle=0)
-                # float('nan') # Use the current system yaw heading mode to set the yaw angle
+                # float("NaN") # Use the current system yaw heading mode to set the yaw angle
                 # PX4 Discussion: https://discuss.px4.io/t/mpc-yaw-mode-0-vs-3/21162
-                # MAVLINK docs: https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
-                self.upload_and_engage_mission(3)
+                self.upload_and_engage_mission(5)
                 self.setBuildingDrop(3, False)
 
 
@@ -377,6 +379,9 @@ class Sandbox(MQTTModule):
             yaw_angle (float, optional): Heading that the drone will turn to. Defaults to 0, which is straight forward from start
             goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
             goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
+ 
+        MAVlink mission docs:
+        https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
         """
         if waypointType not in ['goto', 'land']:
             if waypointType == 'takeoff': # Convert takeoff waypoints to goto waypoints
