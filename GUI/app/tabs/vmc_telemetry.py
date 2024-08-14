@@ -61,6 +61,9 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.armed_label = QtWidgets.QLabel("")
         armed_layout.addWidget(self.armed_label)
         
+        """
+        NOTE: None of these buttons work, this specific tab hates send_message commands for some reason
+
         arm_button = QtWidgets.QPushButton("Arm")
         arm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "arm", 'payload': {}}))
         armed_layout.addWidget(arm_button)
@@ -73,6 +76,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         # kill_button.setStyleSheet("font: bold")
         kill_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "kill", 'payload': {}}))
         armed_layout.addWidget(kill_button)
+        """
         
         top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
@@ -362,11 +366,8 @@ class VMCTelemetryWidget(BaseTabWidget):
         """
         Update euler attitude information
         """
-        pitch = payload["pitch"]
-        roll = payload["roll"]
-        
-        self.att_p_line_edit.setText(str(pitch))
-        self.att_r_line_edit.setText(str(roll))
+        self.att_p_line_edit.setText(str(payload["pitch"]))
+        self.att_r_line_edit.setText(str(payload["roll"]))
         self.att_y_line_edit.setText(str(payload["yaw"]))
     
     def update_FCM_velocity(self, payload: AvrFcmVelocityPayload) -> None:

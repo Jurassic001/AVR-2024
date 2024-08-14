@@ -162,8 +162,6 @@ class Sandbox(MQTTModule):
         state = payload['testState']
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
-        elif name == 'sound':
-            self.sound_laptop("sound_1")
         elif name == 'arm':
             self.set_armed(True)
         elif name == 'disarm':
@@ -255,7 +253,6 @@ class Sandbox(MQTTModule):
             
             # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
-                self.sound_laptop("startup",".mp3") # Play startup sound
                 self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color)) # Turn on the lights
                 """
                 FROM LAST YEAR
@@ -282,14 +279,6 @@ class Sandbox(MQTTModule):
                 else:
                     last_flash['iter'] += 1
             """
-            # Process to detect if we're too low outside of a landing area and sound an alarm
-            if self.fcm_position[2] < 1.0 and self.isArmed: # if we're lower than 1 meter and the drone is armed
-                for key in self.landing_pads.keys(): # for each landing pad in the dict of landing pads
-                    for i in range(2): # compare current x/y with landing pad x/y
-                        if (self.fcm_position[i] > self.landing_pads[key][i] + .2) or (self.fcm_position[i] < self.landing_pads[key][i] - .2):
-                            # if not within .2 meters of a landing pad, play warning sound
-                            self.sound_laptop("too_low", ".mp3")
-                            break
 
     def status(self):
         """ Shows the stats of the threads.
@@ -323,8 +312,8 @@ class Sandbox(MQTTModule):
             if self.building_drops[0]:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (2, 0, 1), yaw_angle=180, goto_hold_time=3)
-                self.add_mission_waypoint('land', (2, 0, 0))
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=180, goto_hold_time=3)
+                self.add_mission_waypoint('land', (1, 0, 0))
                 self.upload_and_engage_mission(5)
                 self.setBuildingDrop(0, False)
 
@@ -356,7 +345,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint('land', (0, 0, 0), yaw_angle=0)
                 # float('nan') # Use the current system yaw heading mode to set the yaw angle
                 # PX4 Discussion: https://discuss.px4.io/t/mpc-yaw-mode-0-vs-3/21162
-                # MAVLINK msgs: https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
+                # MAVLINK docs: https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
                 self.upload_and_engage_mission(3)
                 self.setBuildingDrop(3, False)
 
@@ -469,17 +458,6 @@ class Sandbox(MQTTModule):
             topic = "avr/pcm/set_laser_off"
             payload = AvrPcmSetLaserOffPayload()
         self.send_message(topic, payload)
-
-    def sound_laptop(self, fileName: str, ext: str = ".WAV", loops: int = 1):
-        """Play a specified audio file from the <GUI/assets/sounds> directory on all connected laptops
-
-        Args:
-            fileName (str): The name of the file.
-            ext (str): The extension of the file. Defaults to ".WAV"
-            loops (int, optional): Number of loops. Currently has no effect. Defaults to 1.
-        """
-        # Plays the sound by publishing the sound topic with the file info as payload, which is processed & handled in autonomy.py
-        self.send_message('avr/autonomous/sound', {'fileName': fileName, 'ext': ext, 'loops': loops})
     
     def setAutonomous(self, isEnabled: bool) -> None:
         """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
