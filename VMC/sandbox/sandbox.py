@@ -21,7 +21,7 @@ class Sandbox(MQTTModule):
             'avr/autonomous/recon': self.handle_recon,
             'avr/autonomous/thermal_range': self.handle_thermal_range,
             'avr/autonomous/thermal_targeting': self.handle_thermal_tracker,
-            # 'avr/apriltags/visible': self.handle_apriltags,
+            'avr/apriltags/visible': self.handle_apriltags,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fcm/location/local': self.handle_fcm_pos,
             'avr/fusion/position/ned': self.handle_fus_pos,
@@ -59,15 +59,15 @@ class Sandbox(MQTTModule):
   
         # Flight Controller vars
         self.states: dict[str, str] = {'flightEvent': "UNKNOWN", 'flightMode': "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
-        possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "UNKNOWN"]
+        possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "GOTO_FINISH", "UNKNOWN"]
         possibleModes: list[str] = ["UNKNOWN", "READY", "TAKEOFF", "HOLD", "MISSION", "RETURN_TO_LAUNCH", "LAND", "OFFBOARD", "FOLLOW_ME", "MANUAL", "ALTCTL", "POSCTL", "ACRO", "STABILIZED", "RATTITUDE"]
         self.possibleStates: dict[str, list[str]] = {'flightEvent': possibleEvents, 'flightMode': possibleModes}
         self.isArmed: bool = False
         
-        # Apriltag vars (DEPRECIATED)
+        # Apriltag vars
         self.cur_apriltag: list = [] # List containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
-        self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing, along with their in
+        self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing
         self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
         
@@ -108,9 +108,6 @@ class Sandbox(MQTTModule):
         
     def handle_recon(self, payload) -> None:
         self.recon = payload['enabled']
-                
-    """
-    NOTE: Apriltag handler (DEPRECIATED)
     
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None: # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload['tags']
@@ -119,8 +116,8 @@ class Sandbox(MQTTModule):
             # If we haven't detected this apriltag before, add it to a list of detected IDs and queue an LED flash (LED flashing is done in the CIC thread)
             self.apriltag_ids.append(payload['tags'][0]['id'])
             self.flash_queue.append(payload['tags'][0]['id'])
-            logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")\
-    """
+            logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
+    
         
     def handle_user_in(self, payload: dict) -> None:
         try:
@@ -177,16 +174,19 @@ class Sandbox(MQTTModule):
         eventName = payload['name']
 
         # Handle flight states
-        if eventName == 'landed_state_in_air_event':
-            newState = "IN_AIR"
-        elif eventName == 'landed_state_landing_event':
-            newState = "LANDING"
-        elif eventName == 'landed_state_on_ground_event':
-            newState = "ON_GROUND"
-        elif eventName == 'landed_state_taking_off_event':
-            newState = "TAKING_OFF"
-        else:
-            newState = "UNKNOWN"
+        match eventName:
+            case 'landed_state_in_air_event':
+                newState = "IN_AIR"
+            case 'landed_state_landing_event':
+                newState = "LANDING"
+            case 'landed_state_on_ground_event':
+                newState = "ON_GROUND"
+            case 'landed_state_taking_off_event':
+                newState = "TAKING_OFF"
+            case 'goto_complete_event':
+                newState = "GOTO_FINISH"
+            case _:
+                newState = "UNKNOWN"
         
         if newState != self.states['flightEvent']:
             logger.debug(f"Flight State Update || Flight State: {newState}")
@@ -246,7 +246,7 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         status_thread.start()
         light_init = False
-        # (DEPRECIATED) last_flash: dict = {'time': 0, 'iter': 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
+        last_flash: dict = {'time': 0, 'iter': 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
             if not self.CIC_loop:
                 continue
@@ -264,10 +264,7 @@ class Sandbox(MQTTModule):
                 """
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000) # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
-            
-            """
-            NOTE: Apriltag LED flash process (DEPRECIATED)
-            
+
             # Flashing the LEDs when a new apriltag ID is detected
             if self.flash_queue and time.time() > last_flash['time'] + 1: # Make sure it's been at least one second since the last LED flash
                 self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
@@ -278,7 +275,7 @@ class Sandbox(MQTTModule):
                     del self.flash_queue[0]
                 else:
                     last_flash['iter'] += 1
-            """
+            
 
     def status(self):
         """ Shows the stats of the threads.
@@ -308,34 +305,42 @@ class Sandbox(MQTTModule):
 
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # simple path using mission commands
+            # takeoff, go forward, land
             if self.building_drops[0]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=180, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=180, goto_hold_time=3)
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=5)
                 self.add_mission_waypoint('land', (1, 0, 0))
-                self.upload_and_engage_mission(5)
+                self.upload_and_engage_mission()
                 self.setBuildingDrop(0, False)
 
-            # start with a mission waypoint, then use goto ned commands
+            # takeoff, turn around, land
             if self.building_drops[1]:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=3)
-                self.upload_and_engage_mission(5)
-                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
-                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 180})
-                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 180})
-                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=180, goto_hold_time=5)
+                self.add_mission_waypoint('land', (0, 0, 1), yaw_angle=180)
+                self.upload_and_engage_mission()
                 self.setBuildingDrop(1, False)
 
             # using goto_ned commands
             if self.building_drops[2]:
+                self.send_action("takeoff", {"alt": 1.0})
+                self.wait_for_state("flightEvent", "IN_AIR")
+
                 self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
+                self.wait_for_state("flightEvent", "GOTO_FINISH")
+
                 self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
+                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                
                 self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 180})
+                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                
                 self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 180})
+                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                
                 self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
+                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                
                 self.setBuildingDrop(2, False)
 
             # takeoff, move in a square, land - while using system yaw heading mode
@@ -348,7 +353,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint('land', (0, 0, 0), yaw_angle=0)
                 # float("NaN") # Use the current system yaw heading mode to set the yaw angle
                 # PX4 Discussion: https://discuss.px4.io/t/mpc-yaw-mode-0-vs-3/21162
-                self.upload_and_engage_mission(5)
+                self.upload_and_engage_mission()
                 self.setBuildingDrop(3, False)
 
 
@@ -360,9 +365,9 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint('goto', (0, 1, 1)) # back 1 meter
                 self.add_mission_waypoint('goto', (0, 0, 1)) # left 1 meter
                 self.add_mission_waypoint('land', (0, 0, 0)) # land
-                self.upload_and_engage_mission(5)
+                self.upload_and_engage_mission()
 
-                self.wait_for_state('flightMode', "MISSION") # Wait until the mission has started
+                self.wait_for_state("flightMode", "MISSION") # Wait until the mission has started
 
                 self.setRecon(False)
     
@@ -370,11 +375,11 @@ class Sandbox(MQTTModule):
     # =========================================
     # Mission and Waypoint commands
 
-    def add_mission_waypoint(self, waypointType: str, coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
+    def add_mission_waypoint(self, waypointType: Literal["goto", "land"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
         """Add a waypoint to the mission_waypoints list.
 
         Args:
-            waypointType (str): Must be one of `goto` or `land`
+            waypointType (Literal["goto", "land"]): Must be one of `goto` or `land`. Goto acts as a takeoff command, as the "real" takeoff command has never worked for me
             coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
             yaw_angle (float, optional): Heading that the drone will turn to. Defaults to 0, which is straight forward from start
             goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
@@ -383,13 +388,6 @@ class Sandbox(MQTTModule):
         MAVlink mission docs:
         https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
         """
-        if waypointType not in ['goto', 'land']:
-            if waypointType == 'takeoff': # Convert takeoff waypoints to goto waypoints
-                waypointType = 'goto'
-            else:
-                # If we dont recognize the type of the waypoint throw an error and skip the waypoint
-                logger.error(f"Unrecognized waypointType: {waypointType} || Waypoint has not been added to mission")
-                return
         # Add the waypoint to the list of waypoints
         self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
     
@@ -503,11 +501,11 @@ class Sandbox(MQTTModule):
         logger.debug(f'Timeout reached while waiting to detect Apriltag {id}')
         return False
 
-    def wait_for_state(self, stateKey: str, desiredVal: str, timeout: float = 5) -> bool:
+    def wait_for_state(self, stateKey: Literal["flightEvent", "flightMode"], desiredVal: str, timeout: float = 5) -> bool:
         """Wait until a desired value is present for a specific key in the states dict
 
         Args:
-            stateKey (str): The key of the value in the self.states dict that we're waiting for
+            stateKey (Literal["flightEvent", "flightMode"]): The key of the value in the self.states dict that we're waiting for
             desiredVal (str): The desired value that we're waiting for
             timeout (float, optional): The time in seconds that we wait for. Defaults to 5.
 

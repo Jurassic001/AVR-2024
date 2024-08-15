@@ -22,6 +22,7 @@ Documentation is located on the `docs` branch.
 - Complete an autonomous flight that moves the drone along a predetermined path, with turns and holds at several points along the path
 - Remove all apriltag-related code, in order to streamline operations (Including the apriltag module, see start.py)
 - Remove laser targeting code and GUI elements
+- Refactor for new "position focused" competition and not "building focused"
 
 ## Repo Setup
 <!--
