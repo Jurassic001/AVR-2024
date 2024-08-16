@@ -136,72 +136,6 @@ class AutonomyWidget(BaseTabWidget):
         custom_layout.addWidget(thermal_groupbox)
         
         # ==========================
-        # Spintake Box
-        spintake_groupbox = QtWidgets.QGroupBox('Spintake')
-        spintake_layout = QtWidgets.QVBoxLayout()
-        spintake_groupbox.setLayout(spintake_layout)
-        spintake_groupbox.setMaximumWidth(300)
-
-        # ==========================
-        # Spintake Spinner Box
-        spintake_spinner_groupbox = QtWidgets.QGroupBox('Spinner')
-        spintake_spinner_layout = QtWidgets.QVBoxLayout()
-        spintake_spinner_groupbox.setLayout(spintake_spinner_layout)
-        
-        spintake_spinner_go_button = QtWidgets.QPushButton('Start')
-        spintake_spinner_go_button.clicked.connect(lambda: self.set_spintake_spinner(True))
-        spintake_spinner_layout.addWidget(spintake_spinner_go_button)
-        
-        spintake_spinner_stop_button = QtWidgets.QPushButton('Stop')
-        spintake_spinner_stop_button.clicked.connect(lambda: self.set_spintake_spinner(False))
-        spintake_spinner_layout.addWidget(spintake_spinner_stop_button)
-        
-        speed_layout = QtWidgets.QFormLayout()
-
-        speed_precent = DoubleLineEdit()
-        speed_layout.addRow(QtWidgets.QLabel("Speed:"), speed_precent)
-        speed_precent.setText('100')
-        inter = interp1d((100, 0), (1070, self.spin_stop_val))
-        
-        speed_button = QtWidgets.QPushButton("Set Speed")
-        speed_layout.addWidget(speed_button)
-        spintake_spinner_layout.addLayout(speed_layout)
-        speed_button.clicked.connect(  # type: ignore
-            lambda: self.set_spinner_speed(
-                inter(float(speed_precent.text()))
-            )
-        )
-        
-        self.spintake_spinner_label = QtWidgets.QLabel()
-        self.spintake_spinner_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        spintake_spinner_layout.addWidget(spintake_spinner_groupbox)
-        spintake_layout.addWidget(spintake_spinner_groupbox)
-
-        # ==========================
-        # Spintake Bottom Box
-        spintake_bottom_groupbox = QtWidgets.QGroupBox('Bottom')
-        spintake_bottom_layout = QtWidgets.QVBoxLayout()
-        spintake_bottom_groupbox.setLayout(spintake_bottom_layout)
-        
-        spintake_bottom_go_button = QtWidgets.QPushButton('Open')
-        spintake_bottom_go_button.clicked.connect(lambda: self.set_spintake_bottom('open'))
-        spintake_bottom_layout.addWidget(spintake_bottom_go_button)
-        
-        spintake_bottom_stop_button = QtWidgets.QPushButton('Close')
-        spintake_bottom_stop_button.clicked.connect(lambda: self.set_spintake_bottom('close'))
-        spintake_bottom_layout.addWidget(spintake_bottom_stop_button)
-        
-        self.spintake_bottom_label = QtWidgets.QLabel()
-        self.spintake_bottom_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        spintake_layout.addWidget(spintake_bottom_groupbox)
-
-        custom_layout.addWidget(spintake_groupbox)
-
-        # ==========================
         # Sphero Holder Box
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
         sphero_layout = QtWidgets.QGridLayout()
@@ -270,14 +204,14 @@ class AutonomyWidget(BaseTabWidget):
             test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             test_layout.addWidget(test_name)
             
-            building_state = QtWidgets.QLabel() # Only show the state of the test if it's active
-            building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            test_layout.addWidget(building_state)
-            self.testing_states.update({item: building_state}) # Add the state label to this dict so we can modify it
+            test_state = QtWidgets.QLabel() # Only show the state of the test if it's active
+            test_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            test_layout.addWidget(test_state)
+            self.testing_states.update({item: test_state}) # Add the state label to this dict so we can modify it
             
-            building_enable_button = QtWidgets.QPushButton("Execute Test")
-            test_layout.addWidget(building_enable_button)
-            building_enable_button.clicked.connect(functools.partial(self.set_test, item, True))
+            test_exec_btn = QtWidgets.QPushButton("Execute Test")
+            test_layout.addWidget(test_exec_btn)
+            test_exec_btn.clicked.connect(functools.partial(self.set_test, item, True))
 
             # Deactivating the test partway through wouldn't do anything, so this button is useless
             # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
@@ -292,50 +226,37 @@ class AutonomyWidget(BaseTabWidget):
         layout.addLayout(custom_layout, 1, 0, 1, 1) # Finalize second row
 
         # ==========================
-        # Buildings
-        self.number_of_buildings = 6
-        self.building_states: List[QtWidgets.QLabel] = []
+        # Auton positions
+        self.positions: List[str] = [ # List of names for each position
+            "Position 1", "Position 2", "Position 3", "Position 4", "Position 5",
+            "Position 6", "Position 7", "Position 8", "Position 9", "Position 10"
+        ]
+        self.position_states: List[QtWidgets.QLabel] = []
 
-        buildings_groupbox = QtWidgets.QGroupBox("Buildings")
-        buildings_layout = QtWidgets.QVBoxLayout()
-        buildings_groupbox.setLayout(buildings_layout)
-
-        building_all_layout = QtWidgets.QHBoxLayout()
-
-        building_all_enable_button = QtWidgets.QPushButton("Enable All Drops")
-        building_all_enable_button.clicked.connect(lambda: self.set_building_all(True))  # type: ignore
-        building_all_layout.addWidget(building_all_enable_button)
-
-        building_all_disable_button = QtWidgets.QPushButton("Disable All Drops")
-        building_all_disable_button.clicked.connect(lambda: self.set_building_all(False))  # type: ignore
-        building_all_layout.addWidget(building_all_disable_button)
-
-        buildings_layout.addLayout(building_all_layout)
+        positions_groupbox = QtWidgets.QGroupBox("Positions")
+        positions_layout = QtWidgets.QVBoxLayout()
+        positions_groupbox.setLayout(positions_layout)
 
             # ======================
-            # Make each line of building buttons
-        for i in range(self.number_of_buildings):
-            building_layout = QtWidgets.QHBoxLayout()
+            # Make each line of position buttons
+        for i in range (len(self.positions)):
+            position_layout = QtWidgets.QHBoxLayout()
 
-            building_name = QtWidgets.QLabel(f"Building {i+1}")
-            building_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            building_layout.addWidget(building_name)
+            position_name = QtWidgets.QLabel(self.positions[i])
+            position_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            position_layout.addWidget(position_name)
             
-            building_state = QtWidgets.QLabel(wrap_text("Drop Disabled", "red"))
-            building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            building_layout.addWidget(building_state)
-            self.building_states.append(building_state)
+            position_state = QtWidgets.QLabel(wrap_text("", "red"))
+            position_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            position_layout.addWidget(position_state)
+            self.position_states.append(position_state)
             
-            building_enable_button = QtWidgets.QPushButton("Enable Drop")
-            building_layout.addWidget(building_enable_button)
-            building_enable_button.clicked.connect(functools.partial(self.set_building, i, True))  # type: ignore
-
-            building_disable_button = QtWidgets.QPushButton("Disable Drop")
-            building_layout.addWidget(building_disable_button)
-            building_disable_button.clicked.connect(functools.partial(self.set_building, i, False))  # type: ignore
+            position_exec_btn = QtWidgets.QPushButton("Execute Position Command")
+            position_layout.addWidget(position_exec_btn)
+            position_exec_btn.clicked.connect(functools.partial(self.set_position, i+1))  # type: ignore
             
-            buildings_layout.addLayout(building_layout)
-        layout.addWidget(buildings_groupbox, 2, 0, 4, 1)
+            positions_layout.addLayout(position_layout)
+        layout.addWidget(positions_groupbox, 2, 0, 4, 1)
 
 
     # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ MESSAGING FUNCTIONS //////////////////////////////
@@ -345,19 +266,12 @@ class AutonomyWidget(BaseTabWidget):
     """
     # ================
     # Auton messengers
-    def set_building(self, number: int, state: bool) -> None:
+    def set_position(self, number: int) -> None:
         # sourcery skip: assign-if-exp
         """
-        Set a building state
+        Set the current target position for auton control
         """
-        self.send_message("avr/autonomous/building/drop", AvrAutonomousBuildingDropPayload(id=number, enabled=state))
-
-    def set_building_all(self, state: bool) -> None:
-        """
-        Set all building states at once
-        """
-        for i in range(self.number_of_buildings):
-            self.set_building(i, state)
+        self.send_message("avr/autonomous/position", {"position": number})
 
     def set_autonomous(self, state: bool) -> None:
         """
@@ -470,15 +384,10 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/building/drop": # If the value of building drop bools are changing
-            state = payload['enabled']
-            if state:
-                text = "Drop Enabled"
-                color = "green"
-            else:
-                text = "Drop Disabled"
-                color = "red"
-            self.building_states[payload['id']].setText(wrap_text(text, color))
+        elif topic == "avr/autonomous/position": # If the value of building drop bools are changing
+            for state in self.position_states:
+                state.setText("")
+            self.position_states[payload['position']].setText("Executing position command...")
         elif topic == 'avr/sandbox/test': # If we're activating or deactivating a test
             name = payload['testName']
             state = payload['testState']

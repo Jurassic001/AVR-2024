@@ -16,7 +16,7 @@ class Sandbox(MQTTModule):
         self.topic_map = {
             'avr/thermal/reading': self.handle_thermal,
             'avr/fcm/status': self.handle_status,
-            'avr/autonomous/building/drop': self.handle_building_drop, # replace this with "avr positions"
+            'avr/autonomous/position': self.handle_auton_positions,
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/recon': self.handle_recon,
             'avr/autonomous/thermal_data': self.handle_thermal_data,
@@ -47,7 +47,7 @@ class Sandbox(MQTTModule):
         
         # Auton vars
         self.mission_waypoints: list[dict] = []
-        self.building_drops: list[bool] = [False, False, False, False, False, False] # needs to be refactored entirely to account for new competition format
+        self.auton_position: int = 0
         
         # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
@@ -99,8 +99,8 @@ class Sandbox(MQTTModule):
         self.isArmed = payload['armed']
         self.fcm_connected = True
         
-    def handle_building_drop(self, payload: AvrAutonomousBuildingDropPayload) -> None:
-        self.building_drops[payload['id']] = payload['enabled']
+    def handle_auton_positions(self, payload: dict) -> None:
+        self.auton_position = payload['position']
     
     def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
         self.autonomous = payload['enabled']
@@ -303,26 +303,28 @@ class Sandbox(MQTTModule):
                 self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
                 auton_init = True
 
+            if self.auton_position == 0:
+                continue
 
             # \\\\\\\\\\ Button-controlled auton //////////
             # takeoff, go forward, land
-            if self.building_drops[0]:
+            if self.auton_position == 1:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=5)
                 self.add_mission_waypoint('land', (1, 0, 0))
                 self.upload_and_engage_mission()
-                self.setBuildingDrop(0, False)
+                self.setPosition()
 
             # takeoff, turn around, land
-            if self.building_drops[1]:
+            if self.auton_position == 2:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5)
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=180, goto_hold_time=5)
                 self.add_mission_waypoint('land', (0, 0, 1), yaw_angle=180)
                 self.upload_and_engage_mission()
-                self.setBuildingDrop(1, False)
+                self.setPosition()
 
             # using goto_ned commands
-            if self.building_drops[2]:
+            if self.auton_position == 3:
                 self.send_action("takeoff", {"alt": 1.0})
                 self.wait_for_state("flightEvent", "IN_AIR", 10)
 
@@ -332,10 +334,10 @@ class Sandbox(MQTTModule):
                 self.send_action("land")
                 self.wait_for_state("flightEvent", "ON_GROUND", 10)
                 
-                self.setBuildingDrop(2, False)
+                self.setPosition()
 
             # takeoff, move in a square, land - while using system yaw heading mode
-            if self.building_drops[3]:
+            if self.auton_position == 4:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=float("NaN"))
                 self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=float("NaN"))
@@ -345,8 +347,7 @@ class Sandbox(MQTTModule):
                 # float("NaN") # Use the current system yaw heading mode to set the yaw angle
                 # PX4 Discussion: https://discuss.px4.io/t/mpc-yaw-mode-0-vs-3/21162
                 self.upload_and_engage_mission()
-                self.setBuildingDrop(3, False)
-
+                self.setPosition()
 
             # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
             if self.recon:
@@ -365,18 +366,19 @@ class Sandbox(MQTTModule):
 
     # =========================================
     # Mission and Waypoint commands
+    # PX4 mission docs: https://docs.px4.io/main/en/flight_modes_mc/mission.html
 
     def add_mission_waypoint(self, waypointType: Literal["goto", "land"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
         """Add a waypoint to the mission_waypoints list.
 
         Args:
-            waypointType (Literal["goto", "land"]): Must be one of `goto` or `land`. Goto acts as a takeoff command, as the "real" takeoff command has never worked for me
+            waypointType (Literal["goto", "land"]): Must be one of `goto` or `land`. If the drone is landed, it will takeoff first before preceeding towards the waypoint
             coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
             yaw_angle (float, optional): Heading that the drone will turn to. Defaults to 0, which is straight forward from start
             goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
             goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
  
-        MAVlink mission docs:
+        MAVLink mission syntax docs:
         https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
         """
         # Add the waypoint to the list of waypoints
@@ -463,10 +465,10 @@ class Sandbox(MQTTModule):
         """
         self.send_message('avr/autonomous/recon', {'enabled': isEnabled})
     
-    def setBuildingDrop(self, building_id: int, isEnabled: bool) -> None:
-        """Broadcast given int and boolean for topic `avr/autonomous/building/drop`, in the `id` and `enabled` payloads, respectively. This will update values on both the sandbox and the GUI.
+    def setPosition(self, number: int = 0) -> None:
+        """Broadcast current auton position
         """
-        self.send_message('avr/autonomous/building/drop', AvrAutonomousBuildingDropPayload(id=building_id, enabled=isEnabled))
+        self.send_message("avr/autonomous/position", {"position": number})
 
     
     # ================================

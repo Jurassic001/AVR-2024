@@ -20,7 +20,6 @@ Documentation is located on the `docs` branch.
 
 - ~~Complete an autonomous flight test (takeoff, go forward, land)~~
 - Complete an autonomous flight that moves the drone along a predetermined path, with turns and holds at several points along the path
-- Refactor for new "position focused" competition and not "building focused"
 
 ## Repo Setup
 <!--
