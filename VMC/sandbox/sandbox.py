@@ -19,8 +19,7 @@ class Sandbox(MQTTModule):
             'avr/autonomous/building/drop': self.handle_building_drop, # replace this with "avr positions"
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/recon': self.handle_recon,
-            'avr/autonomous/thermal_range': self.handle_thermal_range,
-            'avr/autonomous/thermal_targeting': self.handle_thermal_tracker,
+            'avr/autonomous/thermal_data': self.handle_thermal_data,
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/sandbox/user_in': self.handle_user_in,
             'avr/fcm/location/local': self.handle_fcm_pos,
@@ -35,10 +34,9 @@ class Sandbox(MQTTModule):
         self.show_status: bool = True
         self.pause: bool = False
         self.autonomous: bool = False
-        self.auto_target: bool = False
         self.recon: bool = False
         self.fcm_connected: bool = False
-        self.thermalAutoAim: bool = False
+        self.thermalThreadRun: bool = False # Determines if the thermal thread will be run
         
         # Position vars
         self.fcm_position: list = [0, 0, 0]
@@ -51,11 +49,12 @@ class Sandbox(MQTTModule):
         self.mission_waypoints: list[dict] = []
         self.building_drops: list[bool] = [False, False, False, False, False, False] # needs to be refactored entirely to account for new competition format
         
-        # Thermal tracking vars (DEPRECIATED)
+        # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[int, int] = (30, 40)
         self.targeting_step: int = 7
         self.laser_on: bool = False
+        self.thermal_state: int = 0 # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
   
         # Flight Controller vars
         self.states: dict[str, str] = {'flightEvent': "UNKNOWN", 'flightMode': "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
@@ -125,23 +124,23 @@ class Sandbox(MQTTModule):
         except:
             pass
         
-    def handle_thermal_tracker(self, payload: dict) -> None:
-        self.auto_target = payload['enabled']
-        if self.auto_target:
-            turret_angles = [1450, 1450]
-            self.send_message(
-                        "avr/pcm/set_servo_abs",
-                        AvrPcmSetServoAbsPayload(servo= 2, absolute= turret_angles[0])
-                    )
-            self.send_message(
-                        "avr/pcm/set_servo_abs",
-                        AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
-                    )
-    
-    def handle_thermal_range(self, payload: dict) -> None:
-        self.target_range = payload['range'][0:2]
-        logger.debug(self.target_range)
-        self.targeting_step = int(payload['range'][2])
+    def handle_thermal_data(self, payload: dict) -> None:
+        if payload.keys().__contains__('state'):
+            self.thermal_state = payload['state']
+            if self.thermal_state == 2:
+                turret_angles = [1450, 1450]
+                self.send_message(
+                            "avr/pcm/set_servo_abs",
+                            AvrPcmSetServoAbsPayload(servo= 2, absolute= turret_angles[0])
+                        )
+                self.send_message(
+                            "avr/pcm/set_servo_abs",
+                            AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
+                        )
+        if payload.keys().__contains__('range'):
+            self.target_range = payload['range'][0:2]
+            logger.debug(self.target_range)
+            self.targeting_step = int(payload['range'][2])
 
     def handle_fcm_pos(self, payload: AvrFcmLocationLocalPayload) -> None:
         self.fcm_position = [payload['dX'], payload['dY'], payload['dZ']*-1]
@@ -154,7 +153,7 @@ class Sandbox(MQTTModule):
         self.attitude["roll"] = payload["roll"]
         self.attitude["yaw"] = payload["yaw"]
 
-    def handle_testing(self, payload: str):
+    def handle_testing(self, payload: dict):
         name = payload['testName']
         state = payload['testState']
         if not state: # If a test is being deactivated then we don't need to worry about it
@@ -195,19 +194,16 @@ class Sandbox(MQTTModule):
 
     # ===============
     # Threads
-    def targeting(self) -> None: # Currently useless as there is no application for it, still works though.
-        logger.debug('Thermal Tracking Thread: Online')
+    def Thermal(self) -> None:
+        logger.debug('Thermal Scanning/Targeting Thread: Online')
         turret_angles = [1450, 1450]
         while True:
-            if not self.auto_target:
-                if self.laser_on:
-                    self.set_laser(False)
+            
+            if self.thermal_state == 0: # If you aren't scanning or targeting, then don't scan or target
                 continue
-            if not self.laser_on:
-                self.set_laser(True)
-                
-            # Create mask of pixels above thermal threshold
-            img = np.array(self.thermal_grid)
+            
+            # Thermal scanning process
+            img = np.array(self.thermal_grid) # Create mask of pixels above thermal threshold
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
@@ -224,9 +220,13 @@ class Sandbox(MQTTModule):
             move_range = [15, -15]
             m = interp1d([0, 8], move_range)
             logger.debug(heat_center)
+
+            if self.thermal_state < 2: # If you aren't targeting then don't target
+                continue
+            elif not self.laser_on: # If you are targeting, make sure the laser is on
+                self.set_laser(True)
             
-            # Couldn't figure out the math to move the gimbal to the right position
-            # so this justs moves reactily in small steps, it also sucks ass.
+            # This just moves reactily in small steps, it also sucks ass.
             if heat_center[0] > 4:
                 turret_angles[0] += self.targeting_step
                 self.move_servo(2, turret_angles[0])
@@ -288,7 +288,7 @@ class Sandbox(MQTTModule):
                 time.sleep(0.5)
                 self.send_message(
                     'avr/sandbox/CIC',
-                    {'Thermal Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Laser': onoff[self.laser_on]}
+                    {'Thermal Scanning/Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Laser': onoff[self.laser_on]}
                 )
     
     def Autonomous(self):
@@ -324,22 +324,13 @@ class Sandbox(MQTTModule):
             # using goto_ned commands
             if self.building_drops[2]:
                 self.send_action("takeoff", {"alt": 1.0})
-                self.wait_for_state("flightEvent", "IN_AIR")
-
-                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
-                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                self.wait_for_state("flightEvent", "IN_AIR", 10)
 
                 self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
-                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                self.wait_for_state("flightEvent", "GOTO_FINISH", 10)
                 
-                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 180})
-                self.wait_for_state("flightEvent", "GOTO_FINISH")
-                
-                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 180})
-                self.wait_for_state("flightEvent", "GOTO_FINISH")
-                
-                self.send_action('goto_location_ned', {'n': 0, 'e': 0, 'd': -1, 'heading': 0})
-                self.wait_for_state("flightEvent", "GOTO_FINISH")
+                self.send_action("land")
+                self.wait_for_state("flightEvent", "ON_GROUND", 10)
                 
                 self.setBuildingDrop(2, False)
 
@@ -545,8 +536,8 @@ if __name__ == '__main__':
     box = Sandbox()
     
     # Create Threads
-    targeting_thread = Thread(target=box.targeting, daemon=True)
-    if box.thermalAutoAim: targeting_thread.start()
+    thermal_thread = Thread(target=box.Thermal, daemon=True)
+    if box.thermalThreadRun: thermal_thread.start()
     
     CIC_thread = Thread(target=box.CIC, daemon=True)
     CIC_thread.start()
@@ -554,6 +545,6 @@ if __name__ == '__main__':
     autonomous_thread = Thread(target=box.Autonomous, daemon=True)
     autonomous_thread.start()
     
-    box.set_threads({'thermal': targeting_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
+    box.set_threads({'thermal': thermal_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
     
     box.run()

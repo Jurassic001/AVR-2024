@@ -79,20 +79,24 @@ class AutonomyWidget(BaseTabWidget):
         
         recon_layout.addWidget(recon_groupbox)
         custom_layout.addWidget(recon_groupbox)
-        """
+        
         # ==========================
-        # Thermal Target Box
-        thermal_groupbox = QtWidgets.QGroupBox('Thermal Tracking')
+        # Thermal Operations Box
+        thermal_groupbox = QtWidgets.QGroupBox('Thermal Operations')
         thermal_layout = QtWidgets.QVBoxLayout()
         thermal_groupbox.setLayout(thermal_layout)
         thermal_groupbox.setMaximumWidth(300)
         
-        thermal_go_button = QtWidgets.QPushButton('Start')
-        thermal_go_button.clicked.connect(lambda: self.set_thermal_auto(True))
-        thermal_layout.addWidget(thermal_go_button)
+        thermal_tracking_button = QtWidgets.QPushButton('Start Tracking')
+        thermal_tracking_button.clicked.connect(lambda: self.set_thermal_data(2))
+        thermal_layout.addWidget(thermal_tracking_button)
+
+        thermal_scanning_button = QtWidgets.QPushButton('Start Scanning')
+        thermal_scanning_button.clicked.connect(lambda: self.set_thermal_data(1))
+        thermal_layout.addWidget(thermal_scanning_button)
         
-        thermal_stop_button = QtWidgets.QPushButton('Stop')
-        thermal_stop_button.clicked.connect(lambda: self.set_thermal_auto(False))
+        thermal_stop_button = QtWidgets.QPushButton('Stop All')
+        thermal_stop_button.clicked.connect(lambda: self.set_thermal_data(0))
         thermal_layout.addWidget(thermal_stop_button)
         
         temp_range_layout = QtWidgets.QFormLayout()
@@ -109,14 +113,14 @@ class AutonomyWidget(BaseTabWidget):
         temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_step_edit)
         self.temp_step_edit.setText(str(config.temp_range[2]))
 
-        set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
+        set_temp_range_button = QtWidgets.QPushButton("Update Thermal Params")
         temp_range_layout.addWidget(set_temp_range_button)
         thermal_layout.addLayout(temp_range_layout)
         set_temp_range_button.clicked.connect(  # type: ignore
-            lambda: self.set_targeting_range(
-                float(self.temp_min_line_edit.text()),
-                float(self.temp_max_line_edit.text()),
-                float(self.temp_step_edit.text()),
+            lambda: self.set_thermal_data(
+                lower=float(self.temp_min_line_edit.text()),
+                upper=float(self.temp_max_line_edit.text()),
+                step=float(self.temp_step_edit.text()),
             )
         )
         
@@ -130,7 +134,7 @@ class AutonomyWidget(BaseTabWidget):
         thermal_layout.addWidget(thermal_groupbox)
         
         custom_layout.addWidget(thermal_groupbox)
-        """
+        
         # ==========================
         # Spintake Box
         spintake_groupbox = QtWidgets.QGroupBox('Spintake')
@@ -153,7 +157,7 @@ class AutonomyWidget(BaseTabWidget):
         spintake_spinner_layout.addWidget(spintake_spinner_stop_button)
         
         speed_layout = QtWidgets.QFormLayout()
-        
+
         speed_precent = DoubleLineEdit()
         speed_layout.addRow(QtWidgets.QLabel("Speed:"), speed_precent)
         speed_precent.setText('100')
@@ -259,26 +263,26 @@ class AutonomyWidget(BaseTabWidget):
         self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test
-        for str in self.testing_items:
+        for item in self.testing_items:
             test_layout = QtWidgets.QHBoxLayout()
 
-            test_name = QtWidgets.QLabel(f"{str.title()} test")
+            test_name = QtWidgets.QLabel(f"{item.title()} test")
             test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             test_layout.addWidget(test_name)
             
             building_state = QtWidgets.QLabel() # Only show the state of the test if it's active
             building_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             test_layout.addWidget(building_state)
-            self.testing_states.update({str: building_state}) # Add the state label to this dict so we can modify it
+            self.testing_states.update({item: building_state}) # Add the state label to this dict so we can modify it
             
             building_enable_button = QtWidgets.QPushButton("Execute Test")
             test_layout.addWidget(building_enable_button)
-            building_enable_button.clicked.connect(functools.partial(self.set_test, str, True))
+            building_enable_button.clicked.connect(functools.partial(self.set_test, item, True))
 
             # Deactivating the test partway through wouldn't do anything, so this button is useless
             # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
             # test_layout.addWidget(building_disable_button)
-            # building_disable_button.clicked.connect(functools.partial(self.set_test, str, False))
+            # building_disable_button.clicked.connect(functools.partial(self.set_test, item, False))
 
             testing_layout.addLayout(test_layout)
 
@@ -369,28 +373,39 @@ class AutonomyWidget(BaseTabWidget):
         self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
 
     # ==========================
-    # Thermal autoaim messengers
-    def set_thermal_auto(self, state: bool) -> None:
-        """ Starts autonomous thermal targeting. """
-        self.send_message(
-            'avr/autonomous/thermal_targeting', {'enabled': state}
-        )
-        
-        if state:
-            text = 'Thermal Tracking Enabled'
-            color = 'green'
-        else:
-            text = 'Thermal Tracking Disabled'
-            color = 'red'
-            
-        self.thermal_label.setText(wrap_text(text, color))
+    # Thermal scanning/targeting messenger
+    def set_thermal_data(self, state: int = -1, lower: int = -1, upper: int = -1, step: int = -1) -> None:
+        """Handles sending thermal scanning and targeting data
 
-    def set_targeting_range(self, lower: int, upper: int, step: int) -> None:
-        config.temp_range = (lower, upper, step)
-        self.send_message(
-            'avr/autonomous/thermal_range',
-            {'range': (lower, upper, step)}
-        )
+        Args:
+            state (int, optional): State of thermal operations, 0 for off, 1 for scanning, 2 for targeting. A value of -1 (default) will make no change.
+            lower (int, optional): Lowest temp to scan for. A value of -1 (default) will make no change.
+            upper (int, optional): Highest temp to scan for. A value of -1 (default) will make no change.
+            step (int, optional): Step of movement for the tracking gimbal to make. A value of -1 (default) will make no change.
+        """
+        if (lower, upper, step).count(-1) == 0:
+            config.temp_range = (lower, upper, step)
+            if state != -1:
+                self.send_message('avr/autonomous/thermal_data', {'state': state, 'range': (lower, upper, step)})
+            else:
+                self.send_message('avr/autonomous/thermal_data', {'range': (lower, upper, step)})
+        elif state != -1:
+            self.send_message('avr/autonomous/thermal_data', {'state': state})
+        
+        match state:
+            case 2:
+                text = 'Thermal Tracking Enabled'
+                color = 'green'
+            case 1:
+                text = 'Thermal Scanning Enabled'
+                color = 'blue'
+            case 0:
+                text = 'Thermal Operations Disabled'
+                color = 'red'
+            case _:
+                return
+     
+        self.thermal_label.setText(wrap_text(text, color))
 
     # ===================
     # Spintake messengers

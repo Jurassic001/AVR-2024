@@ -116,13 +116,6 @@ Add `-a` to the end of this command to view all containers, active and inactive
 
 <br/>
 
-To view the output of the composed AVR software modules, run:
-```bash
-sudo docker-compose logs --follow $(docker compose ls -q)
-```
-
-<br/>
-
 To prune unused Docker containers, run:
 ```bash
 sudo docker image prune
