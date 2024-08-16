@@ -1,5 +1,5 @@
 # Docker Instructions
-### This guide is for building/running Docker containers outside of the Jetson's enviroment
+### **IMPORTANT** <br/> This guide is for building/running Docker containers outside of the Jetson's enviroment
 ## Docker setup
 - First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 - Then, run `pip install docker` if you haven't yet
@@ -40,4 +40,5 @@ start.py -s run sandbox fcm
 ### Misc:
 
 **Note that the apriltag container will fail to build, and everything except Sandbox and FCM will fail to simulate properly due to missing peripherals** <br/><br/>
-If you have any questions come to Max
+
+This isn't the most well constructed part of the codebase, and it's generally not very useful since you don't get any sensor data, but if you are curious feel free to dive in

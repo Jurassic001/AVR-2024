@@ -1,6 +1,6 @@
 # AVR-2024/VMC
 ## Setup
-This section contains instructions for setting up the repository on the Jetson. For the 2024 team, this has already been done. <br/><br/>
+This section contains instructions for setting up the repository on the **Jetson**. For the 2024 team, this has already been done. <br/><br/>
 Run the following commands:
 
 ```bash
@@ -55,68 +55,75 @@ ghcr.io
 ```
 
 This may not be an exhaustive list, as upstream sources may change CDNs or domain names.
-## Usage
-### Updating AVR Software
-If you made changes to the AVR software, you can update the container using the following steps: <br/>
-1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
-2. Re-run the `./setup.py` script. This will automatically build the software modules. Once this script finishes you can (optionally) reboot your Jetson
-3. Use `./start.py run -a` (documentation below) to run the AVR software
-<!-- Here is the official AVR documentation on updating your software. I've modified the ./setup.py command to build/run all modules instead of just the "normal" modules. I might modify it again in the future so you can select what modules you want to build/run, similar to the way that the start.py command works.
 
-If you ever need to update the AVR software, run:
+## Usage
+### Updating AVR Software on the Jetson
+If you made changes to the AVR software, you can update the software using the following steps: <br/>
+
+1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
+    - Use `git log` to verify that the local repository on the Jetson has been updated
+
+2. Run the `setup.py` script. This will automatically build all software modules and apply important updated to your VMC. Once this script finishes you should reboot your Jetson (It will give you the option)
+    - This script is located in `AVR-2024/VMC/scripts`
+    - You need to put a `./` before all script names when you are running them in Linux. This would look like `./setup.py`
+
+3. Use the `start.py` script to run your desired software modules
+    - `start.py` is the primary script for preforming actions on the AVR software modules. It is located in `AVR-2024/VMC`
+
+Here is the syntax of the `start.py` command. It might look confusing, but for the most part you'll be sticking to the "run" action
+
 ```bash
-# Update the git repo
-git pull
-# Re-run the setup script
-./setup.py
+start.py {build/run/stop} [MODULES...] [-m | -n | -a]
+
+
+positional arguments:
+    {build/run/stop}             Either build, run, or stop the specified modules
+
+keyword arguments:
+    [MODULES...]             You can add specific software modules to your command execution. Just type the module name(s), with a space in between each name
+
+options:
+    -m, --min             Perform action on minimual modules (fcm, fusion, mavp2p, mqtt, vio). This is the bare minimum for flight
+
+    -n, --norm            Perform action on normal modules (minimal modules, apriltag, pcm, status, thermal). This is what you will need for scoring. If nothing else is specified, this is the default
+
+    -a, --all             Perform action on all modules (normal modules + sandbox). Sandbox is the module you need for autonomous control and some other functions like apriltag LED flashing
 ```
--->
+<br/>
+
+#### Examples:
+This will run all of the minimum modules required for flight in addition to the thermal & status modules
+```bash
+./start.py run thermal status -m
+```
+<br/>
+
+This will run every module except for the apriltag and thermal modules
+```bash
+./start.py run pcm status sandbox -m
+```
+
+<br/>
+
 ***
-### Building, running, and viewing software containers
+
+### Viewing the output of software modules
 To view currently running containers, run:
 ```bash
-docker ps
+sudo docker ps
 ```
 Add `-a` to the end of this command to view all containers, active and inactive
 
 <br/>
 
-To build the AVR software on the Jetson, run:
+To view the output of the composed AVR software modules, run:
 ```bash
-./start.py build -a
-```
-Note the `-a` option, this means that all modules will be built
-
-<br/>
-
-To start the AVR software, run:
-```bash
-./start.py run -a
+sudo docker-compose logs --follow $(docker compose ls -q)
 ```
 
 <br/>
 
-To stop the AVR software hit <kbd>Ctrl</kbd>+<kbd>C</kbd>, or run:
+To prune unused Docker containers, run:
 ```bash
-./start.py stop -a
+sudo docker image prune
 ```
-This will stop all active AVR software modules <!--Use caution, the stop command and stop keybind are ever-so-slightly different in their effect.-->
-<br/>
-<!--
-**IMPORTANT**: Use `./start.py -h` to see the full start.py syntax
--->
-***
-
-### Making changes to the AVR software
-`./setup.py` has the option `--dev`. This option makes it so that containers will be built/run from the files inside of the VMC folder, instead of using the pre-built containers from GitHub from GitHub. <br/>
-Sandbox is automatically built and run from the local files, so don't worry about that. I've noticed some weird behavior with this option, i.e. the Apriltags module might build locally even when the option isn't used. <br/>
-For the most part you don't really need to use this option, and I personally advise against making any changes to the AVR software modules. <br/><br/>
-`./start.py` also has a similar option, `-l`, or `--local`. If you do modify the AVR software modules (other than sandbox), you should only locally build containers that you've made changes to. Locally building containers that you haven't made any changes to will take longer than using pre-build images and could lead to bugs and other issues. <br/><br/>
-For this reason, I **advise against** using the `--dev` option. Instead, run `./setup.py` normally, and locally build/run the modified software modules using the `./start.py` command after.
-***
-### Examples
-You can specify certain containers by declaring them as folows:
-```bash
-./start.py run thermal status -m
-```
-this will run all of the minimum modules required for flight `-m = [fcm, fusion, mavp2p, mqtt, vio]` in addition to the thermal & status modules.
