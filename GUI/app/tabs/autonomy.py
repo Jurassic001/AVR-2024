@@ -53,32 +53,9 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
         
         # ==========================
-        # Recon, Thermal autoaim, Spintake, Sphero controls, and Testing boxes
+        # Thermal autoaim, Spintake, Sphero controls, and Testing boxes
 
         custom_layout = QtWidgets.QHBoxLayout()
-        
-        # ==========================
-        # Recon Box
-        recon_groupbox = QtWidgets.QGroupBox('Recon')
-        recon_layout = QtWidgets.QVBoxLayout()
-        recon_groupbox.setLayout(recon_layout)
-
-        self.recon_label = QtWidgets.QLabel(wrap_text('Recon Disabled', 'red'))
-        self.recon_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-        recon_layout.addWidget(self.recon_label)
-
-        custom_recon_go_button = QtWidgets.QPushButton('Enable')
-        custom_recon_go_button.clicked.connect(lambda: self.set_recon(True))
-        recon_layout.addWidget(custom_recon_go_button)
-        
-        custom_recon_stop_button = QtWidgets.QPushButton('Disable')
-        custom_recon_stop_button.clicked.connect(lambda: self.set_recon(False))
-        recon_layout.addWidget(custom_recon_stop_button)
-        
-        recon_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Ignored))
-        
-        recon_layout.addWidget(recon_groupbox)
-        custom_layout.addWidget(recon_groupbox)
         
         # ==========================
         # Thermal Operations Box
@@ -278,10 +255,6 @@ class AutonomyWidget(BaseTabWidget):
         Set autonomous mode
         """
         self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state))
-
-    def set_recon(self, state: bool) -> None:
-        """ Starts AVR Recon. """
-        self.send_message('avr/autonomous/recon', {'enabled': state})
     
     def set_test(self, test_name: str, test_state: bool) -> None:
         self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
@@ -366,16 +339,7 @@ class AutonomyWidget(BaseTabWidget):
     # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
-        if topic == "avr/autonomous/recon": # If the value of the recon bool is changing
-            state = payload['enabled']
-            if state:
-                text = 'Recon Enabled'
-                color = 'green'
-            else:
-                text = 'Recon Disabled'
-                color = 'red'
-            self.recon_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/enable": # If the value of the auton bool is changing
+        if topic == "avr/autonomous/enable": # If the value of the auton bool is changing
             state = payload['enabled']
             if state:
                 text = "Autonomous Enabled"

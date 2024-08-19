@@ -18,7 +18,6 @@ class Sandbox(MQTTModule):
             'avr/fcm/status': self.handle_status,
             'avr/autonomous/position': self.handle_auton_positions,
             'avr/autonomous/enable': self.handle_autonomous,
-            'avr/autonomous/recon': self.handle_recon,
             'avr/autonomous/thermal_data': self.handle_thermal_data,
             'avr/apriltags/visible': self.handle_apriltags,
             'avr/sandbox/user_in': self.handle_user_in,
@@ -34,7 +33,6 @@ class Sandbox(MQTTModule):
         self.show_status: bool = True
         self.pause: bool = False
         self.autonomous: bool = False
-        self.recon: bool = False
         self.fcm_connected: bool = False
         self.thermalThreadRun: bool = False # Determines if the thermal thread will be run
         
@@ -104,9 +102,6 @@ class Sandbox(MQTTModule):
     
     def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
         self.autonomous = payload['enabled']
-        
-    def handle_recon(self, payload) -> None:
-        self.recon = payload['enabled']
     
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None: # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload['tags']
@@ -291,7 +286,7 @@ class Sandbox(MQTTModule):
                 time.sleep(0.5)
                 self.send_message(
                     'avr/sandbox/CIC',
-                    {'Thermal Scanning/Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Recon': onoff[self.recon], 'Laser': onoff[self.laser_on]}
+                    {'Thermal Scanning/Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Laser': onoff[self.laser_on]}
                 )
     
     def Autonomous(self):
@@ -310,66 +305,65 @@ class Sandbox(MQTTModule):
                 continue
 
             # \\\\\\\\\\ Button-controlled auton //////////
-            # takeoff, go forward, land
+            # more precise movement?
             if self.auton_position == 1:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=5)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5, acceptanceRad=.05)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=5, acceptanceRad=.05)
                 self.add_mission_waypoint('land', (1, 0, 0))
                 self.upload_and_engage_mission()
                 self.setPosition()
 
-            # takeoff, turn around, land
+            # takeoff, go forward and hold for 20 seconds, land
             if self.auton_position == 2:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5)
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=180, goto_hold_time=5)
-                self.add_mission_waypoint('land', (0, 0, 1), yaw_angle=180)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=20)
+                self.add_mission_waypoint('land', (0, 0, 1), yaw_angle=0)
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.setPosition(3)
 
-            # using goto_ned commands
+            # go a little bit to the right
             if self.auton_position == 3:
-                self.send_action("takeoff", {"alt": 1.0})
-                self.wait_for_state("flightEvent", "IN_AIR", 10)
+                time.sleep(10)
 
-                self.send_action('goto_location_ned', {'n': 1, 'e': 0, 'd': -1, 'heading': 0})
+                self.send_action('goto_location_ned', {'n': 0, 'e': 1, 'd': -1, 'heading': 0, 'rel': True})
                 self.wait_for_state("flightEvent", "GOTO_FINISH", 10)
                 
-                self.send_action("land")
-                self.wait_for_state("flightEvent", "ON_GROUND", 10)
-                
                 self.setPosition()
 
-            # takeoff, move in a square, land - while using system yaw heading mode
+            # takeoff, move in a square, land
             if self.auton_position == 4:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=float("NaN"))
-                self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=float("NaN"))
-                self.add_mission_waypoint('goto', (0, 1, 1), yaw_angle=float("NaN"))
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=float("NaN"))
+                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=45)
+                self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=135)
+                self.add_mission_waypoint('goto', (0, 1, 1), yaw_angle=225)
+                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
                 self.add_mission_waypoint('land', (0, 0, 0), yaw_angle=0)
-                # float("NaN") # Use the current system yaw heading mode to set the yaw angle
-                # PX4 Discussion: https://discuss.px4.io/t/mpc-yaw-mode-0-vs-3/21162
+                self.upload_and_engage_mission()
+                self.setPosition()
+            
+            # More complex movement pattern
+            if self.auton_position == 5:
+                self.add_mission_waypoint('goto', (0, 0, 1))
+                self.add_mission_waypoint('goto', (1, .25, 1), 20, 3)
+                self.add_mission_waypoint('goto', (2, .25, 1), 0, 3)
+                self.add_mission_waypoint('goto', (2, 2, 1.5), 270, 3)
+                self.add_mission_waypoint('goto', (0, 0, 1))
+                self.add_mission_waypoint('land', (0, 0, 0))
+                self.upload_and_engage_mission()
+                self.setPosition()
+            
+            # Do you even need a 'takeoff' command?
+            if self.auton_position == 6:
+                self.add_mission_waypoint('goto', (1, 0, 1), goto_hold_time=5)
+                self.add_mission_waypoint('land', (1, 0, 0))
                 self.upload_and_engage_mission()
                 self.setPosition()
 
-            # \\\\\\\\\\ Fully automatic auton - Will takeoff, move in a square, then land //////////
-            if self.recon:
-                self.add_mission_waypoint('goto', (0, 0, 1)) # takeoff
-                self.add_mission_waypoint('goto', (1, 0, 1)) # fwd 1 meter
-                self.add_mission_waypoint('goto', (1, 1, 1)) # right 1 meter
-                self.add_mission_waypoint('goto', (0, 1, 1)) # back 1 meter
-                self.add_mission_waypoint('goto', (0, 0, 1)) # left 1 meter
-                self.add_mission_waypoint('land', (0, 0, 0)) # land
-                self.upload_and_engage_mission()
-
-                self.wait_for_state("flightMode", "MISSION") # Wait until the mission has started
-
-                self.setRecon(False)
     
 
     # =========================================
     # Mission and Waypoint commands
-    # PX4 mission docs: https://docs.px4.io/main/en/flight_modes_mc/mission.html
+    # PX4 mission mode docs: https://docs.px4.io/main/en/flight_modes_mc/mission.html
 
     def add_mission_waypoint(self, waypointType: Literal["goto", "land"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
         """Add a waypoint to the mission_waypoints list.
@@ -377,7 +371,7 @@ class Sandbox(MQTTModule):
         Args:
             waypointType (Literal["goto", "land"]): Must be one of `goto` or `land`. If the drone is landed, it will takeoff first before preceeding towards the waypoint
             coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
-            yaw_angle (float, optional): Heading that the drone will turn to. Defaults to 0, which is straight forward from start
+            yaw_angle (float, optional): Heading that the drone will be facing when it reaches the waypoint. Defaults to 0, which is straight forward from start
             goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
             goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
  
@@ -396,16 +390,14 @@ class Sandbox(MQTTModule):
         """Upload a mission to the flight controller, mission waypoints are represented in the self.mission_waypoints list.
 
         Args:
-            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. If not specified, the mission will start as soon as the upload completes.
+            delay (float, optional): Delay in seconds between uploading the mission and starting the mission. Negative or no delay will cause the mission to start as soon as the upload completes.
         """
         self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay < 0:
-            if self.wait_for_state('flightEvent', 'MISSION_UPLOAD_GOOD'):
-                self.start_mission()
-            else:
-                logger.debug("Mission Upload FAILED -- Mission Start Aborted")
+            self.wait_for_state('flightEvent', 'MISSION_UPLOAD_GOOD')
+            self.start_mission()
         else:
             time.sleep(delay)
             self.start_mission()
@@ -464,11 +456,6 @@ class Sandbox(MQTTModule):
         """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
         self.send_message('avr/autonomous/enable', AvrAutonomousEnablePayload(enabled=isEnabled))
-    
-    def setRecon(self, isEnabled: bool) -> None:
-        """Broadcast given boolean for topic `avr/autonomous/recon`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
-        """
-        self.send_message('avr/autonomous/recon', {'enabled': isEnabled})
     
     def setPosition(self, number: int = 0) -> None:
         """Broadcast current auton position
