@@ -60,7 +60,7 @@ def original_user_cmd(username, cmd):
     return ["sudo", "-u", username, "-i"] + cmd
 
 
-def main(development):
+def main(development, reboot):
     if not os.path.isdir(AVR_DIR):
         print(f"AVR repository has not been cloned to {AVR_DIR}")
         print(f"Do this with 'git clone --recurse-submodules https://github.com/Jurassic001/AVR-2024 {AVR_DIR}'")
@@ -333,7 +333,9 @@ def main(development):
     print(f"{GREEN}AVR setup has completed{NC}")
     print(f"{GREEN}Please reboot your VMC{NC}")
 
-    if input("Would you like to reboot now? (y/n): ").lower() == "y":
+    if reboot: # If the reboot option was added during terminal runtime
+        subprocess.run(["reboot"])
+    elif input("Would you like to reboot now? (y/n): ").lower() == "y": # Otherwise ask the user
         subprocess.run(["reboot"])
 
 if __name__ == "__main__":
@@ -342,5 +344,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Setup the Jetson for AVR")
     parser.add_argument("--development", "--dev", action="store_true", help="Development setup")
 
+    parser.add_argument("-r", "--reboot", action="store_true", help="Reboot after the program finishes")
+
     args = parser.parse_args()
-    main(args.development)
+    main(development=args.development, reboot=args.reboot)
