@@ -246,7 +246,7 @@ class AutonomyWidget(BaseTabWidget):
             position_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             position_layout.addWidget(position_name)
             
-            position_state = QtWidgets.QLabel(wrap_text("", "red"))
+            position_state = QtWidgets.QLabel("")
             position_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             position_layout.addWidget(position_state)
             self.position_states.append(position_state)
@@ -384,10 +384,14 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/position": # If the value of building drop bools are changing
-            for state in self.position_states:
-                state.setText("")
-            self.position_states[payload['position']].setText("Executing position command...")
+        elif topic == "avr/autonomous/position":
+            pos_num = payload['position']
+            if pos_num == 0:
+                for state in self.position_states:
+                    state.setText("")
+                return
+            else:
+                self.position_states[pos_num-1].setText(wrap_text("Executing position command...", "red"))
         elif topic == 'avr/sandbox/test': # If we're activating or deactivating a test
             name = payload['testName']
             state = payload['testState']

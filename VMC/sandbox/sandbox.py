@@ -173,19 +173,18 @@ class Sandbox(MQTTModule):
         eventName = payload['name']
 
         # Handle flight states
-        match eventName:
-            case 'landed_state_in_air_event':
-                newState = "IN_AIR"
-            case 'landed_state_landing_event':
-                newState = "LANDING"
-            case 'landed_state_on_ground_event':
-                newState = "ON_GROUND"
-            case 'landed_state_taking_off_event':
-                newState = "TAKING_OFF"
-            case 'goto_complete_event':
-                newState = "GOTO_FINISH"
-            case _:
-                newState = "UNKNOWN"
+        if eventName == 'landed_state_in_air_event':
+            newState = "IN_AIR"
+        elif eventName == 'landed_state_landing_event':
+            newState = "LANDING"
+        elif eventName == 'landed_state_on_ground_event':
+            newState = "ON_GROUND"
+        elif eventName == 'landed_state_taking_off_event':
+            newState = "TAKING_OFF"
+        elif eventName == 'goto_complete_event':
+            newState = "GOTO_FINISH"
+        else:
+            newState = "UNKNOWN"
         
         if newState != self.states['flightEvent']:
             logger.debug(f"Flight State Update || Flight State: {newState}")
