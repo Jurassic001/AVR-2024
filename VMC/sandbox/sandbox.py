@@ -58,7 +58,7 @@ class Sandbox(MQTTModule):
   
         # Flight Controller vars
         self.states: dict[str, str] = {'flightEvent': "UNKNOWN", 'flightMode': "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
-        possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "GOTO_FINISH", "UNKNOWN"]
+        possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "GOTO_FINISH", "MISSION_UPLOAD_GOOD", "MISSION_UPLOAD_BAD", "UNKNOWN"]
         possibleModes: list[str] = ["UNKNOWN", "READY", "TAKEOFF", "HOLD", "MISSION", "RETURN_TO_LAUNCH", "LAND", "OFFBOARD", "FOLLOW_ME", "MANUAL", "ALTCTL", "POSCTL", "ACRO", "STABILIZED", "RATTITUDE"]
         self.possibleStates: dict[str, list[str]] = {'flightEvent': possibleEvents, 'flightMode': possibleModes}
         self.isArmed: bool = False
@@ -169,7 +169,7 @@ class Sandbox(MQTTModule):
         self.send_message('avr/sandbox/test', {'testName': name, 'testState': False})
             
     def handle_events(self, payload: AvrFcmEventsPayload):
-        """ `AvrFcmEventsPayload`:\n\n`name`: event name,\n\n`payload`: event payload"""
+        """Event names are transformed to help weed out all the extra events. Only the important events are recorded and logged"""
         eventName = payload['name']
 
         # Handle flight states
@@ -183,6 +183,10 @@ class Sandbox(MQTTModule):
             newState = "TAKING_OFF"
         elif eventName == 'goto_complete_event':
             newState = "GOTO_FINISH"
+        elif eventName == 'mission_upload_success_event':
+            newState = 'MISSION_UPLOAD_GOOD'
+        elif eventName == 'mission_upload_failed_event':
+            newState = 'MISSION_UPLOAD_BAD'
         else:
             newState = "UNKNOWN"
         
@@ -388,7 +392,7 @@ class Sandbox(MQTTModule):
         """
         self.mission_waypoints = []
 
-    def upload_and_engage_mission(self, delay: float = float("NaN")) -> None:
+    def upload_and_engage_mission(self, delay: float = -1) -> None:
         """Upload a mission to the flight controller, mission waypoints are represented in the self.mission_waypoints list.
 
         Args:
@@ -397,12 +401,14 @@ class Sandbox(MQTTModule):
         self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
-        if delay == float("NaN"):
-            while self.states['flightEvent'] not in ['mission_upload_success_event', 'request_upload_mission_completed_event']:
-                time.sleep(.01)
+        if delay < 0:
+            if self.wait_for_state('flightEvent', 'MISSION_UPLOAD_GOOD'):
+                self.start_mission()
+            else:
+                logger.debug("Mission Upload FAILED -- Mission Start Aborted")
         else:
             time.sleep(delay)
-        self.start_mission()
+            self.start_mission()
     
     def start_mission(self) -> None:
         """Arms the drone & starts the uploaded mission

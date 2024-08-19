@@ -331,11 +331,15 @@ def main(development, reboot):
 
 
     print(f"{GREEN}AVR setup has completed{NC}")
-    print(f"{GREEN}Please reboot your VMC{NC}")
-
+    
     if reboot: # If the reboot option was added during terminal runtime
+        print(f"{GREEN}Rebooting VMC...{NC}")
         subprocess.run(["reboot"])
-    elif input("Would you like to reboot now? (y/n): ").lower() == "y": # Otherwise ask the user
+        return
+    
+    # If the option wasn't added, ask the user to reboot
+    print(f"{GREEN}Please reboot your VMC{NC}")
+    if input("Would you like to reboot now? (y/n): ").lower() == "y":
         subprocess.run(["reboot"])
 
 if __name__ == "__main__":
