@@ -521,7 +521,7 @@ class ControlManager(FCMMQTTModule):
             logger.info("Uploading mission items to drone")
             await self.drone.mission_raw.upload_mission(mission_items)
             self._publish_event("mission_upload_success_event")
-            logger.info("Mission Upload SUCESS")
+            logger.info("Mission Upload SUCCESS")
         except MissionRawError as e:
             logger.warning(f"Mission upload failed because: {e._result.result_str}")
             self._publish_event(
