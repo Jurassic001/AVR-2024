@@ -46,14 +46,15 @@ class AutonomyWidget(BaseTabWidget):
 
         self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
         self.autonomous_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
+        self.autonomous_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
         autonomous_layout.addWidget(self.autonomous_label)
 
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
         
         # ==========================
-        # Thermal autoaim, Spintake, Sphero controls, and Testing boxes
+        # Thermal autoaim, Object Scanner, Sphero controls, and Testing boxes
 
         custom_layout = QtWidgets.QHBoxLayout()
         
@@ -64,17 +65,20 @@ class AutonomyWidget(BaseTabWidget):
         thermal_groupbox.setLayout(thermal_layout)
         thermal_groupbox.setMaximumWidth(300)
         
+        thermal_buttons_layout = QtWidgets.QHBoxLayout()
+        thermal_layout.addLayout(thermal_buttons_layout)
+
         thermal_tracking_button = QtWidgets.QPushButton('Start Tracking')
         thermal_tracking_button.clicked.connect(lambda: self.set_thermal_data(2))
-        thermal_layout.addWidget(thermal_tracking_button)
+        thermal_buttons_layout.addWidget(thermal_tracking_button)
 
         thermal_scanning_button = QtWidgets.QPushButton('Start Scanning')
         thermal_scanning_button.clicked.connect(lambda: self.set_thermal_data(1))
-        thermal_layout.addWidget(thermal_scanning_button)
+        thermal_buttons_layout.addWidget(thermal_scanning_button)
         
         thermal_stop_button = QtWidgets.QPushButton('Stop All')
         thermal_stop_button.clicked.connect(lambda: self.set_thermal_data(0))
-        thermal_layout.addWidget(thermal_stop_button)
+        thermal_buttons_layout.addWidget(thermal_stop_button)
         
         temp_range_layout = QtWidgets.QFormLayout()
 
@@ -103,7 +107,7 @@ class AutonomyWidget(BaseTabWidget):
         
         self.thermal_label = QtWidgets.QLabel()
         self.thermal_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
         self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
         thermal_layout.addWidget(self.thermal_label)
@@ -111,6 +115,36 @@ class AutonomyWidget(BaseTabWidget):
         thermal_layout.addWidget(thermal_groupbox)
         
         custom_layout.addWidget(thermal_groupbox)
+
+        # ==========================
+        # Object Scanner Box
+        objscanner_groupbox = QtWidgets.QGroupBox('Object Scanner')
+        objscanner_layout = QtWidgets.QVBoxLayout()
+        objscanner_groupbox.setLayout(objscanner_layout)
+        objscanner_groupbox.setMaximumWidth(300)
+
+        objscanner_align_button = QtWidgets.QPushButton('Start Auto-Aligning')
+        objscanner_align_button.clicked.connect(lambda: self.set_objscanner_params(2))
+        objscanner_layout.addWidget(objscanner_align_button)
+
+        objscanner_scan_button = QtWidgets.QPushButton('Start Scanning')
+        objscanner_scan_button.clicked.connect(lambda: self.set_objscanner_params(1))
+        objscanner_layout.addWidget(objscanner_scan_button)
+        
+        objscanner_stop_button = QtWidgets.QPushButton('Stop All')
+        objscanner_stop_button.clicked.connect(lambda: self.set_objscanner_params(0))
+        objscanner_layout.addWidget(objscanner_stop_button)
+        
+        self.objscanner_label = QtWidgets.QLabel()
+        self.objscanner_label.setAlignment(
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
+        )
+        self.objscanner_label.setText(wrap_text("Object Scanner Offline", "red"))
+        objscanner_layout.addWidget(self.objscanner_label)
+
+        objscanner_layout.addWidget(objscanner_groupbox)
+        
+        custom_layout.addWidget(objscanner_groupbox)
         
         # ==========================
         # Sphero Holder Box
@@ -170,7 +204,7 @@ class AutonomyWidget(BaseTabWidget):
         testing_layout = QtWidgets.QVBoxLayout()
         testing_groupbox.setLayout(testing_layout)
 
-        self.testing_items: list[str] = ['Arm', 'Disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_items: list[str] = ['Kill', 'Arm', 'Disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
         self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test
@@ -188,7 +222,7 @@ class AutonomyWidget(BaseTabWidget):
             
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
             test_layout.addWidget(test_exec_btn)
-            test_exec_btn.clicked.connect(functools.partial(self.set_test, item, True))
+            test_exec_btn.clicked.connect(functools.partial(self.set_test, item.lower(), True))
 
             # Deactivating the test partway through wouldn't do anything, so this button is useless
             # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
@@ -278,47 +312,16 @@ class AutonomyWidget(BaseTabWidget):
                 self.send_message('avr/autonomous/thermal_data', {'range': (lower, upper, step)})
         elif state != -1:
             self.send_message('avr/autonomous/thermal_data', {'state': state})
-        
-        match state:
-            case 2:
-                text = 'Thermal Tracking Enabled'
-                color = 'green'
-            case 1:
-                text = 'Thermal Scanning Enabled'
-                color = 'blue'
-            case 0:
-                text = 'Thermal Operations Disabled'
-                color = 'red'
-            case _:
-                return
-     
-        self.thermal_label.setText(wrap_text(text, color))
 
-    # ===================
-    # Spintake messengers
-    def set_spintake_spinner(self, state: bool) -> None:
-        vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
-        if state:
-            self.send_message(
-                "avr/pcm/set_servo_abs",
-                AvrPcmSetServoAbsPayload(servo= 0, absolute= self.spinner_speed_val)
-            )
-        else:
-            self.send_message(
-                "avr/pcm/set_servo_abs",
-                AvrPcmSetServoAbsPayload(servo= 0, absolute= self.spin_stop_val)
-            )
-        
-    def set_spintake_bottom(self, open_close: str) -> None:
-        """ [Placeholder]"""
-        self.send_message( #Open: 41
-        "avr/pcm/set_servo_open_close",
-        AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
-        )
+    # ========================
+    # Object scanner messenger
+    def set_objscanner_params(self, state: int) -> None:
+        """Handles sending parameter updates to the object scanner
 
-    def set_spinner_speed(self, precent: float) -> None:
-        print(precent)
-        self.spinner_speed_val = int(precent)
+        Args:
+            state (int): Value determines the state of the object scanner. 0 is no scanning, 1 is scan for objects and report relevant data, 2 is automatically move towards detected objects (aka auto-align)
+        """
+        self.send_message('avr/objscanner/params', {"state": state})
     
     # =======================
     # Sphero holder messenger
@@ -363,3 +366,40 @@ class AutonomyWidget(BaseTabWidget):
                 self.testing_states[name].setText(wrap_text("Executing...", "red"))
             else:
                 self.testing_states[name].setText("")
+        elif topic == 'avr/autonomous/thermal_data':
+            if 'state' not in payload.keys():
+                return
+            
+            match payload['state']:
+                case 2:
+                    text = 'Thermal Tracking Enabled'
+                    color = 'green'
+                case 1:
+                    text = 'Thermal Scanning Enabled'
+                    color = 'blue'
+                case 0:
+                    text = 'Thermal Operations Disabled'
+                    color = 'red'
+                case _:
+                    return
+    
+            self.thermal_label.setText(wrap_text(text, color))
+        elif topic == 'avr/objscanner/params':
+            if 'state' not in payload.keys():
+                return
+            
+            match payload['state']:
+                case 2:
+                    text = 'Object Auto-Align Online'
+                    color = 'green'
+                case 1:
+                    text = 'Object Scanner Online'
+                    color = 'blue'
+                case 0:
+                    text = 'Object Scanner Offline'
+                    color = 'red'
+                case _:
+                    return
+    
+            self.objscanner_label.setText(wrap_text(text, color))
+

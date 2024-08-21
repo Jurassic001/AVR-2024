@@ -159,11 +159,13 @@ class Sandbox(MQTTModule):
         state = payload['testState']
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
+        elif name == 'kill':
+            self.send_action("kill", {})
         elif name == 'arm':
             self.set_armed(True)
         elif name == 'disarm':
             self.set_armed(False)
-        elif name == 'Zero NED':
+        elif name == 'zero ned':
             self.send_message('avr/fcm/capture_home', {})
         
         # Once the test has been run, mark it as inactive
@@ -472,6 +474,14 @@ class Sandbox(MQTTModule):
         """Broadcast current auton position
         """
         self.send_message("avr/autonomous/position", {"position": number})
+
+    def set_objscanner_params(self, state: int) -> None:
+        """Handles sending parameter updates to the object scanner
+
+        Args:
+            state (int): Value determines the state of the object scanner. 0 is no scanning, 1 is scan for objects and report relevant data, 2 is automatically move towards detected objects (aka auto-align)
+        """
+        self.send_message('avr/objscanner/params', {"state": state})
 
     
     # ================================

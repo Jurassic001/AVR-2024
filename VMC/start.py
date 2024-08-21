@@ -223,6 +223,16 @@ def vio_service(compose_services: dict, local: bool = False) -> None:
     compose_services["vio"] = vio_data
 
 
+def objscanner_service(compose_services: dict) -> None:
+    objscanner_data = {
+        "depends_on": ["mqtt"],
+        "build": os.path.join(THIS_DIR, "objscanner"),
+        "restart": "unless-stopped",
+    }
+
+    compose_services["objscanner"] = objscanner_data
+
+
 def prepare_compose_file(local: bool = False, simulation=False) -> str:
     # prepare compose services dict
     compose_services = {}
@@ -237,6 +247,7 @@ def prepare_compose_file(local: bool = False, simulation=False) -> str:
     thermal_service(compose_services, local)
     vio_service(compose_services, local)
     simulator_service(compose_services, local)
+    objscanner_service(compose_services)
 
     # nvpmodel not available on Windows
     if os.name != "nt":
@@ -305,7 +316,9 @@ if __name__ == "__main__":
 
     min_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio"]
     norm_modules = min_modules + ["apriltag", "pcm", "status", "thermal"]
-    all_modules = norm_modules + ["sandbox"]
+    all_modules = norm_modules + ["sandbox", "objscanner"]
+
+    zephyrus_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio", "pcm", "status", "thermal", "sandbox", "objscanner"]
 
 
     parser = argparse.ArgumentParser()
@@ -344,6 +357,12 @@ if __name__ == "__main__":
         action="store_true",
         help=f"Perform action on all modules ({', '.join(sorted(all_modules))}). Adds to any modules explicitly specified.",
     )
+    exgroup.add_argument(
+        "-z",
+        "--zephyrus",
+        action="store_true",
+        help=f"Perform action on all relevant modules for the 2024-25 Bell AVR Season ({', '.join(sorted(zephyrus_modules))}). Does not add to specified modules.",
+    )
 
     exgroup.add_argument(
         "-s",
@@ -354,7 +373,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.min:
+    if args.zephyrus:
+        # Modules specifically for the 2024-25 Bell AVR Season
+        args.modules = zephyrus_modules
+    elif args.min:
         # minimal modules selected
         args.modules += min_modules
     elif args.norm:
