@@ -15,12 +15,15 @@ class ObjectScanner(MQTTModule):
         self.threshold: float = 0.5 # Minimum scanning confidence required to report the target and its location
         self.scales: list[float] = [.5, .4, .3, .2, .1] # All scales that will be searched on
         self.scanning_state: int = 0 # Value determines the state of the object scanner. 0 is no scanning, 1 is scan for objects and report relevant data, 2 is automatically move towards detected objects
-    
+
+        logger.info("objscanner initialized")
+
     def handle_params(self, payload: dict):
         """Handle parameter update messages
         """
         if "state" in payload.keys():
             self.scanning_state = payload["state"]
+            logger.debug(f"objscanner params updated || scanning_state: {self.scanning_state}")
 
     def load_images_from_directory(self, directory_path) -> tuple[list, list]:
         image_files = []
@@ -76,14 +79,16 @@ class ObjectScanner(MQTTModule):
 
         return horizontal_distance, vertical_distance
 
-    def main(self):
+    def cap_process(self):
+        """Capture, process, report, and act on data from the CSI camera. Basically the main method of the object scanner.
+
+        This function is blocking, assuming the VideoCapture object initialized successfully
+        """
+        capture_confirmed: bool = False
         # GStreamer pipeline for the camera
-        pipeline = (
-            "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720, format=NV12, framerate=15/1 "
-            "! nvvidconv ! video/x-raw, format=BGRx ! videoconvert ! videorate "
-            "! video/x-raw, format=BGR, framerate=5/1 ! appsink"
-        )
+        pipeline = ("nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink")
         capture = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+        logger.debug("VideoCapture initialized successfully")
 
         # Load all target images from a directory (e.g., multiple helipads)
         target_images, image_names = self.load_images_from_directory("targets")
@@ -95,7 +100,10 @@ class ObjectScanner(MQTTModule):
                 logger.error("Could not read capture from CSI camera... Retrying")
                 time.sleep(5)
                 continue
-            
+            elif not capture_confirmed:
+                logger.debug("CSI Camera capture confirmed")
+                capture_confirmed = True
+
             if self.scanning_state == 0:
                 continue
 
@@ -115,8 +123,13 @@ class ObjectScanner(MQTTModule):
 
                 time.sleep(1)
 
+        logger.error("Capture closed, while loop exited")
         capture.release()
         cv2.destroyAllWindows()
+
+    def run(self) -> None:
+        super().run_non_blocking()
+        self.cap_process()
 
 if __name__ == "__main__":
     try:

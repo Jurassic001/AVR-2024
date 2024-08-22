@@ -26,8 +26,7 @@ def check_sudo() -> None:
         ["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     if result.returncode == 0:
-        # either we have permission to run docker as non-root
-        # or we have sudo
+        # either we have permission to run docker as non-root or we have sudo
         return
 
     # re run ourselves with sudo
@@ -54,18 +53,14 @@ def apriltag_service(compose_services: dict) -> None:
     compose_services["apriltag"] = apriltag_data
 
 
-def fcm_service(compose_services: dict, local: bool = False, simulation=False) -> None:
-    local = True # FCM will always build locally since I've modified the fcc_control.py file
+def fcm_service(compose_services: dict, simulation=False) -> None:
     fcm_data = {
         "depends_on": ["mqtt", "mavp2p" if not simulation else "simulator"],
         "restart": "unless-stopped",
         "network_mode": "host"
     }
 
-    if local:
-        fcm_data["build"] = os.path.join(THIS_DIR, "fcm")
-    else:
-        fcm_data["image"] = f"{IMAGE_BASE}fcm:latest"
+    fcm_data["build"] = os.path.join(THIS_DIR, "fcm")
 
     compose_services["fcm"] = fcm_data
 
@@ -238,7 +233,7 @@ def prepare_compose_file(local: bool = False, simulation=False) -> str:
     compose_services = {}
 
     apriltag_service(compose_services)
-    fcm_service(compose_services, local, simulation)
+    fcm_service(compose_services, simulation)
     fusion_service(compose_services, local)
     mavp2p_service(compose_services, local)
     mqtt_service(compose_services, local)
