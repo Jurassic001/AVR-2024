@@ -79,20 +79,35 @@ class ObjectScanner(MQTTModule):
 
         return horizontal_distance, vertical_distance
 
-    def cap_process(self):
+    def cap_process(self, use_main_pipeline: bool = True):
         """Capture, process, report, and act on data from the CSI camera. Basically the main method of the object scanner.
 
-        This function is blocking, assuming the VideoCapture object initialized successfully
+        NOTE: This function is blocking, assuming the VideoCapture object initialized successfully and the initial frame is captured successfully
         """
         capture_confirmed: bool = False
+
         # GStreamer pipeline for the camera
-        pipeline = ("nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink")
-        capture = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+        pipeline = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink"
+        alt_pipeline = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=60/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! videorate ! video/x-raw,format=BGR,framerate=30/1,width=1280,height=720 ! appsink"
+        
+        if use_main_pipeline:
+            capture = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+        else:
+            capture = cv2.VideoCapture(alt_pipeline)
+
         logger.debug("VideoCapture initialized successfully")
 
         # Load all target images from a directory (e.g., multiple helipads)
         target_images, image_names = self.load_images_from_directory("targets")
         target_images_with_names = list(zip(target_images, image_names))
+
+        # Read an initial test frame
+        ret, frame = capture.read()
+        if not ret:
+            logger.error("Failed to capture initial frame, pipeline might be incorrect")
+            capture.release()
+            return
+        logger.debug("Initial frame captured successfully")
 
         while capture.isOpened():
             ret, frame = capture.read()
@@ -123,13 +138,16 @@ class ObjectScanner(MQTTModule):
 
                 time.sleep(1)
 
-        logger.error("Capture closed, while loop exited")
+        logger.error("VideoCapture initialization failed")
         capture.release()
-        cv2.destroyAllWindows()
 
     def run(self) -> None:
         super().run_non_blocking()
         self.cap_process()
+        logger.error("Capture Process error, trying again with alternate pipeline...")
+        self.cap_process(False)
+        logger.error("Capture Process error, this container will now exit & restart")
+
 
 if __name__ == "__main__":
     try:
