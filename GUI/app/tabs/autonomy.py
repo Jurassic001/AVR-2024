@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import functools, json, os
+import functools, json, os, playsound
 from typing import List
+
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from comtypes import CLSCTX_ALL
+from ctypes import cast, POINTER
 
 from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
@@ -342,7 +346,7 @@ class AutonomyWidget(BaseTabWidget):
     # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
     def process_message(self, topic: str, payload: dict) -> None:
         payload = json.loads(payload)
-        if topic == "avr/autonomous/enable": # If the value of the auton bool is changing
+        if topic == 'avr/autonomous/enable': # If the value of the auton bool is changing
             state = payload['enabled']
             if state:
                 text = "Autonomous Enabled"
@@ -351,7 +355,7 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/position":
+        elif topic == 'avr/autonomous/position':
             pos_num = payload['position']
             if pos_num == 0:
                 for state in self.position_states:
@@ -372,14 +376,14 @@ class AutonomyWidget(BaseTabWidget):
             
             match payload['state']:
                 case 2:
-                    text = 'Thermal Tracking Enabled'
-                    color = 'green'
+                    text = "Thermal Tracking Enabled"
+                    color = "green"
                 case 1:
-                    text = 'Thermal Scanning Enabled'
-                    color = 'blue'
+                    text = "Thermal Scanning Enabled"
+                    color = "blue"
                 case 0:
-                    text = 'Thermal Operations Disabled'
-                    color = 'red'
+                    text = "Thermal Operations Disabled"
+                    color = "red"
                 case _:
                     return
     
@@ -390,16 +394,32 @@ class AutonomyWidget(BaseTabWidget):
             
             match payload['state']:
                 case 2:
-                    text = 'Object Auto-Align Online'
-                    color = 'green'
+                    text = "Object Auto-Align Online"
+                    color = "green"
                 case 1:
-                    text = 'Object Scanner Online'
-                    color = 'blue'
+                    text = "Object Scanner Online"
+                    color = "blue"
                 case 0:
-                    text = 'Object Scanner Offline'
-                    color = 'red'
+                    text = "Object Scanner Offline"
+                    color = "red"
                 case _:
                     return
     
             self.objscanner_label.setText(wrap_text(text, color))
+        elif topic == 'avr/autonomous/sound':
+            file_name = payload['fileName']
+            ext = payload['ext']
+            if 'max_vol' in payload.keys():
+                max_volume: bool = payload['max_vol']
 
+            playsound.playsound(f"./GUI/assets/sounds/{file_name}{ext}", False)
+
+            if max_volume:
+                # Get the default audio device
+                devices = AudioUtilities.GetSpeakers()
+                interface = devices.Activate(
+                    IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                volume = cast(interface, POINTER(IAudioEndpointVolume))
+
+                while True: # Set the volume to maximum (1.0 represents 100%)
+                    volume.SetMasterVolumeLevelScalar(1.0, None)

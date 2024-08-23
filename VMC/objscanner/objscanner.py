@@ -79,7 +79,7 @@ class ObjectScanner(MQTTModule):
 
         return horizontal_distance, vertical_distance
 
-    def cap_process(self, use_main_pipeline: bool = True):
+    def cap_process(self, pipeline_index: int):
         """Capture, process, report, and act on data from the CSI camera. Basically the main method of the object scanner.
 
         NOTE: This function is blocking, assuming the VideoCapture object initialized successfully and the initial frame is captured successfully
@@ -87,13 +87,14 @@ class ObjectScanner(MQTTModule):
         capture_confirmed: bool = False
 
         # GStreamer pipeline for the camera
-        pipeline = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink"
-        alt_pipeline = "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=60/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! videorate ! video/x-raw,format=BGR,framerate=30/1,width=1280,height=720 ! appsink"
-        
-        if use_main_pipeline:
-            capture = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
-        else:
-            capture = cv2.VideoCapture(alt_pipeline)
+        pipelines = []
+        pipelines.append("nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink")
+        pipelines.append("nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=60/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! videorate ! video/x-raw,format=BGR,framerate=30/1,width=1280,height=720 ! appsink")
+        pipelines.append("v4l2src device=/dev/video0 io-mode=2 ! image/jpeg,width=1280,height=720,framerate=60/1 ! jpegparse ! nvv4l2decoder mjpeg=1 ! nvvidconv ! videorate ! video/x-raw,format=BGRx,framerate=30/1 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGRx ! appsink")
+        # In order: 0 = C++ pipeline, 1 = Python argus pipeline, 2 = Python v4l2 pipeline
+        logger.debug(f"Using pipeline {pipeline_index} as capture pipeline")
+
+        capture = cv2.VideoCapture(pipelines[pipeline_index], cv2.CAP_GSTREAMER)
 
         logger.debug("VideoCapture initialized successfully")
 
@@ -143,9 +144,11 @@ class ObjectScanner(MQTTModule):
 
     def run(self) -> None:
         super().run_non_blocking()
-        self.cap_process()
-        logger.error("Capture Process error, trying again with alternate pipeline...")
-        self.cap_process(False)
+        self.cap_process(0)
+        logger.error("Capture Process error, trying again with different pipeline...")
+        self.cap_process(1)
+        logger.error("Capture Process error, trying again with different pipeline...")
+        self.cap_process(2)
         logger.error("Capture Process error, this container will now exit & restart")
 
 
