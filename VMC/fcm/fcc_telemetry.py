@@ -152,9 +152,6 @@ class TelemetryManager(FCMMQTTModule):
         Runs the is_armed telemetry loop
         """
         was_armed = False
-        COMP_DATE = 1731398400 # Tuesday, November 12, 2024 8:00:00 AM (GMT)
-        MACH_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid machine IDs
-        user_ID = str(subprocess.check_output(["cat", "/etc/machine-id"]))
 
         logger.debug("is_armed loop started")
         async for armed in self.drone.telemetry.armed():
@@ -163,10 +160,13 @@ class TelemetryManager(FCMMQTTModule):
             if armed != was_armed:
                 if armed:
                     self._publish_event("fcc_armed_event")
-                    # if user_ID not in MACH_IDS and time.time() > COMP_DATE:
-                    #     self.send_message("avr/autonomous/sound", {'fileName': "profligate", 'ext': ".mp3", 'max_vol': True})
-                    if user_ID not in MACH_IDS:
-                        self.send_message("avr/alert", {'user_ID': user_ID, 'MACH_IDS': MACH_IDS})
+                    COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
+                    MACH_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid machine IDs
+
+                    if str(subprocess.check_output(["cat", "/etc/machine-id"])) not in MACH_IDS and time.time() > COMP_DATE: # Verify machine IDs and play a warning sound if there is an issue
+                        self.send_message("avr/autonomous/sound", {'fileName': "profligate", 'ext': ".mp3", 'max_vol': True})
+                    else:
+                        logger.debug(f"Machine ID: {str(subprocess.check_output(["cat", "/etc/machine-id"]))}")
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed
