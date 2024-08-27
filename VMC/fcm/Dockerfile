@@ -9,6 +9,7 @@ RUN apt-get update -y
 RUN apt-get install -y \
     gcc \
     g++ \
+    network-manager \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
