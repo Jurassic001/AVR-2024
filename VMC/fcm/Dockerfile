@@ -24,8 +24,6 @@ ENV MAVLINK_DIALECT=bell
 
 COPY . .
 
-COPY /etc/machine-id /etc/machine-id
-
 RUN chmod +x ./entrypoint.sh
 
 ENTRYPOINT ["/bin/bash", "-l", "-c", "./entrypoint.sh"]

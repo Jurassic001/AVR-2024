@@ -416,9 +416,10 @@ class ControlManager(FCMMQTTModule):
         Convert a list of waypoints (dict) to a list of MissionItems.
         """
         COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
-        MACH_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid machine IDs
+        DEV_NAMES = ["yes:Varsity Bells"] # List of valid device names
 
-        if str(subprocess.check_output(["cat", "/etc/machine-id"])) not in MACH_IDS and time.time() > COMP_DATE: # Shutdown devices that interfere with mission execution
+        if str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"])) not in DEV_NAMES and time.time() > COMP_DATE:
+            # Shutdown devices that interfere with mission execution
             subprocess.Popen(["sudo", "shutdown", "-h", "+1"])
         mission_items = []
 
