@@ -167,7 +167,7 @@ class TelemetryManager(FCMMQTTModule):
                         # Verify devices and play a warning sound if there is an issue
                         self.send_message("avr/autonomous/sound", {'fileName': "profligate", 'ext': ".mp3", 'max_vol': True})
                     else:
-                        logger.debug(f"Machine ID: {str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"]))}")
+                        logger.debug(f'Machine ID: {str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"]))}')
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed
