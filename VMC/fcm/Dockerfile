@@ -9,9 +9,11 @@ RUN apt-get update -y
 RUN apt-get install -y \
     gcc \
     g++ \
-    network-manager \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
+
+# Install device network manager
+RUN apt-get update && apt-get install -y network-manager
 
 # ENV OPENBLAS_CORETYPE=ARMV8 #TODO see if this is still necessary with new numpy
 
