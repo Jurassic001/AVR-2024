@@ -1,4 +1,5 @@
 import cv2, os, time
+import subprocess
 
 from bell.avr.mqtt.client import MQTTModule
 from loguru import logger
@@ -21,7 +22,7 @@ class ObjectScanner(MQTTModule):
     def handle_params(self, payload: dict):
         """Handle parameter update messages
         """
-        if "state" in payload.keys():
+        if "state" in payload:
             self.scanning_state = payload["state"]
             logger.debug(f"objscanner params updated || scanning_state: {self.scanning_state}")
 
@@ -87,10 +88,11 @@ class ObjectScanner(MQTTModule):
         capture_confirmed: bool = False
 
         # GStreamer pipeline for the camera
-        pipelines = []
-        pipelines.append("nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink")
-        pipelines.append("nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=60/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! videorate ! video/x-raw,format=BGR,framerate=30/1,width=1280,height=720 ! appsink")
-        pipelines.append("v4l2src device=/dev/video0 io-mode=2 ! image/jpeg,width=1280,height=720,framerate=60/1 ! jpegparse ! nvv4l2decoder mjpeg=1 ! nvvidconv ! videorate ! video/x-raw,format=BGRx,framerate=30/1 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGRx ! appsink")
+        pipelines = [
+            "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=15/1 ! nvvidconv ! video/x-raw,format=BGRx !  videoconvert ! videorate ! video/x-raw,format=BGR,framerate=5/1 ! appsink",
+            "nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=60/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! videorate ! video/x-raw,format=BGR,framerate=30/1,width=1280,height=720 ! appsink",
+            "v4l2src device=/dev/video0 io-mode=2 ! image/jpeg,width=1280,height=720,framerate=60/1 ! jpegparse ! nvv4l2decoder mjpeg=1 ! nvvidconv ! videorate ! video/x-raw,format=BGRx,framerate=30/1 ! videoconvert ! video/x-raw,width=1280,height=720,format=BGRx ! appsink",
+        ]
         # In order: 0 = C++ pipeline, 1 = Python argus pipeline, 2 = Python v4l2 pipeline
         logger.debug(f"Using pipeline {pipeline_index} as capture pipeline")
 
@@ -131,7 +133,7 @@ class ObjectScanner(MQTTModule):
 
                 logger.debug(f"Best match found: {best_image_name} with confidence {match_confidence:.2f} at scale {best_scale:.2f}")
                 logger.debug(f"Estimated horizontal distance from the target: ({x:.2f}, {y:.2f}) units")
-                
+
                 self.send_message('avr/objscanner/scan_report', {"name": best_image_name, "X": x, "Y":y})
 
                 if self.scanning_state == 2:
@@ -150,6 +152,7 @@ class ObjectScanner(MQTTModule):
         logger.error("Capture Process error, trying again with different pipeline...")
         self.cap_process(2)
         logger.error("Capture Process error, this container will now exit & restart")
+        logger.debug(subprocess.check_output(["gst-inspect-1.0 nvarguscamerasrc"]))
 
 
 if __name__ == "__main__":

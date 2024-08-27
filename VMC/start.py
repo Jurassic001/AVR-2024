@@ -55,12 +55,11 @@ def apriltag_service(compose_services: dict) -> None:
 
 def fcm_service(compose_services: dict, simulation=False) -> None:
     fcm_data = {
-        "depends_on": ["mqtt", "mavp2p" if not simulation else "simulator"],
+        "depends_on": ["mqtt", "simulator" if simulation else "mavp2p"],
         "restart": "unless-stopped",
-        "network_mode": "host"
+        "network_mode": "host",
+        "build": os.path.join(THIS_DIR, "fcm"),
     }
-
-    fcm_data["build"] = os.path.join(THIS_DIR, "fcm")
 
     compose_services["fcm"] = fcm_data
 
@@ -363,7 +362,7 @@ if __name__ == "__main__":
         "-s",
         "--sim",
         action="store_true",
-        help=f"Run system in simulation",
+        help="Run system in simulation",
     )
 
     args = parser.parse_args()
