@@ -27,6 +27,7 @@ class AutonomyWidget(BaseTabWidget):
 
 
     def build(self) -> None:
+        # sourcery skip: extract-duplicate-method, simplify-dictionary-update
         """
         Build the GUI layout
         """
@@ -34,8 +35,7 @@ class AutonomyWidget(BaseTabWidget):
         layout = QtWidgets.QGridLayout(self)
         self.setLayout(layout)
 
-        # ==========================
-        # Autonomous mode
+        # region Autonomous state
         autonomous_groupbox = QtWidgets.QGroupBox("Autonomous")
         autonomous_layout = QtWidgets.QHBoxLayout()
         autonomous_groupbox.setLayout(autonomous_layout)
@@ -63,7 +63,7 @@ class AutonomyWidget(BaseTabWidget):
         custom_layout = QtWidgets.QHBoxLayout()
         
         # ==========================
-        # Thermal Operations Box
+        # region Thermal controls
         thermal_groupbox = QtWidgets.QGroupBox('Thermal Operations')
         thermal_layout = QtWidgets.QVBoxLayout()
         thermal_groupbox.setLayout(thermal_layout)
@@ -120,38 +120,7 @@ class AutonomyWidget(BaseTabWidget):
         
         custom_layout.addWidget(thermal_groupbox)
 
-        # ==========================
-        # Object Scanner Box
-        objscanner_groupbox = QtWidgets.QGroupBox('Object Scanner')
-        objscanner_layout = QtWidgets.QVBoxLayout()
-        objscanner_groupbox.setLayout(objscanner_layout)
-        objscanner_groupbox.setMaximumWidth(300)
-
-        objscanner_align_button = QtWidgets.QPushButton('Start Auto-Aligning')
-        objscanner_align_button.clicked.connect(lambda: self.set_objscanner_params(2))
-        objscanner_layout.addWidget(objscanner_align_button)
-
-        objscanner_scan_button = QtWidgets.QPushButton('Start Scanning')
-        objscanner_scan_button.clicked.connect(lambda: self.set_objscanner_params(1))
-        objscanner_layout.addWidget(objscanner_scan_button)
-        
-        objscanner_stop_button = QtWidgets.QPushButton('Stop All')
-        objscanner_stop_button.clicked.connect(lambda: self.set_objscanner_params(0))
-        objscanner_layout.addWidget(objscanner_stop_button)
-        
-        self.objscanner_label = QtWidgets.QLabel()
-        self.objscanner_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
-        self.objscanner_label.setText(wrap_text("Object Scanner Offline", "red"))
-        objscanner_layout.addWidget(self.objscanner_label)
-
-        objscanner_layout.addWidget(objscanner_groupbox)
-        
-        custom_layout.addWidget(objscanner_groupbox)
-        
-        # ==========================
-        # Sphero Holder Box
+        # region Sphero Holder
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
         sphero_layout = QtWidgets.QGridLayout()
         sphero_groupbox.setLayout(sphero_layout)
@@ -202,8 +171,7 @@ class AutonomyWidget(BaseTabWidget):
         
         custom_layout.addWidget(sphero_groupbox)
         
-        # ==================================
-        # Testing box
+        # region Testing
         testing_groupbox = QtWidgets.QGroupBox("Test Commands")
         testing_layout = QtWidgets.QVBoxLayout()
         testing_groupbox.setLayout(testing_layout)
@@ -240,8 +208,7 @@ class AutonomyWidget(BaseTabWidget):
 
         layout.addLayout(custom_layout, 1, 0, 1, 1) # Finalize second row
 
-        # ==========================
-        # Auton positions
+        # region Auton positions
         self.positions: List[str] = [ # List of names for each position
             "Position 1", "Position 2", "Position 3", "Position 4", "Position 5",
             "Position 6", "Position 7", "Position 8", "Position 9", "Position 10"
@@ -274,7 +241,7 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(positions_groupbox, 2, 0, 4, 1)
 
 
-    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ MESSAGING FUNCTIONS //////////////////////////////
+    # region Messengers
     """
     NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
     the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server.
@@ -316,16 +283,6 @@ class AutonomyWidget(BaseTabWidget):
                 self.send_message('avr/autonomous/thermal_data', {'range': (lower, upper, step)})
         elif state != -1:
             self.send_message('avr/autonomous/thermal_data', {'state': state})
-
-    # ========================
-    # Object scanner messenger
-    def set_objscanner_params(self, state: int) -> None:
-        """Handles sending parameter updates to the object scanner
-
-        Args:
-            state (int): Value determines the state of the object scanner. 0 is no scanning, 1 is scan for objects and report relevant data, 2 is automatically move towards detected objects (aka auto-align)
-        """
-        self.send_message('avr/objscanner/params', {"state": state})
     
     # =======================
     # Sphero holder messenger
@@ -343,8 +300,14 @@ class AutonomyWidget(BaseTabWidget):
                 AvrPcmSetServoOpenClosePayload(servo= 4+door, action= open_close)
             )
 
-    # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
+    # region MQTT Handler
     def process_message(self, topic: str, payload: dict) -> None:
+        """
+        Processes incoming messages based on the specified topic and updates the UI accordingly.
+        This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating positions, managing test states, and handling thermal and object scanner data.
+        
+        TODO (maybe): split this into seperate handlers using a topic map?
+        """
         payload = json.loads(payload)
         if topic == 'avr/autonomous/enable': # If the value of the auton bool is changing
             state = payload['enabled']
@@ -388,24 +351,6 @@ class AutonomyWidget(BaseTabWidget):
                     return
     
             self.thermal_label.setText(wrap_text(text, color))
-        elif topic == 'avr/objscanner/params':
-            if 'state' not in payload.keys():
-                return
-            
-            match payload['state']:
-                case 2:
-                    text = "Object Auto-Align Online"
-                    color = "green"
-                case 1:
-                    text = "Object Scanner Online"
-                    color = "blue"
-                case 0:
-                    text = "Object Scanner Offline"
-                    color = "red"
-                case _:
-                    return
-    
-            self.objscanner_label.setText(wrap_text(text, color))
         elif topic == 'avr/autonomous/sound':
             file_name = payload['fileName']
             ext = payload['ext']

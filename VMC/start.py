@@ -310,9 +310,10 @@ if __name__ == "__main__":
 
     min_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio"]
     norm_modules = min_modules + ["apriltag", "pcm", "status", "thermal"]
-    all_modules = norm_modules + ["sandbox", "objscanner"]
+    all_modules = norm_modules + ["sandbox"]
 
-    zephyrus_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio", "pcm", "status", "thermal", "sandbox", "objscanner"]
+    zephyrus_modules = all_modules
+    zephyrus_modules.remove("apriltag")
 
 
     parser = argparse.ArgumentParser()
