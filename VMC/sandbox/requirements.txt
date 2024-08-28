@@ -1,6 +1,4 @@
 bell-avr-libraries[mqtt]==0.1.9
 loguru==0.6.0
 opencv-python-headless
-keyboard
 scipy
-Geometry3D
