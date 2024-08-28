@@ -26,8 +26,7 @@ def check_sudo() -> None:
         ["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     if result.returncode == 0:
-        # either we have permission to run docker as non-root
-        # or we have sudo
+        # either we have permission to run docker as non-root or we have sudo
         return
 
     # re run ourselves with sudo
@@ -54,18 +53,13 @@ def apriltag_service(compose_services: dict) -> None:
     compose_services["apriltag"] = apriltag_data
 
 
-def fcm_service(compose_services: dict, local: bool = False, simulation=False) -> None:
-    local = True # FCM will always build locally since I've modified the fcc_control.py file
+def fcm_service(compose_services: dict, simulation=False) -> None:
     fcm_data = {
-        "depends_on": ["mqtt", "mavp2p" if not simulation else "simulator"],
+        "depends_on": ["mqtt", "simulator" if simulation else "mavp2p"],
         "restart": "unless-stopped",
-        "network_mode": "host"
+        "network_mode": "host",
+        "build": os.path.join(THIS_DIR, "fcm"),
     }
-
-    if local:
-        fcm_data["build"] = os.path.join(THIS_DIR, "fcm")
-    else:
-        fcm_data["image"] = f"{IMAGE_BASE}fcm:latest"
 
     compose_services["fcm"] = fcm_data
 
@@ -222,13 +216,12 @@ def vio_service(compose_services: dict, local: bool = False) -> None:
 
     compose_services["vio"] = vio_data
 
-
 def prepare_compose_file(local: bool = False, simulation=False) -> str:
     # prepare compose services dict
     compose_services = {}
 
     apriltag_service(compose_services)
-    fcm_service(compose_services, local, simulation)
+    fcm_service(compose_services, simulation)
     fusion_service(compose_services, local)
     mavp2p_service(compose_services, local)
     mqtt_service(compose_services, local)
@@ -307,6 +300,9 @@ if __name__ == "__main__":
     norm_modules = min_modules + ["apriltag", "pcm", "status", "thermal"]
     all_modules = norm_modules + ["sandbox"]
 
+    zephyrus_modules = all_modules
+    zephyrus_modules.remove("apriltag")
+
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -344,17 +340,26 @@ if __name__ == "__main__":
         action="store_true",
         help=f"Perform action on all modules ({', '.join(sorted(all_modules))}). Adds to any modules explicitly specified.",
     )
+    exgroup.add_argument(
+        "-z",
+        "--zephyrus",
+        action="store_true",
+        help=f"Perform action on all relevant modules for the 2024-25 Bell AVR Season ({', '.join(sorted(zephyrus_modules))}). Does not add to specified modules.",
+    )
 
     exgroup.add_argument(
         "-s",
         "--sim",
         action="store_true",
-        help=f"Run system in simulation",
+        help="Run system in simulation",
     )
 
     args = parser.parse_args()
 
-    if args.min:
+    if args.zephyrus:
+        # Modules specifically for the 2024-25 Bell AVR Season
+        args.modules = zephyrus_modules
+    elif args.min:
         # minimal modules selected
         args.modules += min_modules
     elif args.norm:

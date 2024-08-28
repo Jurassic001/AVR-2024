@@ -24,3 +24,7 @@ PCC/.vscode/c_cpp_properties.json
 /VMC/apriltag/c/libraries/paho.mqtt.c/test/python/test_offline.py
 /VMC/apriltag/c/libraries/paho.mqtt.c/test/python/test1.py
 /VMC/apriltag/c/libraries/paho.mqtt.c/test/python/test2.py
+
+# Phantom file with a nonsense name will sometimes appear
+# The Jetson is haunted
+@�@��J

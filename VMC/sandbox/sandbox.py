@@ -1,16 +1,14 @@
-import base64, cv2, time, asyncio
+import base64, cv2, time
 import numpy as np
 from threading import Thread
 from scipy import ndimage
 from scipy.interpolate import interp1d
 from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
-from bell.avr.utils import decorators
 from loguru import logger
-from collision_avoidance import collision_dectector
-from contextvars import ContextVar
 
 class Sandbox(MQTTModule):
+    # region Init
     def __init__(self) -> None:
         super().__init__()
         self.topic_map = {
@@ -20,7 +18,6 @@ class Sandbox(MQTTModule):
             'avr/autonomous/enable': self.handle_autonomous,
             'avr/autonomous/thermal_data': self.handle_thermal_data,
             'avr/apriltags/visible': self.handle_apriltags,
-            'avr/sandbox/user_in': self.handle_user_in,
             'avr/fcm/location/local': self.handle_fcm_pos,
             'avr/fusion/position/ned': self.handle_fus_pos,
             'avr/fcm/attitude/euler': self.handle_attitude,
@@ -80,8 +77,7 @@ class Sandbox(MQTTModule):
     def set_threads(self, threads: dict):
         self.threads: dict = threads
 
-    # ===================
-    # Topic Handlers
+    # region Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
         # Handle the raw data from the thermal camera
         data = payload['data']
@@ -112,18 +108,11 @@ class Sandbox(MQTTModule):
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None: # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload['tags']
 
-        if not payload['tags'][0]['id'] in self.apriltag_ids:
+        if payload['tags'][0]['id'] not in self.apriltag_ids:
             # If we haven't detected this apriltag before, add it to a list of detected IDs and queue an LED flash (LED flashing is done in the CIC thread)
             self.apriltag_ids.append(payload['tags'][0]['id'])
             self.flash_queue.append(payload['tags'][0]['id'])
             logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
-    
-        
-    def handle_user_in(self, payload: dict) -> None:
-        try:
-            self.pause = payload['pause']
-        except:
-            pass
         
     def handle_thermal_data(self, payload: dict) -> None:
         if payload.keys().__contains__('state'):
@@ -139,7 +128,7 @@ class Sandbox(MQTTModule):
                             AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
                         )
         if payload.keys().__contains__('range'):
-            self.target_range = payload['range'][0:2]
+            self.target_range = payload['range'][:2]
             logger.debug(self.target_range)
             self.targeting_step = int(payload['range'][2])
 
@@ -159,11 +148,13 @@ class Sandbox(MQTTModule):
         state = payload['testState']
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
+        elif name == 'kill':
+            self.send_action("kill", {})
         elif name == 'arm':
             self.set_armed(True)
         elif name == 'disarm':
             self.set_armed(False)
-        elif name == 'Zero NED':
+        elif name == 'zero ned':
             self.send_message('avr/fcm/capture_home', {})
         
         # Once the test has been run, mark it as inactive
@@ -201,8 +192,7 @@ class Sandbox(MQTTModule):
             self.states['flightEvent'] = newState
 
 
-    # ===============
-    # Threads
+    # region Thermal Thread
     def Thermal(self) -> None:
         logger.debug('Thermal Scanning/Targeting Thread: Online')
         turret_angles = [1450, 1450]
@@ -248,7 +238,8 @@ class Sandbox(MQTTModule):
             elif heat_center[1] > 4:
                 turret_angles[1] -= self.targeting_step
                 self.move_servo(3, turret_angles[1])
-                
+
+    # region CIC Thread
     def CIC(self) -> None:
         logger.debug('Command, Information, & Control Thread: Online')
         status_thread = Thread(target=self.status)
@@ -285,7 +276,7 @@ class Sandbox(MQTTModule):
                 else:
                     last_flash['iter'] += 1
             
-
+    # region Status Sub-Thread
     def status(self):
         """ Shows the stats of the threads.
         """
@@ -300,8 +291,10 @@ class Sandbox(MQTTModule):
                     {'Thermal Scanning/Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Laser': onoff[self.laser_on]}
                 )
     
+    # region Autonomous Thread
     def Autonomous(self):
-        logger.debug('Autonomous Thread: Online')
+        # sourcery skip: extract-duplicate-method, extract-method
+        logger.debug("Autonomous Thread: Online")
         auton_init: bool = False
         while True:
             if not self.autonomous:
@@ -372,10 +365,8 @@ class Sandbox(MQTTModule):
 
     
 
-    # =========================================
-    # Mission and Waypoint commands
+    # region Mission and Waypoint methods
     # PX4 mission mode docs: https://docs.px4.io/main/en/flight_modes_mc/mission.html
-
     def add_mission_waypoint(self, waypointType: Literal["goto", "land"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
         """Add a waypoint to the mission_waypoints list.
 
@@ -408,10 +399,10 @@ class Sandbox(MQTTModule):
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay < 0:
             self.wait_for_state('flightEvent', 'MISSION_UPLOAD_GOOD')
-            self.start_mission()
         else:
             time.sleep(delay)
-            self.start_mission()
+
+        self.start_mission()
     
     def start_mission(self) -> None:
         """Arms the drone & starts the uploaded mission
@@ -421,9 +412,7 @@ class Sandbox(MQTTModule):
         self.send_action('start_mission')
 
 
-    # ================================
-    # Send Message Commands
-
+    # region Messenger methods
     def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
         self.send_action('set_geofence', {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
     
@@ -445,6 +434,7 @@ class Sandbox(MQTTModule):
         self.send_message("avr/pcm/set_servo_abs",AvrPcmSetServoAbsPayload(servo=id, absolute=angle))
 
     def send_action(self, action: str, payload: dict = {}):
+        # sourcery skip: default-mutable-arg
         """Send one of many possible action payloads to the `avr/fcm/actions` MQTT topic.
 
         Args:
@@ -473,9 +463,8 @@ class Sandbox(MQTTModule):
         """
         self.send_message("avr/autonomous/position", {"position": number})
 
-    
-    # ================================
-    # Misc/Helper commands
+
+    # region Helper methods
     def wait_for_apriltag_id(self, id: int, timeout: float = 5) -> bool:
         """Wait until a specificied Apriltag ID is detected, or a timeout is reached
 
@@ -491,7 +480,7 @@ class Sandbox(MQTTModule):
             try:
                 if self.cur_apriltag[0]['id'] == id:
                     return True
-            except: # Catch the IndexError that is thrown if we haven't yet scanned an apriltag (i.e. the list is empty)
+            except IndexError: # Catch the IndexError that is thrown if we haven't yet scanned an apriltag (i.e. the list is empty)
                 pass
             time.sleep(.025) # Given the low FPS of the CSI camera (which scans for apriltags), this sleep command won't lead to skipping over a detected apriltag
         logger.debug(f'Timeout reached while waiting to detect Apriltag {id}')
@@ -536,7 +525,7 @@ class Sandbox(MQTTModule):
         """
         return inches/39.37
     
-
+# region Main process
 if __name__ == '__main__':
     box = Sandbox()
     

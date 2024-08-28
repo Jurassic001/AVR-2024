@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-import functools, json, os
+import functools, json, os, playsound
 from typing import List
+
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+from comtypes import CLSCTX_ALL
+from ctypes import cast, POINTER
 
 from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
@@ -23,6 +27,7 @@ class AutonomyWidget(BaseTabWidget):
 
 
     def build(self) -> None:
+        # sourcery skip: extract-duplicate-method, simplify-dictionary-update
         """
         Build the GUI layout
         """
@@ -30,8 +35,7 @@ class AutonomyWidget(BaseTabWidget):
         layout = QtWidgets.QGridLayout(self)
         self.setLayout(layout)
 
-        # ==========================
-        # Autonomous mode
+        # region Autonomous state
         autonomous_groupbox = QtWidgets.QGroupBox("Autonomous")
         autonomous_layout = QtWidgets.QHBoxLayout()
         autonomous_groupbox.setLayout(autonomous_layout)
@@ -46,35 +50,39 @@ class AutonomyWidget(BaseTabWidget):
 
         self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
         self.autonomous_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
+        self.autonomous_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
         autonomous_layout.addWidget(self.autonomous_label)
 
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
         
         # ==========================
-        # Thermal autoaim, Spintake, Sphero controls, and Testing boxes
+        # Thermal autoaim, Object Scanner, Sphero controls, and Testing boxes
 
         custom_layout = QtWidgets.QHBoxLayout()
         
         # ==========================
-        # Thermal Operations Box
+        # region Thermal controls
         thermal_groupbox = QtWidgets.QGroupBox('Thermal Operations')
         thermal_layout = QtWidgets.QVBoxLayout()
         thermal_groupbox.setLayout(thermal_layout)
         thermal_groupbox.setMaximumWidth(300)
         
+        thermal_buttons_layout = QtWidgets.QHBoxLayout()
+        thermal_layout.addLayout(thermal_buttons_layout)
+
         thermal_tracking_button = QtWidgets.QPushButton('Start Tracking')
         thermal_tracking_button.clicked.connect(lambda: self.set_thermal_data(2))
-        thermal_layout.addWidget(thermal_tracking_button)
+        thermal_buttons_layout.addWidget(thermal_tracking_button)
 
         thermal_scanning_button = QtWidgets.QPushButton('Start Scanning')
         thermal_scanning_button.clicked.connect(lambda: self.set_thermal_data(1))
-        thermal_layout.addWidget(thermal_scanning_button)
+        thermal_buttons_layout.addWidget(thermal_scanning_button)
         
         thermal_stop_button = QtWidgets.QPushButton('Stop All')
         thermal_stop_button.clicked.connect(lambda: self.set_thermal_data(0))
-        thermal_layout.addWidget(thermal_stop_button)
+        thermal_buttons_layout.addWidget(thermal_stop_button)
         
         temp_range_layout = QtWidgets.QFormLayout()
 
@@ -103,7 +111,7 @@ class AutonomyWidget(BaseTabWidget):
         
         self.thermal_label = QtWidgets.QLabel()
         self.thermal_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignBottom | QtCore.Qt.AlignmentFlag.AlignVCenter
+            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
         )
         self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
         thermal_layout.addWidget(self.thermal_label)
@@ -111,9 +119,8 @@ class AutonomyWidget(BaseTabWidget):
         thermal_layout.addWidget(thermal_groupbox)
         
         custom_layout.addWidget(thermal_groupbox)
-        
-        # ==========================
-        # Sphero Holder Box
+
+        # region Sphero Holder
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
         sphero_layout = QtWidgets.QGridLayout()
         sphero_groupbox.setLayout(sphero_layout)
@@ -164,13 +171,12 @@ class AutonomyWidget(BaseTabWidget):
         
         custom_layout.addWidget(sphero_groupbox)
         
-        # ==================================
-        # Testing box
+        # region Testing
         testing_groupbox = QtWidgets.QGroupBox("Test Commands")
         testing_layout = QtWidgets.QVBoxLayout()
         testing_groupbox.setLayout(testing_layout)
 
-        self.testing_items: list[str] = ['Arm', 'Disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_items: list[str] = ['Kill', 'Arm', 'Disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
         self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test
@@ -188,7 +194,7 @@ class AutonomyWidget(BaseTabWidget):
             
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
             test_layout.addWidget(test_exec_btn)
-            test_exec_btn.clicked.connect(functools.partial(self.set_test, item, True))
+            test_exec_btn.clicked.connect(functools.partial(self.set_test, item.lower(), True))
 
             # Deactivating the test partway through wouldn't do anything, so this button is useless
             # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
@@ -202,8 +208,7 @@ class AutonomyWidget(BaseTabWidget):
 
         layout.addLayout(custom_layout, 1, 0, 1, 1) # Finalize second row
 
-        # ==========================
-        # Auton positions
+        # region Auton positions
         self.positions: List[str] = [ # List of names for each position
             "Position 1", "Position 2", "Position 3", "Position 4", "Position 5",
             "Position 6", "Position 7", "Position 8", "Position 9", "Position 10"
@@ -236,7 +241,7 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(positions_groupbox, 2, 0, 4, 1)
 
 
-    # \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\ MESSAGING FUNCTIONS //////////////////////////////
+    # region Messengers
     """
     NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
     the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server.
@@ -278,47 +283,6 @@ class AutonomyWidget(BaseTabWidget):
                 self.send_message('avr/autonomous/thermal_data', {'range': (lower, upper, step)})
         elif state != -1:
             self.send_message('avr/autonomous/thermal_data', {'state': state})
-        
-        match state:
-            case 2:
-                text = 'Thermal Tracking Enabled'
-                color = 'green'
-            case 1:
-                text = 'Thermal Scanning Enabled'
-                color = 'blue'
-            case 0:
-                text = 'Thermal Operations Disabled'
-                color = 'red'
-            case _:
-                return
-     
-        self.thermal_label.setText(wrap_text(text, color))
-
-    # ===================
-    # Spintake messengers
-    def set_spintake_spinner(self, state: bool) -> None:
-        vals ={True: 200, False: 81} # Check 200, ask Row what val is max speed.
-        if state:
-            self.send_message(
-                "avr/pcm/set_servo_abs",
-                AvrPcmSetServoAbsPayload(servo= 0, absolute= self.spinner_speed_val)
-            )
-        else:
-            self.send_message(
-                "avr/pcm/set_servo_abs",
-                AvrPcmSetServoAbsPayload(servo= 0, absolute= self.spin_stop_val)
-            )
-        
-    def set_spintake_bottom(self, open_close: str) -> None:
-        """ [Placeholder]"""
-        self.send_message( #Open: 41
-        "avr/pcm/set_servo_open_close",
-        AvrPcmSetServoOpenClosePayload(servo= 1, action= open_close)
-        )
-
-    def set_spinner_speed(self, precent: float) -> None:
-        print(precent)
-        self.spinner_speed_val = int(precent)
     
     # =======================
     # Sphero holder messenger
@@ -336,10 +300,16 @@ class AutonomyWidget(BaseTabWidget):
                 AvrPcmSetServoOpenClosePayload(servo= 4+door, action= open_close)
             )
 
-    # \\\\\\\\\\\\\\\ MQTT Message Handling ///////////////
+    # region MQTT Handler
     def process_message(self, topic: str, payload: dict) -> None:
+        """
+        Processes incoming messages based on the specified topic and updates the UI accordingly.
+        This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating positions, managing test states, and handling thermal and object scanner data.
+        
+        TODO (maybe): split this into seperate handlers using a topic map?
+        """
         payload = json.loads(payload)
-        if topic == "avr/autonomous/enable": # If the value of the auton bool is changing
+        if topic == 'avr/autonomous/enable': # If the value of the auton bool is changing
             state = payload['enabled']
             if state:
                 text = "Autonomous Enabled"
@@ -348,7 +318,7 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/position":
+        elif topic == 'avr/autonomous/position':
             pos_num = payload['position']
             if pos_num == 0:
                 for state in self.position_states:
@@ -363,3 +333,38 @@ class AutonomyWidget(BaseTabWidget):
                 self.testing_states[name].setText(wrap_text("Executing...", "red"))
             else:
                 self.testing_states[name].setText("")
+        elif topic == 'avr/autonomous/thermal_data':
+            if 'state' not in payload.keys():
+                return
+            
+            match payload['state']:
+                case 2:
+                    text = "Thermal Tracking Enabled"
+                    color = "green"
+                case 1:
+                    text = "Thermal Scanning Enabled"
+                    color = "blue"
+                case 0:
+                    text = "Thermal Operations Disabled"
+                    color = "red"
+                case _:
+                    return
+    
+            self.thermal_label.setText(wrap_text(text, color))
+        elif topic == 'avr/autonomous/sound':
+            file_name = payload['fileName']
+            ext = payload['ext']
+            if 'max_vol' in payload.keys():
+                max_volume: bool = payload['max_vol']
+
+            playsound.playsound(f"./GUI/assets/sounds/{file_name}{ext}", False)
+
+            if max_volume:
+                # Get the default audio device
+                devices = AudioUtilities.GetSpeakers()
+                interface = devices.Activate(
+                    IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                volume = cast(interface, POINTER(IAudioEndpointVolume))
+
+                while True: # Set the volume to maximum (1.0 represents 100%)
+                    volume.SetMasterVolumeLevelScalar(1.0, None)
