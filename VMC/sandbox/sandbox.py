@@ -463,15 +463,7 @@ class Sandbox(MQTTModule):
         """
         self.send_message("avr/autonomous/position", {"position": number})
 
-    def set_objscanner_params(self, state: int) -> None:
-        """Handles sending parameter updates to the object scanner
 
-        Args:
-            state (int): Value determines the state of the object scanner. 0 is no scanning, 1 is scan for objects and report relevant data, 2 is automatically move towards detected objects (aka auto-align)
-        """
-        self.send_message('avr/objscanner/params', {"state": state})
-
-    
     # region Helper methods
     def wait_for_apriltag_id(self, id: int, timeout: float = 5) -> bool:
         """Wait until a specificied Apriltag ID is detected, or a timeout is reached
