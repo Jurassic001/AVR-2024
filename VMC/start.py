@@ -17,6 +17,7 @@ THIS_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 def check_sudo() -> None:
+    # region sudo check
     # skip these checks on Windows
     if sys.platform == "win32":
         return
@@ -43,6 +44,7 @@ def check_sudo() -> None:
 
 
 def apriltag_service(compose_services: dict) -> None:
+    # region apriltag
     apriltag_data = {
         "depends_on": ["mqtt"],
         "build": os.path.join(THIS_DIR, "apriltag"),
@@ -54,16 +56,19 @@ def apriltag_service(compose_services: dict) -> None:
 
 
 def fcm_service(compose_services: dict, simulation=False) -> None:
+    # region fcm
     fcm_data = {
         "depends_on": ["mqtt", "simulator" if simulation else "mavp2p"],
         "restart": "unless-stopped",
         "network_mode": "host",
+        "privileged": True,
         "build": os.path.join(THIS_DIR, "fcm"),
     }
 
     compose_services["fcm"] = fcm_data
 
 def simulator_service(compose_services: dict, local: bool = False) -> None:
+    # region simulator
     sim_data = {
         "restart": "unless-stopped",
         "tty": True,
@@ -80,6 +85,7 @@ def simulator_service(compose_services: dict, local: bool = False) -> None:
 
 
 def fusion_service(compose_services: dict, local: bool = False) -> None:
+    # region fusion
     fusion_data = {
         "depends_on": ["mqtt", "vio"],
         "restart": "unless-stopped",
@@ -94,6 +100,7 @@ def fusion_service(compose_services: dict, local: bool = False) -> None:
 
 
 def mavp2p_service(compose_services: dict, local: bool = False) -> None:
+    # region mavp2p
     mavp2p_data = {
         "restart": "unless-stopped",
         "devices": ["/dev/ttyTHS1:/dev/ttyTHS1"],
@@ -110,6 +117,7 @@ def mavp2p_service(compose_services: dict, local: bool = False) -> None:
 
 
 def mqtt_service(compose_services: dict, local: bool = False) -> None:
+    # region mqtt
     mqtt_data = {
         "ports": ["18830:18830"],
         "restart": "unless-stopped",
@@ -124,6 +132,7 @@ def mqtt_service(compose_services: dict, local: bool = False) -> None:
 
 
 def pcm_service(compose_services: dict, local: bool = False) -> None:
+    # region pcm
     pcm_data = {
         "depends_on": ["mqtt"],
         "restart": "unless-stopped",
@@ -139,6 +148,7 @@ def pcm_service(compose_services: dict, local: bool = False) -> None:
 
 
 def sandbox_service(compose_services: dict) -> None:
+    # region sandbox
     sandbox_data = {
         "depends_on": ["mqtt"],
         "build": os.path.join(THIS_DIR, "sandbox"),
@@ -149,6 +159,7 @@ def sandbox_service(compose_services: dict) -> None:
 
 
 def status_service(compose_services: dict, local: bool = False) -> None:
+    # region status
     # don't create a volume for nvpmodel if it's not available
     nvpmodel_source = shutil.which("nvpmodel")
 
@@ -185,6 +196,7 @@ def status_service(compose_services: dict, local: bool = False) -> None:
 
 
 def thermal_service(compose_services: dict, local: bool = False) -> None:
+    # region thermal
     thermal_data = {
         "depends_on": ["mqtt"],
         "restart": "unless-stopped",
@@ -200,6 +212,7 @@ def thermal_service(compose_services: dict, local: bool = False) -> None:
 
 
 def vio_service(compose_services: dict, local: bool = False) -> None:
+    # region vio
     vio_data = {
         "depends_on": ["mqtt"],
         "restart": "unless-stopped",
@@ -217,6 +230,7 @@ def vio_service(compose_services: dict, local: bool = False) -> None:
     compose_services["vio"] = vio_data
 
 def prepare_compose_file(local: bool = False, simulation=False) -> str:
+    # region prep compose
     # prepare compose services dict
     compose_services = {}
 
@@ -249,6 +263,7 @@ def prepare_compose_file(local: bool = False, simulation=False) -> str:
 
 
 def main(action: str, modules: List[str], local: bool = False, simulation: bool = False) -> None:
+    # region main
     compose_file = prepare_compose_file(local, simulation)
 
     # run docker-compose
@@ -294,6 +309,7 @@ def main(action: str, modules: List[str], local: bool = False, simulation: bool 
 
 # sourcery skip: merge-duplicate-blocks, remove-redundant-if
 if __name__ == "__main__":
+    # region runtime
     check_sudo()
 
     min_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio"]
@@ -344,7 +360,7 @@ if __name__ == "__main__":
         "-z",
         "--zephyrus",
         action="store_true",
-        help=f"Perform action on all relevant modules for the 2024-25 Bell AVR Season ({', '.join(sorted(zephyrus_modules))}). Does not add to specified modules.",
+        help=f"Perform action on all relevant modules for the 2024-25 Bell AVR Season ({', '.join(sorted(zephyrus_modules))}). Subtracts any modules explicitly specified.",
     )
 
     exgroup.add_argument(
@@ -358,7 +374,7 @@ if __name__ == "__main__":
 
     if args.zephyrus:
         # Modules specifically for the 2024-25 Bell AVR Season
-        args.modules = zephyrus_modules
+        args.modules = [module for module in zephyrus_modules if module not in args.modules] # Remove modules in args.modules from zephyrus_modules
     elif args.min:
         # minimal modules selected
         args.modules += min_modules

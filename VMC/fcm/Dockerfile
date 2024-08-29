@@ -12,9 +12,6 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Start device network manager
-CMD ["nmcli", "device", "wifi", "list"]
-
 # ENV OPENBLAS_CORETYPE=ARMV8 #TODO see if this is still necessary with new numpy
 
 COPY requirements.txt requirements.txt

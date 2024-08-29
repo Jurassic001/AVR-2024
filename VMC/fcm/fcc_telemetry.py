@@ -171,8 +171,9 @@ class TelemetryManager(FCMMQTTModule):
                         if local_name not in DEV_NAMES and time.time() > COMP_DATE:
                             # Verify devices and play a warning sound if there is an issue
                             self.send_message("avr/autonomous/sound", {'fileName': "profligate", 'ext': ".mp3", 'max_vol': True})
+                            logger.debug(f'Dev name (good): {local_name}')
                         else:
-                            logger.debug(f'Machine ID: {local_name}')
+                            logger.debug(f'Dev name (bad): {local_name}')
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed
