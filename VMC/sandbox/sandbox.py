@@ -68,8 +68,9 @@ class Sandbox(MQTTModule):
         self.cur_apriltag: list = [] # List containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = [] # List containing every apriltag ID that has been detected
         self.flash_queue: list = [] # List containing all the IDs that are queued for LED flashing
-        self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb
+        self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196] # wrgb (white, red, green, blue)
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
+        self.hotspot_color: tuple[int, int, int, int] = [255, 0, 0, 0] # wrgb
         
         self.threads: dict
         
@@ -308,7 +309,7 @@ class Sandbox(MQTTModule):
             if self.auton_position == 0:
                 continue
 
-            # \\\\\\\\\\ Button-controlled auton //////////
+
             # more precise movement?
             if self.auton_position == 1:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5, acceptanceRad=.05)
@@ -317,25 +318,8 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
                 self.setPosition()
 
-            # takeoff, go forward and hold for 20 seconds, land
-            if self.auton_position == 2:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=20)
-                self.add_mission_waypoint('land', (0, 0, 1), yaw_angle=0)
-                self.upload_and_engage_mission()
-                self.setPosition(3)
-
-            # go a little bit to the right
-            if self.auton_position == 3:
-                time.sleep(10)
-
-                self.send_action('goto_location_ned', {'n': 0, 'e': 1, 'd': -1, 'heading': 0, 'rel': True})
-                self.wait_for_state("flightEvent", "GOTO_FINISH", 10)
-                
-                self.setPosition()
-
             # takeoff, move in a square, land
-            if self.auton_position == 4:
+            if self.auton_position == 2:
                 self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
                 self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=45)
                 self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=135)
@@ -346,7 +330,7 @@ class Sandbox(MQTTModule):
                 self.setPosition()
             
             # More complex movement pattern
-            if self.auton_position == 5:
+            if self.auton_position == 3:
                 self.add_mission_waypoint('goto', (0, 0, 1))
                 self.add_mission_waypoint('goto', (1, .25, 1), 20, 3)
                 self.add_mission_waypoint('goto', (2, .25, 1), 0, 3)
@@ -357,25 +341,59 @@ class Sandbox(MQTTModule):
                 self.setPosition()
             
             # Do you even need a 'takeoff' command?
-            if self.auton_position == 6:
+            if self.auton_position == 4:
                 self.add_mission_waypoint('goto', (1, 0, 1), goto_hold_time=5)
                 self.add_mission_waypoint('land', (1, 0, 0))
                 self.upload_and_engage_mission()
                 self.setPosition()
 
+
+            # ===============
+            # Competition formatted tests
+
+            # Starting point -> Box pickup -> Box drop (slow)
+            if self.auton_position == 5:
+                self.add_mission_waypoint('goto', (0, 0, 1))
+                self.add_mission_waypoint('goto', (0, 10.8, 0.5))
+                self.add_mission_waypoint('land', (0, 10.8, 0))
+                self.upload_and_engage_mission()
+
+                time.sleep(5)
+                self.wait_for_state('flightEvent', "ON_GROUND", 25)
+
+                self.add_mission_waypoint('goto', (0, 10.8, 1))
+                self.add_mission_waypoint('goto', (0.105, 4.516, 0.5))
+                self.add_mission_waypoint('land', (0.105, 4.516, 0))
+                self.upload_and_engage_mission()
+                self.setPosition()
+
+
+            # Starting point -> Box pickup -> Box drop (fast)
+            if self.auton_position == 6:
+                self.add_mission_waypoint('goto', (0, 5, 1), acceptanceRad=0.5)
+                self.add_mission_waypoint('land', (0, 10.8, 0))
+                self.upload_and_engage_mission()
+
+                time.sleep(5)
+                self.wait_for_state('flightEvent', "ON_GROUND", 25)
+
+                self.add_mission_waypoint('goto', (0, 5, 1), acceptanceRad=0.5)
+                self.add_mission_waypoint('land', (0.105, 4.516, 0))
+                self.upload_and_engage_mission()
+                self.setPosition()
     
 
     # region Mission and Waypoint methods
     # PX4 mission mode docs: https://docs.px4.io/main/en/flight_modes_mc/mission.html
-    def add_mission_waypoint(self, waypointType: Literal["goto", "land"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
+    def add_mission_waypoint(self, waypointType: Literal["goto", "land", "loiter"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = .10) -> None:
         """Add a waypoint to the mission_waypoints list.
 
         Args:
-            waypointType (Literal["goto", "land"]): Must be one of `goto` or `land`. If the drone is landed, it will takeoff first before preceeding towards the waypoint
+            waypointType (Literal["goto", "land", "loiter"]): Either `goto` a set of coordinates, `land` at a set of coordinates, or `loiter` indefinitely around a set of coordinates. If the drone is landed, it will takeoff first before preceeding towards the waypoint
             coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
             yaw_angle (float, optional): Heading that the drone will be facing when it reaches the waypoint. Defaults to 0, which is straight forward from start
-            goto_hold_time (float, optional): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
-            goto_acceptance_radius (float, optional): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
+            goto_hold_time (float, goto ONLY): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
+            goto_acceptance_radius (float, goto ONLY): Acceptance radius in meters (if the sphere with this radius is hit, the waypoint counts as reached). Only matters for `goto` waypoints. Defaults to .10 (roughly 4 inches)
  
         MAVLink mission syntax docs:
         https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
@@ -462,8 +480,7 @@ class Sandbox(MQTTModule):
         """Broadcast current auton position
         """
         self.send_message("avr/autonomous/position", {"position": number})
-
-
+    
     # region Helper methods
     def wait_for_apriltag_id(self, id: int, timeout: float = 5) -> bool:
         """Wait until a specificied Apriltag ID is detected, or a timeout is reached

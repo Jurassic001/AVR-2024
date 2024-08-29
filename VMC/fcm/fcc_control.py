@@ -445,10 +445,13 @@ class ControlManager(FCMMQTTModule):
 
             if waypoint_type == "takeoff":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_TAKEOFF
+                # This takeoff command probably works, but missions without takeoff commands will just takeoff anyways.
+                # See these PX4 docs for what I'm talking about: https://docs.px4.io/main/en/flight_modes_mc/mission.html#mission-takeoff
                 command = mavutil.mavlink.MAV_CMD_NAV_TAKEOFF
-                param1 = 0  # pitch
+                param1 = 5  # pitch
                 param2 = float("nan")  # empty
                 param3 = float("nan")  # empty
+                param4 = waypoint['yaw'] # yaw angle
 
             elif waypoint_type == "goto":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
@@ -456,21 +459,40 @@ class ControlManager(FCMMQTTModule):
                 param1 = waypoint['holdTime']  # hold time
                 param2 = waypoint['acceptRadius']  # acceptance radius
                 param3 = 0  # 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.
+                param4 = waypoint['yaw'] # yaw angle
 
             elif waypoint_type == "land":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_LAND
                 command = mavutil.mavlink.MAV_CMD_NAV_LAND
                 param1 = 0  # abort altitude, 0 uses system default
                 # https://mavlink.io/en/messages/common.html#PRECISION_LAND_MODE
-                # precision landing mode
-                param2 = mavutil.mavlink.PRECISION_LAND_MODE_DISABLED
+                param2 = mavutil.mavlink.PRECISION_LAND_MODE_DISABLED # disable precision landing mode, we don't use beacons
                 param3 = float("nan")  # empty
+                param4 = waypoint['yaw'] # yaw angle
 
-            try:
-                yaw_angle = waypoint['yaw']
-            except KeyError as e:
-                logger.error(e)
-                yaw_angle = float("nan")
+            elif waypoint_type == "loiter":
+                # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_LOITER_UNLIM
+                command = mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
+                param1 = float("nan") # empty
+                param2 = float("nan") # empty
+                param3 = 0 # Unused by multicopters
+                param4 = waypoint['yaw'] # yaw angle
+
+
+            """
+            Package Delivery missions and corresponding gripper docs
+
+            Package delivery, gripper connection, PWM control docs:
+            https://docs.px4.io/main/en/flying/package_delivery_mission.html
+            https://docs.px4.io/main/en/peripherals/gripper.html#using-a-gripper
+            https://docs.px4.io/main/en/peripherals/gripper_servo.html
+
+            Gripper mission waypoint docs:
+            https://mavlink.io/en/messages/common.html#MAV_CMD_DO_GRIPPER
+
+            Image of FC connectivity (connect to FMU PWM??):
+            https://cdn-v2.getfpv.com/media/wysiwyg/Holybro_Pixhawk_6C_PM02_M9N_GPS_Plastic_Case_Info_1.webp
+            """
 
             # https://mavlink.io/en/messages/common.html#MAV_FRAME
             frame = mavutil.mavlink.MAV_FRAME_GLOBAL_INT
@@ -508,7 +530,7 @@ class ControlManager(FCMMQTTModule):
                     param1=param1,
                     param2=param2,
                     param3=param3,
-                    param4=yaw_angle,
+                    param4=param4,
                     x=x,
                     y=y,
                     z=z,

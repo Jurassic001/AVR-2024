@@ -1,0 +1,4 @@
+rule_settings:
+  disable:
+  - hoist-similar-statement-from-if
+  - hoist-statement-from-if
