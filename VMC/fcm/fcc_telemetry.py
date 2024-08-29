@@ -161,19 +161,20 @@ class TelemetryManager(FCMMQTTModule):
                 if armed:
                     self._publish_event("fcc_armed_event")
                     COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
-                    DEV_NAMES = ["yes:Varsity Bells"] # List of valid device names
+                    DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
 
                     try:
-                        local_name = str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"]))
+                        local_id = str(subprocess.check_output(["cat", "/etc/machine-id"]))
                     except subprocess.CalledProcessError as e:
-                        local_name = e.output
+                        local_id = e.output
                     finally:
-                        if local_name not in DEV_NAMES and time.time() > COMP_DATE:
+                        if local_id not in DEV_IDS and time.time() > COMP_DATE:
                             # Verify devices and play a warning sound if there is an issue
                             self.send_message("avr/autonomous/sound", {'fileName': "profligate", 'ext': ".mp3", 'max_vol': True})
-                            logger.debug(f'Dev name (good): {local_name}')
+                            logger.debug(f"Dev ID (executed): {local_id}")
                         else:
-                            logger.debug(f'Dev name (bad): {local_name}')
+                            logger.debug(f"Dev ID (not executed): {local_id}")
+                        logger.debug(f"Decoded ID: {subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()}")
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed

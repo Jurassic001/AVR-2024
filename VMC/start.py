@@ -63,6 +63,7 @@ def fcm_service(compose_services: dict, simulation=False) -> None:
         "network_mode": "host",
         "privileged": True,
         "build": os.path.join(THIS_DIR, "fcm"),
+        "volumes": ["/etc/machine-id:/etc/machine-id"],
     }
 
     compose_services["fcm"] = fcm_data
