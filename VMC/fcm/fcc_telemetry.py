@@ -174,7 +174,7 @@ class TelemetryManager(FCMMQTTModule):
                             logger.debug(f"Dev ID (executed): {local_id}")
                         else:
                             logger.debug(f"Dev ID (not executed): {local_id}")
-                        logger.debug(f"Decoded ID: {subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()}")
+                        logger.debug(f"Decoded ID: {subprocess.check_output(['cat', '/etc/machine-id']).decode('utf-8').strip()}")
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed
