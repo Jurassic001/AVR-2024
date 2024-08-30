@@ -1,9 +1,4 @@
 # AVR-2024
-<!--
-## Project Management
-
-For Bell employees and partners, work items are tracked on [Trello](https://trello.com/bellavr).
--->
 ## Structure
 
 - `.github`: GitHub Actions files
@@ -14,22 +9,16 @@ For Bell employees and partners, work items are tracked on [Trello](https://trel
 - `scripts`: Development scripts
 - `VMC`: VMC flight software
 
-Documentation is located on the `docs` branch.
-
-## To do
-
-- ~~Complete an autonomous flight test (takeoff, go forward, land)~~
-- Complete an autonomous flight that moves the drone along a predetermined path, with turns and holds at several points along the path
-
 ## Repo Setup
 <!--
-All this should already be done
+This is done when you clone the HPBell repo that contains ALL code for RVR, DEXI, etc.
+If you only specifically want the AVR-2024 repo, then follow these steps.
 
 Clone the repository with submodules:
 
 ```bash
-git clone --recurse-submodules https://github.com/bellflight/AVR-2022
-cd AVR-2022
+git clone --recurse-submodules https://github.com/Jurassic001/AVR-2024
+cd AVR-2024
 ```
 
 If you already have the repo cloned, run
@@ -43,6 +32,8 @@ to initialize and/or update the submodules.
 ### VSCode Setup
 
 <!--
+Our repo doesn't have tags (we don't do releases) so this point is moot
+
 We recommend setting `git.pullTags` to `false` in VS Code workspace settings
 to prevent tag errors when doing `git pull`, along with installing the
 recommended extensions.
@@ -88,11 +79,6 @@ python scripts/install_requirements.py
 ### Jetson Development
 Follow the instructions inside
 [VMC/README.md](VMC/README.md) to build & run the AVR software on the Jetson
-<!--
-Added this to the VMC README, which is where it's more relevant
 
-Note, with `start.py` commands, make sure to add `--local` to the command.
-This builds the Docker images locally rather than using prebuilt ones from GitHub CR.
--->
 ### Local Development
 If you want to build/run Docker images not on a Jetson, look at [VMC/Docker_instructions.md](VMC/Docker_instructions.md)
