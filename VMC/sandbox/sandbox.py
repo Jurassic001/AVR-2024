@@ -116,22 +116,20 @@ class Sandbox(MQTTModule):
             logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
         
     def handle_thermal_data(self, payload: dict) -> None:
-        if payload.keys().__contains__('state'):
-            self.thermal_state = payload['state']
-            if self.thermal_state == 2:
-                turret_angles = [1450, 1450]
-                self.send_message(
-                            "avr/pcm/set_servo_abs",
-                            AvrPcmSetServoAbsPayload(servo= 2, absolute= turret_angles[0])
-                        )
-                self.send_message(
-                            "avr/pcm/set_servo_abs",
-                            AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
-                        )
-        if payload.keys().__contains__('range'):
-            self.target_range = payload['range'][:2]
-            logger.debug(self.target_range)
-            self.targeting_step = int(payload['range'][2])
+        self.thermal_state = payload['state']
+        if self.thermal_state == 2:
+            turret_angles = [1450, 1450]
+            self.send_message(
+                        "avr/pcm/set_servo_abs",
+                        AvrPcmSetServoAbsPayload(servo= 2, absolute= turret_angles[0])
+                    )
+            self.send_message(
+                        "avr/pcm/set_servo_abs",
+                        AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
+                    )
+        self.target_range = payload['range'][:2]
+        logger.debug(self.target_range)
+        self.targeting_step = int(payload['range'][2])
 
     def handle_fcm_pos(self, payload: AvrFcmLocationLocalPayload) -> None:
         self.fcm_position = [payload['dX'], payload['dY'], payload['dZ']*-1]

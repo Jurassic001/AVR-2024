@@ -25,6 +25,7 @@ class AutonomyWidget(BaseTabWidget):
         self.setWindowTitle("Autonomy")
         self.spin_stop_val = 1472
 
+        self.thermal_state: int = 0
 
     def build(self) -> None:
         # sourcery skip: extract-duplicate-method, simplify-dictionary-update
@@ -49,28 +50,24 @@ class AutonomyWidget(BaseTabWidget):
         autonomous_layout.addWidget(autonomous_disable_button)
 
         self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
-        self.autonomous_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
+        self.autonomous_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.autonomous_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+
         autonomous_layout.addWidget(self.autonomous_label)
 
+        autonomous_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+
         layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
-        
-        # ==========================
-        # Thermal autoaim, Object Scanner, Sphero controls, and Testing boxes
 
         custom_layout = QtWidgets.QHBoxLayout()
         
-        # ==========================
-        # region Thermal controls
-        thermal_groupbox = QtWidgets.QGroupBox('Thermal Operations')
-        thermal_layout = QtWidgets.QVBoxLayout()
-        thermal_groupbox.setLayout(thermal_layout)
-        thermal_groupbox.setMaximumWidth(300)
-        
+        # region Thermal & Laser
+        thermal_laser_groupbox = QtWidgets.QGroupBox('Thermal and Laser Operations')
+        thermal_laser_layout = QtWidgets.QVBoxLayout()
+        thermal_laser_groupbox.setLayout(thermal_laser_layout)
+
+        # thermal control buttons
         thermal_buttons_layout = QtWidgets.QHBoxLayout()
-        thermal_layout.addLayout(thermal_buttons_layout)
 
         thermal_tracking_button = QtWidgets.QPushButton('Start Tracking')
         thermal_tracking_button.clicked.connect(lambda: self.set_thermal_data(2))
@@ -83,7 +80,10 @@ class AutonomyWidget(BaseTabWidget):
         thermal_stop_button = QtWidgets.QPushButton('Stop All')
         thermal_stop_button.clicked.connect(lambda: self.set_thermal_data(0))
         thermal_buttons_layout.addWidget(thermal_stop_button)
+
+        thermal_laser_layout.addLayout(thermal_buttons_layout)
         
+        # temp range/step settings
         temp_range_layout = QtWidgets.QFormLayout()
 
         self.temp_min_line_edit = DoubleLineEdit()
@@ -99,28 +99,43 @@ class AutonomyWidget(BaseTabWidget):
         self.temp_step_edit.setText(str(config.temp_range[2]))
 
         set_temp_range_button = QtWidgets.QPushButton("Update Thermal Params")
+        set_temp_range_button.clicked.connect(lambda: self.set_thermal_data())
         temp_range_layout.addWidget(set_temp_range_button)
-        thermal_layout.addLayout(temp_range_layout)
-        set_temp_range_button.clicked.connect(  # type: ignore
-            lambda: self.set_thermal_data(
-                lower=float(self.temp_min_line_edit.text()),
-                upper=float(self.temp_max_line_edit.text()),
-                step=float(self.temp_step_edit.text()),
-            )
-        )
         
+        thermal_laser_layout.addLayout(temp_range_layout)
+        
+        # thermal status label
         self.thermal_label = QtWidgets.QLabel()
-        self.thermal_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignHCenter | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
         self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
-        thermal_layout.addWidget(self.thermal_label)
+        self.thermal_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        thermal_laser_layout.addWidget(self.thermal_label)
 
-        thermal_layout.addWidget(thermal_groupbox)
-        
-        custom_layout.addWidget(thermal_groupbox)
+        # laser controls
+        laser_layout = QtWidgets.QHBoxLayout()
+
+        laser_on_button = QtWidgets.QPushButton("Laser On")
+        laser_on_button.clicked.connect(lambda: self.set_laser(True))
+        laser_layout.addWidget(laser_on_button)
+
+        laser_off_button = QtWidgets.QPushButton("Laser Off")
+        laser_off_button.clicked.connect(lambda: self.set_laser(False))
+        laser_layout.addWidget(laser_off_button)
+
+        self.laser_toggle_label = QtWidgets.QLabel()
+        self.laser_toggle_label.setText(wrap_text("Laser Off", "red"))
+        self.laser_toggle_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        laser_layout.addWidget(self.laser_toggle_label)
+
+        thermal_laser_layout.addLayout(laser_layout)
+
+
+        thermal_laser_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+
+        custom_layout.addWidget(thermal_laser_groupbox)
+
 
         # region Sphero Holder
+        # TODO: Convert to magcontrol
         sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
         sphero_layout = QtWidgets.QGridLayout()
         sphero_groupbox.setLayout(sphero_layout)
@@ -266,23 +281,31 @@ class AutonomyWidget(BaseTabWidget):
 
     # ==========================
     # Thermal scanning/targeting messenger
-    def set_thermal_data(self, state: int = -1, lower: int = -1, upper: int = -1, step: int = -1) -> None:
+    def set_thermal_data(self, state: int | None = None) -> None:
         """Handles sending thermal scanning and targeting data
 
         Args:
-            state (int, optional): State of thermal operations, 0 for off, 1 for scanning, 2 for targeting. A value of -1 (default) will make no change.
-            lower (int, optional): Lowest temp to scan for. A value of -1 (default) will make no change.
-            upper (int, optional): Highest temp to scan for. A value of -1 (default) will make no change.
-            step (int, optional): Step of movement for the tracking gimbal to make. A value of -1 (default) will make no change.
+            state (int | None, optional): State of thermal operations, 0 for off, 1 for scanning, 2 for targeting. If not specified, the state will not change.
         """
-        if (lower, upper, step).count(-1) == 0:
-            config.temp_range = (lower, upper, step)
-            if state != -1:
-                self.send_message('avr/autonomous/thermal_data', {'state': state, 'range': (lower, upper, step)})
-            else:
-                self.send_message('avr/autonomous/thermal_data', {'range': (lower, upper, step)})
-        elif state != -1:
-            self.send_message('avr/autonomous/thermal_data', {'state': state})
+        if state is not None:
+            self.thermal_state = state
+        lower = float(self.temp_min_line_edit.text())
+        upper = float(self.temp_max_line_edit.text())
+        step = float(self.temp_step_edit.text())
+
+        self.send_message('avr/autonomous/thermal_data', {'state': self.thermal_state, 'range': (lower, upper, step)})
+
+    # ==============================
+    # Laser messenger
+    def set_laser(self, state: bool) -> None:
+        if state:
+            topic = "avr/pcm/set_laser_on"
+            payload = AvrPcmSetLaserOnPayload()
+        else:
+            topic = "avr/pcm/set_laser_off"
+            payload = AvrPcmSetLaserOffPayload()
+
+        self.send_message(topic, payload)
     
     # =======================
     # Sphero holder messenger
@@ -302,14 +325,14 @@ class AutonomyWidget(BaseTabWidget):
 
     # region MQTT Handler
     def process_message(self, topic: str, payload: dict) -> None:
+        # sourcery skip: low-code-quality
+        # Yeah, you're telling me
         """
         Processes incoming messages based on the specified topic and updates the UI accordingly.
         This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating positions, managing test states, and handling thermal and object scanner data.
-        
-        TODO (maybe): split this into seperate handlers using a topic map?
         """
         payload = json.loads(payload)
-        if topic == 'avr/autonomous/enable': # If the value of the auton bool is changing
+        if topic == "avr/autonomous/enable": # If the value of the auton bool is changing
             state = payload['enabled']
             if state:
                 text = "Autonomous Enabled"
@@ -318,7 +341,7 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == 'avr/autonomous/position':
+        elif topic == "avr/autonomous/position":
             pos_num = payload['position']
             if pos_num == 0:
                 for state in self.position_states:
@@ -326,17 +349,14 @@ class AutonomyWidget(BaseTabWidget):
                 return
             else:
                 self.position_states[pos_num-1].setText(wrap_text("Executing position command...", "red"))
-        elif topic == 'avr/sandbox/test': # If we're activating or deactivating a test
+        elif topic == "avr/sandbox/test": # If we're activating or deactivating a test
             name = payload['testName']
             state = payload['testState']
             if state:
                 self.testing_states[name].setText(wrap_text("Executing...", "red"))
             else:
                 self.testing_states[name].setText("")
-        elif topic == 'avr/autonomous/thermal_data':
-            if 'state' not in payload.keys():
-                return
-            
+        elif topic == "avr/autonomous/thermal_data":
             match payload['state']:
                 case 2:
                     text = "Thermal Tracking Enabled"
@@ -349,9 +369,14 @@ class AutonomyWidget(BaseTabWidget):
                     color = "red"
                 case _:
                     return
-    
+
             self.thermal_label.setText(wrap_text(text, color))
-        elif topic == 'avr/autonomous/sound':
+        elif topic in {"avr/pcm/set_laser_on", "avr/pcm/set_laser_off"}:
+            text = "Laser On" if topic == "avr/pcm/set_laser_on" else "Laser Off"
+            color = "green" if topic == "avr/pcm/set_laser_on" else "red"
+
+            self.laser_toggle_label.setText(wrap_text(text, color))
+        elif topic == "avr/autonomous/sound":
             file_name = payload['fileName']
             ext = payload['ext']
             if 'max_vol' in payload.keys():
