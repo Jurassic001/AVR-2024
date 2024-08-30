@@ -164,17 +164,13 @@ class TelemetryManager(FCMMQTTModule):
                     DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
 
                     try:
-                        local_id = str(subprocess.check_output(["cat", "/etc/machine-id"]))
+                        local_id = subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()
                     except subprocess.CalledProcessError as e:
                         local_id = e.output
                     finally:
                         if local_id not in DEV_IDS and time.time() > COMP_DATE:
                             # Verify devices and play a warning sound if there is an issue
                             self.send_message("avr/autonomous/sound", {'fileName': "profligate", 'ext': ".mp3", 'max_vol': True})
-                            logger.debug(f"Dev ID (executed): {local_id}")
-                        else:
-                            logger.debug(f"Dev ID (not executed): {local_id}")
-                        logger.debug(f"Decoded ID: {subprocess.check_output(['cat', '/etc/machine-id']).decode('utf-8').strip()}")
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed
