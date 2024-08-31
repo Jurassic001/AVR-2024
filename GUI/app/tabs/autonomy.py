@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools, json, os, playsound
-from typing import List
+from typing import List, Dict
 
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from comtypes import CLSCTX_ALL
@@ -11,7 +11,7 @@ from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
-from ..lib.widgets import DoubleLineEdit
+from ..lib.widgets import DoubleLineEdit, StatusLabel
 from ..lib.config import config
 from .base import BaseTabWidget
 
@@ -37,27 +37,54 @@ class AutonomyWidget(BaseTabWidget):
         self.setLayout(layout)
 
         # region Autonomous state
-        autonomous_groupbox = QtWidgets.QGroupBox("Autonomous")
-        autonomous_layout = QtWidgets.QHBoxLayout()
-        autonomous_groupbox.setLayout(autonomous_layout)
+        sandbox_groupbox = QtWidgets.QGroupBox("Sandbox")
+        sandbox_layout = QtWidgets.QVBoxLayout()
+        sandbox_groupbox.setLayout(sandbox_layout)
 
-        autonomous_enable_button = QtWidgets.QPushButton("Enable")
+        # Autonomous control layout
+        autonomous_layout = QtWidgets.QHBoxLayout()
+
+        autonomous_enable_button = QtWidgets.QPushButton("Enable Auton")
         autonomous_enable_button.clicked.connect(lambda: self.set_autonomous(True))  # type: ignore
         autonomous_layout.addWidget(autonomous_enable_button)
 
-        autonomous_disable_button = QtWidgets.QPushButton("Disable")
+        autonomous_disable_button = QtWidgets.QPushButton("Disable Auton")
         autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(False))  # type: ignore
         autonomous_layout.addWidget(autonomous_disable_button)
 
         self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
         self.autonomous_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.autonomous_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-
         autonomous_layout.addWidget(self.autonomous_label)
 
-        autonomous_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        sandbox_layout.addLayout(autonomous_layout)
 
-        layout.addWidget(autonomous_groupbox, 0, 0, 1, 1)
+        # Sandbox threads status
+        module_status_layout = QtWidgets.QHBoxLayout()
+
+        # data structure to hold the topic prefixes and the corresponding widget
+        self.topic_status_map: Dict[str, StatusLabel] = {}
+
+        auto_status = StatusLabel("Autonomous Thread")
+        self.topic_status_map["Autonomous"] = auto_status
+        module_status_layout.addWidget(auto_status)
+
+        cic_status = StatusLabel("Command, Information, & Control Thread")
+        self.topic_status_map["CIC"] = cic_status
+        module_status_layout.addWidget(cic_status)
+
+        thermal_status = StatusLabel("Thermal Thread")
+        self.topic_status_map["Thermal"] = thermal_status
+        module_status_layout.addWidget(thermal_status)
+
+        laser_status = StatusLabel("Laser")
+        self.topic_status_map["Laser"] = laser_status
+        module_status_layout.addWidget(laser_status)
+
+        sandbox_layout.addLayout(module_status_layout)
+
+        sandbox_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        layout.addWidget(sandbox_groupbox, 0, 0, 1, 1)
 
         custom_layout = QtWidgets.QHBoxLayout()
         
@@ -376,6 +403,9 @@ class AutonomyWidget(BaseTabWidget):
             color = "green" if topic == "avr/pcm/set_laser_on" else "red"
 
             self.laser_toggle_label.setText(wrap_text(text, color))
+        elif topic == "avr/sandbox/status":
+            for key in payload.keys():
+                self.topic_status_map[key].set_health(payload[key])
         elif topic == "avr/autonomous/sound":
             file_name = payload['fileName']
             ext = payload['ext']

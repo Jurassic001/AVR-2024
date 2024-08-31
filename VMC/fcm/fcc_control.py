@@ -583,29 +583,31 @@ class ControlManager(FCMMQTTModule):
         """
         Creates and uploads an inclusive geofence given min/max lat/lon.
         """
+        try:
+            min_lat = points["min_lat"]
+            min_lon = points["min_lon"]
+            max_lat = points["max_lat"]
+            max_lon = points["max_lon"]
 
-        min_lat = points["min_lat"]
-        min_lon = points["min_lon"]
-        max_lat = points["max_lat"]
-        max_lon = points["max_lon"]
-
-        logger.info(
-            f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"
-        )
-
-        # need to create a rectangle, PX4 isn't quite smart enough
-        # to recognize only two corners
-        tl_point = Point(max_lat, min_lon)
-        tr_point = Point(max_lat, max_lon)
-        bl_point = Point(min_lat, min_lon)
-        br_point = Point(min_lat, max_lon)
-
-        fence = [
-            Polygon(
-                [tl_point, tr_point, bl_point, br_point], Polygon.FenceType.INCLUSION
+            logger.info(
+                f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"
             )
-        ]
-        await self.drone.geofence.upload_geofence(fence)
+
+            # need to create a rectangle, PX4 isn't quite smart enough
+            # to recognize only two corners
+            tl_point = Point(max_lat, min_lon)
+            tr_point = Point(max_lat, max_lon)
+            bl_point = Point(min_lat, min_lon)
+            br_point = Point(min_lat, max_lon)
+
+            fence = [
+                Polygon(
+                    [tl_point, tr_point, bl_point, br_point], Polygon.FenceType.INCLUSION
+                )
+            ]
+            await self.drone.geofence.upload_geofence(fence)
+        except Exception as e:
+            logger.error(e)
 
     # endregion ###############################################################
 

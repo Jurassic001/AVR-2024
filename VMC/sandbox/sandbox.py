@@ -23,22 +23,21 @@ class Sandbox(MQTTModule):
             'avr/fcm/attitude/euler': self.handle_attitude,
             'avr/sandbox/test': self.handle_testing,
             'avr/fcm/events': self.handle_events,
+            'avr/pcm/set_laser_on': self.handle_laser,
+            'avr/pcm/set_laser_off': self.handle_laser,
             }
 
         # Assorted booleans
         self.CIC_loop: bool = True
         self.show_status: bool = True
-        self.pause: bool = False
         self.autonomous: bool = False
         self.fcm_connected: bool = False
-        self.thermalThreadRun: bool = False # Determines if the thermal thread will be run
         
         # Position vars
         self.fcm_position: list = [0, 0, 0]
         self.fus_position: list = [0, 0, 0]
-        self.attitude: dict[str, float] = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
-        self.start_pos: tuple = (0, 0, 0) # In meters
-        self.landing_pads: dict[str, tuple[float, float, float]] = {'start': (0.0, 0.0, 0.0), 'end': (0.0, 0.0, 0.0)} # This is in meters, so compare to FCM coords, not Fusion coords
+        self.attitude: dict[str, float] = {'pitch': 0.0, 'roll': 0.0, 'yaw': 0.0}
+        self.landing_pads: dict[str, tuple[float, float, float]] = {'start': (0.0, 0.0, 0.0), 'loading': (0.085, 10.822, 0.0)} # meters
         
         # Auton vars
         self.mission_waypoints: list[dict] = []
@@ -72,11 +71,8 @@ class Sandbox(MQTTModule):
         self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0] # wrgb
         self.hotspot_color: tuple[int, int, int, int] = [255, 0, 0, 0] # wrgb
         
-        self.threads: dict
-        
-        
-    def set_threads(self, threads: dict):
-        self.threads: dict = threads
+        self.threads: dict[str, Thread] = {}
+
 
     # region Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
@@ -189,11 +185,16 @@ class Sandbox(MQTTModule):
         if newState != self.states['flightEvent']:
             logger.debug(f"New Flight Event: {newState}")
             self.states['flightEvent'] = newState
+    
+    def handle_laser(self, payload: AvrPcmSetLaserOnPayload | AvrPcmSetLaserOffPayload):
+        """Handle laser messages, set value of the laser_on instance variable
+        """
+        self.laser_on = isinstance(payload, AvrPcmSetLaserOnPayload)
 
 
     # region Thermal Thread
     def Thermal(self) -> None:
-        logger.debug('Thermal Scanning/Targeting Thread: Online')
+        logger.debug("Thermal Thread: Online")
         turret_angles = [1450, 1450]
         while True:
             
@@ -240,7 +241,7 @@ class Sandbox(MQTTModule):
 
     # region CIC Thread
     def CIC(self) -> None:
-        logger.debug('Command, Information, & Control Thread: Online')
+        logger.debug("Command, Information, & Control Thread: Online")
         status_thread = Thread(target=self.status)
         status_thread.daemon = True
         status_thread.start()
@@ -277,17 +278,21 @@ class Sandbox(MQTTModule):
             
     # region Status Sub-Thread
     def status(self):
-        """ Shows the stats of the threads.
+        """Shows the status of the threads.
         """
-        logger.debug('Status Sub-Thread: Online')
-        onoffline = {True: 'Online', False: 'Offline'}
-        onoff = {True: 'On', False: 'Off'}
+        logger.debug("Status Sub-Thread: Online")
+        # onoffline = {True: 'Online', False: 'Offline'}
+        # onoff = {True: 'On', False: 'Off'}
         while True:
             if self.show_status:
                 time.sleep(0.5)
-                self.send_message(
-                    'avr/sandbox/CIC',
-                    {'Thermal Scanning/Targeting': onoffline[self.threads['thermal'].is_alive()], 'CIC': onoffline[self.threads['cic'].is_alive()], 'Autonomous': onoffline[self.threads['auto'].is_alive()], 'Laser': onoff[self.laser_on]}
+                self.send_message("avr/sandbox/status",
+                    {
+                        'Autonomous': self.threads['auto'].is_alive(),
+                        'CIC': self.threads['CIC'].is_alive(),
+                        'Thermal': self.threads['thermal'].is_alive(),
+                        'Laser': self.laser_on
+                    }
                 )
     
     # region Autonomous Thread
@@ -430,7 +435,7 @@ class Sandbox(MQTTModule):
 
     # region Messenger methods
     def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
-        self.send_action('set_geofence', {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
+        self.send_action("set_geofence", {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
     
     def set_armed(self, armed: bool) -> None:
         """Arm or disarm the FCC
@@ -460,7 +465,6 @@ class Sandbox(MQTTModule):
         self.send_message('avr/fcm/actions', {'action': action, 'payload': payload})
 
     def set_laser(self, state: bool) -> None:
-        self.laser_on = state
         if state:
             topic = "avr/pcm/set_laser_on"
             payload = AvrPcmSetLaserOnPayload()
@@ -546,14 +550,15 @@ if __name__ == '__main__':
     
     # Create Threads
     thermal_thread = Thread(target=box.Thermal, daemon=True)
-    if box.thermalThreadRun: thermal_thread.start()
-    
     CIC_thread = Thread(target=box.CIC, daemon=True)
-    CIC_thread.start()
-    
     autonomous_thread = Thread(target=box.Autonomous, daemon=True)
-    autonomous_thread.start()
     
-    box.set_threads({'thermal': thermal_thread, 'cic': CIC_thread, 'auto': autonomous_thread})
+    # Create dict of threads (for status reporting)
+    box.threads = {'thermal': thermal_thread, 'CIC': CIC_thread, 'auto': autonomous_thread}
+
+    # Start threads and run sandbox
+    thermal_thread.start()
+    CIC_thread.start()
+    autonomous_thread.start()
     
     box.run()
