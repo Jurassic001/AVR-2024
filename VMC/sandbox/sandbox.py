@@ -23,8 +23,8 @@ class Sandbox(MQTTModule):
             'avr/fcm/attitude/euler': self.handle_attitude,
             'avr/sandbox/test': self.handle_testing,
             'avr/fcm/events': self.handle_events,
-            'avr/pcm/set_laser_on': self.handle_laser,
-            'avr/pcm/set_laser_off': self.handle_laser,
+            'avr/pcm/set_laser_on': self.handle_laser_on,
+            'avr/pcm/set_laser_off': self.handle_laser_off,
             }
 
         # Assorted booleans
@@ -186,12 +186,13 @@ class Sandbox(MQTTModule):
             logger.debug(f"New Flight Event: {newState}")
             self.states['flightEvent'] = newState
     
-    def handle_laser(self, payload):
-        """Handle laser messages, set value of the laser_on instance variable
-
-        No TypeHinting because the Jetson runs Python 2.7 (T_T)
-        """
-        self.laser_on = isinstance(payload, AvrPcmSetLaserOnPayload)
+    def handle_laser_on(self):
+        """Handle laser_on messages"""
+        self.laser_on = True
+    
+    def handle_laser_off(self):
+        """Handle laser_off messages"""
+        self.laser_on = False
 
 
     # region Thermal Thread

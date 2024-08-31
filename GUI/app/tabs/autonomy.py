@@ -218,7 +218,7 @@ class AutonomyWidget(BaseTabWidget):
         testing_layout = QtWidgets.QVBoxLayout()
         testing_groupbox.setLayout(testing_layout)
 
-        self.testing_items: list[str] = ['Kill', 'Arm', 'Disarm', 'Zero NED'] # List of tests. If you want to add a test just add the name to this list
+        self.testing_items: list[str] = ['kill', 'arm', 'disarm', 'zero ned'] # List of tests. If you want to add a test just add the name to this list
         self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test
