@@ -186,8 +186,10 @@ class Sandbox(MQTTModule):
             logger.debug(f"New Flight Event: {newState}")
             self.states['flightEvent'] = newState
     
-    def handle_laser(self, payload: AvrPcmSetLaserOnPayload | AvrPcmSetLaserOffPayload):
+    def handle_laser(self, payload):
         """Handle laser messages, set value of the laser_on instance variable
+
+        No TypeHinting because the Jetson runs Python 2.7 (T_T)
         """
         self.laser_on = isinstance(payload, AvrPcmSetLaserOnPayload)
 
