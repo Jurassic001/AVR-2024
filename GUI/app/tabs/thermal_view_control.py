@@ -32,6 +32,7 @@ class Direction(Enum):
 
 
 class ThermalView(QtWidgets.QWidget):
+    # region Thermal Viewer
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
 
@@ -151,6 +152,7 @@ class ThermalView(QtWidgets.QWidget):
 
 
 class JoystickWidget(BaseTabWidget):
+    # region Joystick Widget
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
 
@@ -350,6 +352,7 @@ class JoystickWidget(BaseTabWidget):
 
 
 class ThermalViewControlWidget(BaseTabWidget):
+    # region Thermal window
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
 
@@ -363,7 +366,7 @@ class ThermalViewControlWidget(BaseTabWidget):
         layout_splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.setLayout(layout)
 
-        # viewer
+        # region =Viewer=
         viewer_groupbox = QtWidgets.QGroupBox("Viewer")
         viewer_layout = QtWidgets.QVBoxLayout()
         viewer_groupbox.setLayout(viewer_layout)
@@ -405,7 +408,7 @@ class ThermalViewControlWidget(BaseTabWidget):
 
         layout_splitter.addWidget(viewer_groupbox)
 
-        # joystick
+        # region =Joystick=
         joystick_groupbox = QtWidgets.QGroupBox("Joystick")
         joystick_layout = QtWidgets.QVBoxLayout()
         joystick_groupbox.setLayout(joystick_layout)
@@ -477,6 +480,7 @@ class ThermalViewControlWidget(BaseTabWidget):
         # don't allow us to shrink below size hint
         self.setMinimumSize(self.sizeHint())
 
+    # region Helper methods
     def inverted_checkbox_clicked(self) -> None:
         """
         Callback when joystick inverted checkbox is clicked
