@@ -77,10 +77,6 @@ class AutonomyWidget(BaseTabWidget):
         self.topic_status_map["Thermal"] = thermal_status
         module_status_layout.addWidget(thermal_status)
 
-        laser_status = StatusLabel("Laser")
-        self.topic_status_map["Laser"] = laser_status
-        module_status_layout.addWidget(laser_status)
-
         sandbox_layout.addLayout(module_status_layout)
 
         sandbox_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)

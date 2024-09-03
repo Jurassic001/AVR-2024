@@ -23,8 +23,6 @@ class Sandbox(MQTTModule):
             'avr/fcm/attitude/euler': self.handle_attitude,
             'avr/sandbox/test': self.handle_testing,
             'avr/fcm/events': self.handle_events,
-            'avr/pcm/set_laser_on': self.handle_laser_on,
-            'avr/pcm/set_laser_off': self.handle_laser_off,
             }
 
         # Assorted booleans
@@ -47,7 +45,6 @@ class Sandbox(MQTTModule):
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[int, int] = (30, 40)
         self.targeting_step: int = 7
-        self.laser_on: bool = False
         self.thermal_state: int = 0 # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
   
         # Flight Controller vars
@@ -185,14 +182,6 @@ class Sandbox(MQTTModule):
         if newState != self.states['flightEvent']:
             logger.debug(f"New Flight Event: {newState}")
             self.states['flightEvent'] = newState
-    
-    def handle_laser_on(self):
-        """Handle laser_on messages"""
-        self.laser_on = True
-    
-    def handle_laser_off(self):
-        """Handle laser_off messages"""
-        self.laser_on = False
 
 
     # region Thermal Thread
@@ -225,8 +214,8 @@ class Sandbox(MQTTModule):
 
             if self.thermal_state < 2: # If you aren't targeting then don't target
                 continue
-            elif not self.laser_on: # If you are targeting, make sure the laser is on
-                self.set_laser(True)
+
+            self.set_laser(True) # If you are targeting, make sure the laser is on
             
             # This just moves reactily in small steps, it also sucks ass.
             if heat_center[0] > 4:
@@ -294,7 +283,6 @@ class Sandbox(MQTTModule):
                         'Autonomous': self.threads['auto'].is_alive(),
                         'CIC': self.threads['CIC'].is_alive(),
                         'Thermal': self.threads['thermal'].is_alive(),
-                        'Laser': self.laser_on
                     }
                 )
     
