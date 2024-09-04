@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json, os, playsound
+import functools, json, os, playsound
 from typing import List, Dict
 
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
@@ -232,7 +232,12 @@ class AutonomyWidget(BaseTabWidget):
             
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
             test_layout.addWidget(test_exec_btn)
-            test_exec_btn.clicked.connect(lambda: self.set_test(item, True))
+            test_exec_btn.clicked.connect(functools.partial(self.set_test, item.lower(), True))
+
+            # Deactivating the test partway through wouldn't do anything, so this button is useless
+            # building_disable_button = QtWidgets.QPushButton("Deactivate Test")
+            # test_layout.addWidget(building_disable_button)
+            # building_disable_button.clicked.connect(functools.partial(self.set_test, item, False))
 
             testing_layout.addLayout(test_layout)
 
@@ -268,7 +273,7 @@ class AutonomyWidget(BaseTabWidget):
             
             position_exec_btn = QtWidgets.QPushButton("Execute Position Command")
             position_layout.addWidget(position_exec_btn)
-            position_exec_btn.clicked.connect(lambda: self.set_position(i+1))
+            position_exec_btn.clicked.connect(functools.partial(self.set_position, i+1))  # type: ignore
             
             positions_layout.addLayout(position_layout)
         layout.addWidget(positions_groupbox, 2, 0, 4, 1)
@@ -295,7 +300,7 @@ class AutonomyWidget(BaseTabWidget):
         self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state))
     
     def set_test(self, test_name: str, test_state: bool) -> None:
-        self.send_message("avr/sandbox/test", {'testName': test_name, 'testState': test_state})
+        self.send_message('avr/sandbox/test', {'testName': test_name, 'testState': test_state})
 
     # ==========================
     # Thermal scanning/targeting messenger
@@ -311,7 +316,7 @@ class AutonomyWidget(BaseTabWidget):
         upper = float(self.temp_max_line_edit.text())
         step = float(self.temp_step_edit.text())
 
-        self.send_message("avr/autonomous/thermal_data", {'state': self.thermal_state, 'range': (lower, upper, step)})
+        self.send_message('avr/autonomous/thermal_data', {'state': self.thermal_state, 'range': (lower, upper, step)})
 
     # ==============================
     # Laser messenger
