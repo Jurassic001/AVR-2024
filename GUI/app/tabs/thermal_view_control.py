@@ -20,7 +20,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from ..lib.calc import constrain, map_value
 from ..lib.color import wrap_text
 from ..lib.config import config
-from ..lib.widgets import DoubleLineEdit
+from ..lib.widgets import FloatLineEdit
 from .base import BaseTabWidget
 
 
@@ -379,20 +379,20 @@ class ThermalViewControlWidget(BaseTabWidget):
         # lay out the host label and line edit
         temp_range_layout = QtWidgets.QFormLayout()
 
-        self.temp_min_line_edit = DoubleLineEdit()
+        self.temp_min_line_edit = FloatLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Min Temp:"), self.temp_min_line_edit)
         self.temp_min_line_edit.setText(str(self.viewer.MINTEMP))
 
-        self.temp_max_line_edit = DoubleLineEdit()
+        self.temp_max_line_edit = FloatLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Max Temp:"), self.temp_max_line_edit)
         self.temp_max_line_edit.setText(str(self.viewer.MAXTEMP))
 
         set_temp_range_button = QtWidgets.QPushButton("Set Temp Range")
         temp_range_layout.addWidget(set_temp_range_button)
-        set_temp_range_button.clicked.connect(  # type: ignore
+        set_temp_range_button.clicked.connect(
             lambda: self.viewer.set_temp_range(
-                float(self.temp_min_line_edit.text()),
-                float(self.temp_max_line_edit.text()),
+                self.temp_min_line_edit.text_float(),
+                self.temp_max_line_edit.text_float(),
             )
         )
 
@@ -420,7 +420,7 @@ class ThermalViewControlWidget(BaseTabWidget):
         sub_joystick_layout.addWidget(self.joystick)
         
         gimbal_picker_layout = QtWidgets.QFormLayout()
-        gimbal_picker = DoubleLineEdit()
+        gimbal_picker = FloatLineEdit()
         gimbal_picker_layout.addRow(QtWidgets.QLabel("Gimbal:"), gimbal_picker)
         gimbal_picker.setText(str(1))
         
@@ -464,7 +464,7 @@ class ThermalViewControlWidget(BaseTabWidget):
         # connect signals
         self.joystick.emit_message.connect(self.emit_message.emit)
 
-        set_gimbal_button.clicked.connect(lambda: self.joystick.set_gimbal(int(gimbal_picker.text())))
+        set_gimbal_button.clicked.connect(lambda: self.joystick.set_gimbal(gimbal_picker.text_float()))
 
         center_gimbal_button.clicked.connect(lambda: self.joystick.center_gimbal())
 

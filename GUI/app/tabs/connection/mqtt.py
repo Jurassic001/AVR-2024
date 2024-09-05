@@ -196,7 +196,7 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         self.hostname_line_edit.returnPressed.connect(self.connect_button.click)  # type: ignore
         self.connect_button.clicked.connect(  # type: ignore
             lambda: self.mqtt_client.login(
-                self.localHost_checkbox.isChecked(), self.hostname_line_edit.text(), int(self.port_line_edit.text())
+                self.localHost_checkbox.isChecked(), self.hostname_line_edit.text(), self.port_line_edit.text_int()
             )
         )
         self.disconnect_button.clicked.connect(self.mqtt_client.logout)  # type: ignore

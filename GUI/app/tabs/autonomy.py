@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import functools, json, os, playsound
+import functools, json, os, playsound # Use functools.partial to assign different button press actions to buttons inside for-loops
 from typing import List, Dict
 
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
@@ -11,7 +11,7 @@ from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
-from ..lib.widgets import DoubleLineEdit, StatusLabel
+from ..lib.widgets import FloatLineEdit, StatusLabel
 from ..lib.config import config
 from .base import BaseTabWidget
 
@@ -21,10 +21,7 @@ from scipy.interpolate import interp1d
 class AutonomyWidget(BaseTabWidget):
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
-        self.spinner_speed_val = 1070
         self.setWindowTitle("Autonomy")
-        self.spin_stop_val = 1472
-
         self.thermal_state: int = 0
 
     def build(self) -> None:
@@ -32,7 +29,7 @@ class AutonomyWidget(BaseTabWidget):
         """
         Build the GUI layout
         """
-        print(os.getcwd())
+        # print(os.getcwd())
         layout = QtWidgets.QGridLayout(self)
         self.setLayout(layout)
 
@@ -109,15 +106,15 @@ class AutonomyWidget(BaseTabWidget):
         # temp range/step settings
         temp_range_layout = QtWidgets.QFormLayout()
 
-        self.temp_min_line_edit = DoubleLineEdit()
+        self.temp_min_line_edit = FloatLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Min:"), self.temp_min_line_edit)
         self.temp_min_line_edit.setText(str(config.temp_range[0]))
 
-        self.temp_max_line_edit = DoubleLineEdit()
+        self.temp_max_line_edit = FloatLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
         self.temp_max_line_edit.setText(str(config.temp_range[1]))
         
-        self.temp_step_edit = DoubleLineEdit()
+        self.temp_step_edit = FloatLineEdit()
         temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_step_edit)
         self.temp_step_edit.setText(str(config.temp_range[2]))
 
@@ -312,9 +309,9 @@ class AutonomyWidget(BaseTabWidget):
         """
         if state is not None:
             self.thermal_state = state
-        lower = float(self.temp_min_line_edit.text())
-        upper = float(self.temp_max_line_edit.text())
-        step = float(self.temp_step_edit.text())
+        lower = self.temp_min_line_edit.text_float()
+        upper = self.temp_max_line_edit.text_float()
+        step = self.temp_step_edit.text_float()
 
         self.send_message('avr/autonomous/thermal_data', {'state': self.thermal_state, 'range': (lower, upper, step)})
 
