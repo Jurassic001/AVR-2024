@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import functools
-import time
-import threading
 from typing import List, Literal, Tuple
-from playsound import playsound
 
 from bell.avr.mqtt.payloads import *
 from PySide6 import QtCore, QtWidgets
 
 from ..lib.color import wrap_text
 from ..lib.config import config
+from ..lib.widgets import IntLineEdit
 from .base import BaseTabWidget
 
 
@@ -19,6 +17,7 @@ class VMCControlWidget(BaseTabWidget):
     # to set LED color, open/close servos etc.
 
     def __init__(self, parent: QtWidgets.QWidget) -> None:
+        # region Init
         super().__init__(parent)
 
         self.setWindowTitle("VMC Control")
@@ -32,36 +31,68 @@ class VMCControlWidget(BaseTabWidget):
 
         self.changingLEDS: bool = False
 
-        # ==========================
-        # LEDs
+        # region LEDs
         led_groupbox = QtWidgets.QGroupBox("LEDs")
         led_layout = QtWidgets.QVBoxLayout()
         led_groupbox.setLayout(led_layout)
 
+        # Add buttons with stretch factors
         red_led_button = QtWidgets.QPushButton("Red")
         red_led_button.setStyleSheet("background-color: red")
         red_led_button.clicked.connect(lambda: self.set_led((255, 255, 0, 0)))  # type: ignore
         led_layout.addWidget(red_led_button)
+        led_layout.addStretch(1)
 
         green_led_button = QtWidgets.QPushButton("Green")
         green_led_button.setStyleSheet("background-color: green")
         green_led_button.clicked.connect(lambda: self.set_led((255, 0, 255, 0)))  # type: ignore
         led_layout.addWidget(green_led_button)
+        led_layout.addStretch(1)
 
         blue_led_button = QtWidgets.QPushButton("Blue")
         blue_led_button.setStyleSheet("background-color: blue; color: white")
         blue_led_button.clicked.connect(lambda: self.set_led((255, 0, 0, 255)))  # type: ignore
         led_layout.addWidget(blue_led_button)
+        led_layout.addStretch(1)
 
         clear_led_button = QtWidgets.QPushButton("Clear")
         clear_led_button.setStyleSheet("background-color: white")
         clear_led_button.clicked.connect(lambda: self.set_led((0, 0, 0, 0)))  # type: ignore
         led_layout.addWidget(clear_led_button)
+        led_layout.addStretch(1)
 
+        # region _Custom colors
+        custom_colors_layout = QtWidgets.QFormLayout()
+
+        white_int_lnedit = IntLineEdit(0, 255)
+        custom_colors_layout.addRow(QtWidgets.QLabel("White:"), white_int_lnedit)
+
+        red_int_lnedit = IntLineEdit(0, 255)
+        custom_colors_layout.addRow(QtWidgets.QLabel("Red:"), red_int_lnedit)
+
+        green_int_lnedit = IntLineEdit(0, 255)
+        custom_colors_layout.addRow(QtWidgets.QLabel("Green:"), green_int_lnedit)
+
+        blue_int_lnedit = IntLineEdit(0, 255)
+        custom_colors_layout.addRow(QtWidgets.QLabel("Blue:"), blue_int_lnedit)
+
+        set_custom_colors_btn = QtWidgets.QPushButton("Set WRGB of LED strip")
+        custom_colors_layout.addWidget(set_custom_colors_btn)
+        set_custom_colors_btn.clicked.connect(
+            lambda: self.set_led((
+                white_int_lnedit.text_int(),
+                red_int_lnedit.text_int(),
+                green_int_lnedit.text_int(),
+                blue_int_lnedit.text_int()
+            )))
+
+        led_layout.addLayout(custom_colors_layout)
+
+        led_groupbox.setMaximumWidth(200)
         layout.addWidget(led_groupbox, 0, 0, 3, 1)
 
-        # ==========================
-        # Servos
+
+        # region Servos
         self.servo_states: List[QtWidgets.QLabel] = []
 
         servos_groupbox = QtWidgets.QGroupBox("Servos")
@@ -85,6 +116,7 @@ class VMCControlWidget(BaseTabWidget):
         servos_layout.addLayout(servo_all_layout)
 
         for i in range(config.num_servos):
+            # region _Servo buttons
             servo_layout = QtWidgets.QHBoxLayout()
 
             # Servo name label
@@ -117,22 +149,55 @@ class VMCControlWidget(BaseTabWidget):
         layout.addWidget(servos_groupbox, 0, 1, 3, 3)
 
 
-        # # ==========================
-        # # PCC Reset
-        # reset_groupbox = QtWidgets.QGroupBox("Reset")
-        # reset_layout = QtWidgets.QVBoxLayout()
-        # reset_groupbox.setLayout(reset_layout)
+        # region Absolute cmds
+        abs_servo_groupbox = QtWidgets.QGroupBox("Absolute Servo Command")
+        abs_servo_form = QtWidgets.QFormLayout()
+        abs_servo_groupbox.setLayout(abs_servo_form)
 
-        # reset_button = QtWidgets.QPushButton("Reset PCC")
-        # reset_button.setStyleSheet("background-color: yellow")
-        # reset_button.clicked.connect(lambda: self.send_message("avr/pcm/reset", AvrPcmResetPayload()))  # type: ignore
-        # reset_layout.addWidget(reset_button)
+        abs_servo_number_lnedit = IntLineEdit(1, config.num_servos)
+        abs_servo_form.addRow(QtWidgets.QLabel("Servo Number:"), abs_servo_number_lnedit)
 
-        # layout.addWidget(reset_groupbox, 3, 3, 1, 1)
+        servo_abs_value_lnedit = IntLineEdit(0, 4096)
+        abs_servo_form.addRow(QtWidgets.QLabel("Value:"), servo_abs_value_lnedit)
 
+        # Value preset buttons
+        servo_abs_val_presets = {'Regular On': 425, 'Regular Off': 150, 'Continuous Go': 1070, 'Continuous Stop': 1472}
+        value_pres = QtWidgets.QHBoxLayout()
+
+        for key in servo_abs_val_presets:
+            preset_btn = QtWidgets.QPushButton(key)
+            preset_btn.clicked.connect(functools.partial(servo_abs_value_lnedit.setText, str(servo_abs_val_presets[key])))
+            value_pres.addWidget(preset_btn)
+        abs_servo_form.addRow(QtWidgets.QLabel("Value Presets:"), value_pres)
+
+        abs_activate_servo_btn = QtWidgets.QPushButton("Execute Absolute Servo Command")
+        abs_servo_form.addWidget(abs_activate_servo_btn)
+        abs_activate_servo_btn.clicked.connect(lambda: self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=abs_servo_number_lnedit.text_int(), absolute=servo_abs_value_lnedit.text_int())))
+
+        layout.addWidget(abs_servo_groupbox, 3, 0, 1, 2)
+
+
+        # region Percentage cmds
+        pct_servo_groupbox = QtWidgets.QGroupBox("Percentage Servo Command")
+        pct_servo_form = QtWidgets.QFormLayout()
+        pct_servo_groupbox.setLayout(pct_servo_form)
+
+        pct_servo_number_lnedit = IntLineEdit(1, config.num_servos)
+        pct_servo_form.addRow(QtWidgets.QLabel("Servo Number:"), pct_servo_number_lnedit)
+
+        servo_pct_value_lnedit = IntLineEdit(0, 100)
+        pct_servo_form.addRow(QtWidgets.QLabel("Percentage:"), servo_pct_value_lnedit)
+
+        pct_activate_servo_btn = QtWidgets.QPushButton("Execute Percentage Servo Command")
+        pct_servo_form.addWidget(pct_activate_servo_btn)
+        pct_activate_servo_btn.clicked.connect(lambda: self.send_message("avr/pcm/set_servo_pct", AvrPcmSetServoPctPayload(servo=pct_servo_number_lnedit.text_int(), percent=servo_pct_value_lnedit.text_int())))
+
+        layout.addWidget(pct_servo_groupbox, 3, 2, 1, 2)
+
+
+    # region Messengers
     def set_servo(self, number: int, action: Literal["open", "close", "stop"]) -> None:
-        """
-        Set a servo state
+        """Set a servos state
         """
         if action == "stop":
             self.send_message(
