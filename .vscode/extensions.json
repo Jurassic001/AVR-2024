@@ -2,6 +2,7 @@
     "recommendations": [
         // general
         "shardulm94.trailing-spaces",
+        "tamasfe.even-better-toml",
         // for Apriltags
         "ms-vscode.cpptools",
         "twxs.cmake",
