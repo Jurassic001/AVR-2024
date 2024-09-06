@@ -33,6 +33,7 @@ class DispatcherBusy(Exception):
 
 
 class DispatcherManager(FCMMQTTModule):
+    # region DispatcherManager
     def __init__(self) -> None:
         super().__init__()
         self.currently_running_task = None
@@ -84,6 +85,7 @@ class DispatcherManager(FCMMQTTModule):
 
 
 class ControlManager(FCMMQTTModule):
+    # region ControlManager
     def __init__(self) -> None:
         super().__init__()
 
@@ -174,8 +176,7 @@ class ControlManager(FCMMQTTModule):
         # logger.debug(f"FCM Control: (N: {n}) -- (E: {e}) -- (D: {d})")
         return np.linalg.norm([n, e, d])
 
-    # region ################## T E L E M E T R Y  ############################
-
+    # region Telemetry
     def position_lla_telemetry(self, payload: dict) -> None:
         """
         Handles incoming LLA telemetry from MQTT
@@ -201,11 +202,9 @@ class ControlManager(FCMMQTTModule):
 
     def set_home_capture(self, payload: dict) -> None:
         self.home_pos_init = False
+    # endregion
 
-    # endregion ###############################################################
-
-    # region ################## D I S P A T C H E R  ##########################
-
+    # region Dispatcher
     def handle_action_message(self, payload: dict) -> None:
         self.action_queue.put(payload)
 
@@ -283,11 +282,9 @@ class ControlManager(FCMMQTTModule):
                 asyncio.create_task(self.connect())
 
             raise e from e
+    # endregion
 
-    # endregion ###############################################################
-
-    # region #####################  A C T I O N S #############################
-
+    # region Actions
     @async_try_except()
     async def set_intentional_timeout(self, **kwargs) -> None:
         """
@@ -349,6 +346,37 @@ class ControlManager(FCMMQTTModule):
         await self.set_arm()
         logger.info("Sending takeoff command")
         await self.simple_action_executor(self.drone.action.takeoff, "takeoff")
+    
+    @async_try_except(reraise=True)
+    async def set_geofence(self, points: dict[str, int]) -> None:
+        """
+        Creates and uploads an inclusive geofence given min/max lat/lon.
+        """
+        try:
+            min_lat = points["min_lat"]
+            min_lon = points["min_lon"]
+            max_lat = points["max_lat"]
+            max_lon = points["max_lon"]
+
+            logger.info(
+                f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"
+            )
+
+            # need to create a rectangle, PX4 isn't quite smart enough
+            # to recognize only two corners
+            tl_point = Point(max_lat, min_lon)
+            tr_point = Point(max_lat, max_lon)
+            bl_point = Point(min_lat, min_lon)
+            br_point = Point(min_lat, max_lon)
+
+            fence = [
+                Polygon(
+                    [tl_point, tr_point, bl_point, br_point], Polygon.FenceType.INCLUSION
+                )
+            ]
+            await self.drone.geofence.upload_geofence(fence)
+        except Exception as e:
+            logger.error(e)
 
     @async_try_except(reraise=True)
     async def goto_location(self, **kwargs) -> None:
@@ -403,7 +431,9 @@ class ControlManager(FCMMQTTModule):
         self.target_pos["lon"] = new_lon
         self.target_pos["alt"] = -1 * kwargs["d"]
         self._publish_event("go_to_started_event")
+    # endregion
 
+    # region Missions
     @async_try_except(reraise=True)
     async def build(self, waypoints: List[dict]) -> List[MissionItem]:
         # sourcery skip: hoist-statement-from-loop, switch, use-assigned-variable
@@ -459,7 +489,7 @@ class ControlManager(FCMMQTTModule):
                 param1 = waypoint['holdTime']  # hold time
                 param2 = waypoint['acceptRadius']  # acceptance radius
                 param3 = 0  # 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.
-                param4 = waypoint['yaw'] # yaw angle
+                param4 = waypoint['yaw'] # yaw angle, float("nan") to use the current system yaw heading mode (https://docs.px4.io/main/en/advanced_config/parameter_reference.html#MPC_YAW_MODE)
 
             elif waypoint_type == "land":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_LAND
@@ -577,40 +607,8 @@ class ControlManager(FCMMQTTModule):
         """
         logger.info("Sending start mission command")
         await self.drone.mission_raw.start_mission()
-
-    @async_try_except(reraise=True)
-    async def set_geofence(self, points: dict[str, int]) -> None:
-        """
-        Creates and uploads an inclusive geofence given min/max lat/lon.
-        """
-        try:
-            min_lat = points["min_lat"]
-            min_lon = points["min_lon"]
-            max_lat = points["max_lat"]
-            max_lon = points["max_lon"]
-
-            logger.info(
-                f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"
-            )
-
-            # need to create a rectangle, PX4 isn't quite smart enough
-            # to recognize only two corners
-            tl_point = Point(max_lat, min_lon)
-            tr_point = Point(max_lat, max_lon)
-            bl_point = Point(min_lat, min_lon)
-            br_point = Point(min_lat, max_lon)
-
-            fence = [
-                Polygon(
-                    [tl_point, tr_point, bl_point, br_point], Polygon.FenceType.INCLUSION
-                )
-            ]
-            await self.drone.geofence.upload_geofence(fence)
-        except Exception as e:
-            logger.error(e)
-
-    # endregion ###############################################################
-
+    
+    # endregion Missions
 
 if __name__ == "__main__":
     control = ControlManager()

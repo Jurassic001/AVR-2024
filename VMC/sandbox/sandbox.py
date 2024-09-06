@@ -12,18 +12,18 @@ class Sandbox(MQTTModule):
     def __init__(self) -> None:
         super().__init__()
         self.topic_map = {
-            'avr/thermal/reading': self.handle_thermal,
-            'avr/fcm/status': self.handle_status,
-            'avr/autonomous/position': self.handle_auton_positions,
-            'avr/autonomous/enable': self.handle_autonomous,
-            'avr/autonomous/thermal_data': self.handle_thermal_data,
-            'avr/apriltags/visible': self.handle_apriltags,
-            'avr/fcm/location/local': self.handle_fcm_pos,
-            'avr/fusion/position/ned': self.handle_fus_pos,
-            'avr/fcm/attitude/euler': self.handle_attitude,
-            'avr/sandbox/test': self.handle_testing,
-            'avr/fcm/events': self.handle_events,
-            }
+            "avr/thermal/reading": self.handle_thermal,
+            "avr/fcm/status": self.handle_status,
+            "avr/autonomous/position": self.handle_auton_positions,
+            "avr/autonomous/enable": self.handle_autonomous,
+            "avr/autonomous/thermal_data": self.handle_thermal_data,
+            "avr/apriltags/visible": self.handle_apriltags,
+            "avr/fcm/location/local": self.handle_fcm_pos,
+            "avr/fusion/position/ned": self.handle_fus_pos,
+            "avr/fcm/attitude/euler": self.handle_attitude,
+            "avr/sandbox/test": self.handle_testing,
+            "avr/fcm/events": self.handle_events,
+        }
 
         # Assorted booleans
         self.CIC_loop: bool = True
@@ -34,8 +34,7 @@ class Sandbox(MQTTModule):
         # Position vars
         self.fcm_position: list = [0, 0, 0]
         self.fus_position: list = [0, 0, 0]
-        self.attitude: dict[str, float] = {'pitch': 0.0, 'roll': 0.0, 'yaw': 0.0}
-        self.landing_pads: dict[str, tuple[float, float, float]] = {'start': (0.0, 0.0, 0.0), 'loading': (0.085, 10.822, 0.0)} # meters
+        self.attitude: dict[str, float] = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
         
         # Auton vars
         self.mission_waypoints: list[dict] = []
@@ -48,10 +47,10 @@ class Sandbox(MQTTModule):
         self.thermal_state: int = 0 # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
   
         # Flight Controller vars
-        self.states: dict[str, str] = {'flightEvent': "UNKNOWN", 'flightMode': "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
+        self.states: dict[str, str] = {"flightEvent": "UNKNOWN", "flightMode": "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
         possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "GOTO_FINISH", "MISSION_UPLOAD_GOOD", "MISSION_UPLOAD_BAD", "UNKNOWN"]
         possibleModes: list[str] = ["UNKNOWN", "READY", "TAKEOFF", "HOLD", "MISSION", "RETURN_TO_LAUNCH", "LAND", "OFFBOARD", "FOLLOW_ME", "MANUAL", "ALTCTL", "POSCTL", "ACRO", "STABILIZED", "RATTITUDE"]
-        self.possibleStates: dict[str, list[str]] = {'flightEvent': possibleEvents, 'flightMode': possibleModes}
+        self.possibleStates: dict[str, list[str]] = {"flightEvent": possibleEvents, "flightMode": possibleModes}
         self.disposableEvents: list[str] = [ # List of all the "junk" events that we want to ignore. 3/4 of these are flight mode updates, which are tracked in the status handler
             "fcc_busy_event", "fcc_telemetry_connected_event", "fcc_telemetry_disconnected_event", "fcc_armed_event", "fcc_disarmed_event",
             "fcc_unknown_mode_event", "fcc_ready_mode_event", "fcc_takeoff_mode_event", "fcc_hold_mode_event", "fcc_mission_mode_event",
@@ -69,12 +68,13 @@ class Sandbox(MQTTModule):
         self.hotspot_color: tuple[int, int, int, int] = [255, 0, 0, 0] # wrgb
         
         self.threads: dict[str, Thread] = {}
+    # endregion
 
 
     # region Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
         # Handle the raw data from the thermal camera
-        data = payload['data']
+        data = payload["data"]
         # decode the payload
         base64Decoded = data.encode("utf-8")
         asbytes = base64.b64decode(base64Decoded)
@@ -87,29 +87,31 @@ class Sandbox(MQTTModule):
         
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         # Set the flight controller's mode and armed status
-        if self.states['flightMode'] != payload['mode']:
-            logger.debug(f"Flight Mode Update || Flight Mode: {payload['mode']}")
-            self.states['flightMode'] = payload['mode']
-        self.isArmed = payload['armed']
+        self.isArmed = payload["armed"]
+        mode = payload["mode"]
+        if self.states["flightMode"] != mode:
+            logger.debug(f"Flight Mode Update || Flight Mode: {mode}")
+            self.states["flightMode"] = mode
         self.fcm_connected = True
         
     def handle_auton_positions(self, payload: dict) -> None:
-        self.auton_position = payload['position']
+        self.auton_position = payload["position"]
     
     def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
-        self.autonomous = payload['enabled']
+        self.autonomous = payload["enabled"]
     
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None: # This handler is only called when an apriltag is scanned and processed successfully
-        self.cur_apriltag = payload['tags']
+        self.cur_apriltag = payload["tags"]
+        tag_id = payload["tags"][0]["id"]
 
-        if payload['tags'][0]['id'] not in self.apriltag_ids:
+        if tag_id not in self.apriltag_ids:
             # If we haven't detected this apriltag before, add it to a list of detected IDs and queue an LED flash (LED flashing is done in the CIC thread)
-            self.apriltag_ids.append(payload['tags'][0]['id'])
-            self.flash_queue.append(payload['tags'][0]['id'])
-            logger.debug(f"New AT detected, ID: {payload['tags'][0]['id']}")
+            self.apriltag_ids.append(tag_id)
+            self.flash_queue.append(tag_id)
+            logger.debug(f"New AT detected, ID: {tag_id}")
         
     def handle_thermal_data(self, payload: dict) -> None:
-        self.thermal_state = payload['state']
+        self.thermal_state = payload["state"]
         if self.thermal_state == 2:
             turret_angles = [1450, 1450]
             self.send_message(
@@ -120,15 +122,15 @@ class Sandbox(MQTTModule):
                         "avr/pcm/set_servo_abs",
                         AvrPcmSetServoAbsPayload(servo= 3, absolute= turret_angles[1])
                     )
-        self.target_range = payload['range'][:2]
+        self.target_range = payload["range"][:2]
         logger.debug(self.target_range)
-        self.targeting_step = int(payload['range'][2])
+        self.targeting_step = int(payload["range"][2])
 
     def handle_fcm_pos(self, payload: AvrFcmLocationLocalPayload) -> None:
-        self.fcm_position = [payload['dX'], payload['dY'], payload['dZ']*-1]
+        self.fcm_position = [payload["dX"], payload["dY"], payload["dZ"]*-1]
     
     def handle_fus_pos(self, payload: AvrFusionPositionNedPayload) -> None:
-        self.fus_position = [payload['n'], payload['e'], payload['d']*-1]
+        self.fus_position = [payload["n"], payload["e"], payload["d"]*-1]
     
     def handle_attitude(self, payload: AvrFcmAttitudeEulerPayload) -> None:
         self.attitude["pitch"] = payload["pitch"]
@@ -136,52 +138,53 @@ class Sandbox(MQTTModule):
         self.attitude["yaw"] = payload["yaw"]
 
     def handle_testing(self, payload: dict):
-        name = payload['testName']
-        state = payload['testState']
+        name = payload["testName"]
+        state = payload["testState"]
         if not state: # If a test is being deactivated then we don't need to worry about it
             return
-        elif name == 'kill':
+        elif name == "kill":
             self.send_action("kill", {})
-        elif name == 'arm':
+        elif name == "arm":
             self.set_armed(True)
-        elif name == 'disarm':
+        elif name == "disarm":
             self.set_armed(False)
-        elif name == 'zero ned':
-            self.send_message('avr/fcm/capture_home', {})
+        elif name == "zero ned":
+            self.send_message("avr/fcm/capture_home", {})
         
         # Once the test has been run, mark it as inactive
-        self.send_message('avr/sandbox/test', {'testName': name, 'testState': False})
+        self.send_message("avr/sandbox/test", {"testName": name, "testState": False})
             
     def handle_events(self, payload: AvrFcmEventsPayload):
         """Event names are transformed to help weed out all the extra events. Only the important events are recorded and logged"""
-        eventName = payload['name']
+        eventName = payload["name"]
 
         if eventName in self.disposableEvents: # Discard unwanted events
             return
         
         # Handle flight events (match-case statements do not work on the drone's version of Python [2.7.17])
-        if eventName == 'landed_state_in_air_event':
+        if eventName == "landed_state_in_air_event":
             newState = "IN_AIR"
-        elif eventName == 'landed_state_landing_event':
+        elif eventName == "landed_state_landing_event":
             newState = "LANDING"
-        elif eventName == 'landed_state_on_ground_event':
+        elif eventName == "landed_state_on_ground_event":
             newState = "ON_GROUND"
-        elif eventName == 'landed_state_taking_off_event':
+        elif eventName == "landed_state_taking_off_event":
             newState = "TAKING_OFF"
-        elif eventName == 'go_to_started_event':
+        elif eventName == "go_to_started_event":
             newState = "GOTO_START"
-        elif eventName == 'goto_complete_event':
+        elif eventName == "goto_complete_event":
             newState = "GOTO_FINISH"
-        elif eventName == 'mission_upload_success_event':
-            newState = 'MISSION_UPLOAD_GOOD'
-        elif eventName == 'mission_upload_failed_event':
-            newState = 'MISSION_UPLOAD_BAD'
+        elif eventName == "mission_upload_success_event":
+            newState = "MISSION_UPLOAD_GOOD"
+        elif eventName == "mission_upload_failed_event":
+            newState = "MISSION_UPLOAD_BAD"
         else:
             newState = "UNKNOWN"
         
-        if newState != self.states['flightEvent']:
+        if newState != self.states["flightEvent"]:
             logger.debug(f"New Flight Event: {newState}")
-            self.states['flightEvent'] = newState
+            self.states["flightEvent"] = newState
+    # endregion
 
 
     # region Thermal Thread
@@ -198,7 +201,7 @@ class Sandbox(MQTTModule):
             lowerb = np.array(self.target_range[0], np.uint8)
             upperb = np.array(self.target_range[1], np.uint8)
             mask = cv2.inRange(img, lowerb, upperb)
-            logger.debug(f'\n{mask}')
+            logger.debug(f"\n{mask}")
             if np.all(np.array(mask) == 0):
                 continue
             blobs = mask > 100
@@ -230,6 +233,7 @@ class Sandbox(MQTTModule):
             elif heat_center[1] > 4:
                 turret_angles[1] -= self.targeting_step
                 self.move_servo(3, turret_angles[1])
+    # endregion
 
     # region CIC Thread
     def CIC(self) -> None:
@@ -238,35 +242,36 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         status_thread.start()
         light_init = False
-        last_flash: dict = {'time': 0, 'iter': 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
+        last_flash: dict = {"time": 0, "iter": 0} # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
             if not self.CIC_loop:
                 continue
             
             # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
-                self.send_message('avr/pcm/set_base_color', AvrPcmSetBaseColorPayload(wrgb=self.normal_color)) # Turn on the lights
+                self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=self.normal_color)) # Turn on the lights
                 """
                 FROM LAST YEAR
                 for i in range (5, 8): # Opening the sphero holders
                     self.send_message(
                     "avr/pcm/set_servo_open_close",
-                    AvrPcmSetServoOpenClosePayload(servo= i, action= 'open')
+                    AvrPcmSetServoOpenClosePayload(servo= i, action= "open")
                     )
                 """
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000) # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
 
             # Flashing the LEDs when a new apriltag ID is detected
-            if self.flash_queue and time.time() > last_flash['time'] + 1: # Make sure it's been at least one second since the last LED flash
-                self.send_message('avr/pcm/set_temp_color', AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
-                last_flash['time'] = time.time()
+            if self.flash_queue and time.time() > last_flash["time"] + 1: # Make sure it's been at least one second since the last LED flash
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=.5))
+                last_flash["time"] = time.time()
                 # logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
-                if last_flash['iter'] >= 2:
-                    last_flash['iter'] = 0
+                if last_flash["iter"] >= 2:
+                    last_flash["iter"] = 0
                     del self.flash_queue[0]
                 else:
-                    last_flash['iter'] += 1
+                    last_flash["iter"] += 1
+    # endregion
             
     # region Status Sub-Thread
     def status(self):
@@ -280,16 +285,18 @@ class Sandbox(MQTTModule):
                 time.sleep(0.5)
                 self.send_message("avr/sandbox/status",
                     {
-                        'Autonomous': self.threads['auto'].is_alive(),
-                        'CIC': self.threads['CIC'].is_alive(),
-                        'Thermal': self.threads['thermal'].is_alive(),
+                        "Autonomous": self.threads["auto"].is_alive(),
+                        "CIC": self.threads["CIC"].is_alive(),
+                        "Thermal": self.threads["thermal"].is_alive(),
                     }
                 )
+    # endregion
     
     # region Autonomous Thread
     def Autonomous(self):
         # sourcery skip: extract-duplicate-method, extract-method
         logger.debug("Autonomous Thread: Online")
+        LZ = {"start": (0.0, 0.0, 0.0), "loading": (0.085, 10.822, 0.0)} # coordinates of landing zones (LZ's, yes I am a nerd) in meters
         auton_init: bool = False
         while True:
             if not self.autonomous:
@@ -297,84 +304,69 @@ class Sandbox(MQTTModule):
             
             # Auton initialization process
             if not auton_init:
-                self.send_message('avr/fcm/capture_home', {}) # Capture home coordinates (zero NED position, like how you zero a scale)
+                self.send_message("avr/fcm/capture_home", {}) # Capture home coordinates (zero NED position, like how you zero a scale)
                 auton_init = True
 
             if self.auton_position == 0:
                 continue
 
 
-            # more precise movement?
+            # go to the starting point and land
             if self.auton_position == 1:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0, goto_hold_time=5, acceptanceRad=.05)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=0, goto_hold_time=5, acceptanceRad=.05)
-                self.add_mission_waypoint('land', (1, 0, 0))
+                self.add_mission_waypoint("goto", (0, 0, 1), acceptanceRad=1)
+                self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
                 self.setPosition()
 
-            # takeoff, move in a square, land
+            # loiter forever, one meter above starting point
             if self.auton_position == 2:
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('goto', (1, 0, 1), yaw_angle=45)
-                self.add_mission_waypoint('goto', (1, 1, 1), yaw_angle=135)
-                self.add_mission_waypoint('goto', (0, 1, 1), yaw_angle=225)
-                self.add_mission_waypoint('goto', (0, 0, 1), yaw_angle=0)
-                self.add_mission_waypoint('land', (0, 0, 0), yaw_angle=0)
+                self.add_mission_waypoint("loiter", (0, 0, 1))
                 self.upload_and_engage_mission()
                 self.setPosition()
             
-            # More complex movement pattern
+            # complex test pattern
             if self.auton_position == 3:
-                self.add_mission_waypoint('goto', (0, 0, 1))
-                self.add_mission_waypoint('goto', (1, .25, 1), 20, 3)
-                self.add_mission_waypoint('goto', (2, .25, 1), 0, 3)
-                self.add_mission_waypoint('goto', (2, 2, 1.5), 270, 3)
-                self.add_mission_waypoint('goto', (0, 0, 1))
-                self.add_mission_waypoint('land', (0, 0, 0))
+                self.add_mission_waypoint("goto", (0, 1.5, 1)) # right 1.5m
+                self.add_mission_waypoint("goto", (2, 1.5, 1)) # fwd 2m
+                self.add_mission_waypoint("goto", (2, 2, 1)) # right .5m
+                self.add_mission_waypoint("goto", (3, 2, 1)) # fwd 1m
+                self.add_mission_waypoint("land", LZ["start"]) # back to start
+                self.upload_and_engage_mission()
+                self.setPosition()
+
+            # go fwd one meter, accurate to one centimeter (?)
+            if self.auton_position == 4:
+                self.add_mission_waypoint("goto", (1, 0, 1), acceptanceRad=0.01)
+                self.add_mission_waypoint("land", (1, 0, 0))
                 self.upload_and_engage_mission()
                 self.setPosition()
             
-            # Do you even need a 'takeoff' command?
-            if self.auton_position == 4:
-                self.add_mission_waypoint('goto', (1, 0, 1), goto_hold_time=5)
-                self.add_mission_waypoint('land', (1, 0, 0))
-                self.upload_and_engage_mission()
-                self.setPosition()
-
-
-            # ===============
-            # Competition formatted tests
-
-            # Starting point -> Box pickup -> Box drop (slow)
+            # test float("nan") as heading setting
             if self.auton_position == 5:
-                self.add_mission_waypoint('goto', (0, 0, 1))
-                self.add_mission_waypoint('goto', (0, 10.8, 0.5))
-                self.add_mission_waypoint('land', (0, 10.8, 0))
-                self.upload_and_engage_mission()
-
-                time.sleep(5)
-                self.wait_for_state('flightEvent', "ON_GROUND", 25)
-
-                self.add_mission_waypoint('goto', (0, 10.8, 1))
-                self.add_mission_waypoint('goto', (0.105, 4.516, 0.5))
-                self.add_mission_waypoint('land', (0.105, 4.516, 0))
+                self.add_mission_waypoint("goto", (1, 0, 1), float("nan"))
+                self.add_mission_waypoint("goto", (1, 1, 1), float("nan"))
+                self.add_mission_waypoint("goto", (2, 1, 1), float("nan"))
+                self.add_mission_waypoint("goto", (3, 1, 1), float("nan"))
+                self.add_mission_waypoint("goto", (1, 1, 1), float("nan"))
+                self.add_mission_waypoint("goto", (0, 0, 1), float("nan"))
+                self.add_mission_waypoint("goto", LZ["start"], 0)
                 self.upload_and_engage_mission()
                 self.setPosition()
 
-
-            # Starting point -> Box pickup -> Box drop (fast)
+            # phase one auton v1 (intended to be as fast as possible)
             if self.auton_position == 6:
-                self.add_mission_waypoint('goto', (0, 5, 1), acceptanceRad=0.5)
-                self.add_mission_waypoint('land', (0, 10.8, 0))
+                self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
+                self.add_mission_waypoint("land", LZ["loading"])
                 self.upload_and_engage_mission()
 
                 time.sleep(5)
-                self.wait_for_state('flightEvent', "ON_GROUND", 25)
+                self.wait_for_state("flightEvent", "ON_GROUND", 25)
 
-                self.add_mission_waypoint('goto', (0, 5, 1), acceptanceRad=0.5)
-                self.add_mission_waypoint('land', (0.105, 4.516, 0))
+                self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
+                self.add_mission_waypoint("land", (0.105, 4.516, 0))
                 self.upload_and_engage_mission()
                 self.setPosition()
+    # endregion
     
 
     # region Mission and Waypoint methods
@@ -393,7 +385,7 @@ class Sandbox(MQTTModule):
         https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
         """
         # Add the waypoint to the list of waypoints
-        self.mission_waypoints.append({'type': waypointType, 'n': coords[0], 'e': coords[1], 'd': coords[2] * -1, 'yaw': yaw_angle, 'holdTime': goto_hold_time, 'acceptRadius': acceptanceRad})
+        self.mission_waypoints.append({"type": waypointType, "n": coords[0], "e": coords[1], "d": coords[2] * -1, "yaw": yaw_angle, "holdTime": goto_hold_time, "acceptRadius": acceptanceRad})
     
     def clear_mission_waypoints(self) -> None:
         """Clear the mission_waypoints list
@@ -406,11 +398,11 @@ class Sandbox(MQTTModule):
         Args:
             delay (float, optional): Delay in seconds between uploading the mission and starting the mission. Negative or no delay will cause the mission to start as soon as the upload completes.
         """
-        self.send_action('upload_mission', {'waypoints': self.mission_waypoints})
+        self.send_action("upload_mission", {"waypoints": self.mission_waypoints})
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay < 0:
-            self.wait_for_state('flightEvent', 'MISSION_UPLOAD_GOOD')
+            self.wait_for_state("flightEvent", "MISSION_UPLOAD_GOOD")
         else:
             time.sleep(delay)
 
@@ -421,12 +413,12 @@ class Sandbox(MQTTModule):
         """
         self.set_armed(True)
         time.sleep(.1)
-        self.send_action('start_mission')
-
+        self.send_action("start_mission")
+    # endregion
 
     # region Messenger methods
     def set_geofence(self, min_lat: int, min_lon: int, max_lat: int, max_lon: int):
-        self.send_action("set_geofence", {'min_lat': min_lat, 'min_lon': min_lon, 'max_lat': max_lat, 'max_lon': max_lon})
+        self.send_action("set_geofence", {"min_lat": min_lat, "min_lon": min_lon, "max_lat": max_lat, "max_lon": max_lon})
     
     def set_armed(self, armed: bool) -> None:
         """Arm or disarm the FCC
@@ -453,7 +445,7 @@ class Sandbox(MQTTModule):
             action (str): The action you want to send
             payload (dict, optional): The payload of the action you want to send. Defaults to {}.
         """
-        self.send_message('avr/fcm/actions', {'action': action, 'payload': payload})
+        self.send_message("avr/fcm/actions", {"action": action, "payload": payload})
 
     def set_laser(self, state: bool) -> None:
         if state:
@@ -467,12 +459,13 @@ class Sandbox(MQTTModule):
     def setAutonomous(self, isEnabled: bool) -> None:
         """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
-        self.send_message('avr/autonomous/enable', AvrAutonomousEnablePayload(enabled=isEnabled))
+        self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=isEnabled))
     
     def setPosition(self, number: int = 0) -> None:
         """Broadcast current auton position
         """
         self.send_message("avr/autonomous/position", {"position": number})
+    # endregion
     
     # region Helper methods
     def wait_for_apriltag_id(self, id: int, timeout: float = 5) -> bool:
@@ -488,12 +481,12 @@ class Sandbox(MQTTModule):
         start_time = time.time()
         while start_time + timeout > time.time():
             try:
-                if self.cur_apriltag[0]['id'] == id:
+                if self.cur_apriltag[0]["id"] == id:
                     return True
             except IndexError: # Catch the IndexError that is thrown if we haven't yet scanned an apriltag (i.e. the list is empty)
                 pass
             time.sleep(.025) # Given the low FPS of the CSI camera (which scans for apriltags), this sleep command won't lead to skipping over a detected apriltag
-        logger.debug(f'Timeout reached while waiting to detect Apriltag {id}')
+        logger.debug(f"Timeout reached while waiting to detect Apriltag {id}")
         return False
 
     def wait_for_state(self, stateKey: Literal["flightEvent", "flightMode"], desiredVal: str, timeout: float = 5) -> bool:
@@ -509,7 +502,7 @@ class Sandbox(MQTTModule):
         """
         try:
             if desiredVal not in self.possibleStates[stateKey]: # Check to make sure that we're waiting for a valid key that can contain the given value
-                logger.error(f'The given key {stateKey} cannot contain the value {desiredVal}')
+                logger.error(f"The given key {stateKey} cannot contain the value {desiredVal}")
                 return False
         except KeyError as e: # If you get this error it means the key you're looking for doesn't exist
                 logger.error(e)
@@ -520,7 +513,7 @@ class Sandbox(MQTTModule):
             if self.states[stateKey] == desiredVal:
                 return True
             time.sleep(.005)
-        logger.debug(f'Timeout reached while waiting for {stateKey} value {desiredVal}')
+        logger.debug(f"Timeout reached while waiting for {stateKey} value {desiredVal}")
         return False
     
     # From Quentin: Bell gives us field dimensions in inches then programs the drone to use meters because fuck you
@@ -534,6 +527,7 @@ class Sandbox(MQTTModule):
             float: Distance in meters
         """
         return inches/39.37
+    # endregion
     
 # region Main process
 if __name__ == '__main__':
@@ -545,7 +539,7 @@ if __name__ == '__main__':
     autonomous_thread = Thread(target=box.Autonomous, daemon=True)
     
     # Create dict of threads (for status reporting)
-    box.threads = {'thermal': thermal_thread, 'CIC': CIC_thread, 'auto': autonomous_thread}
+    box.threads = {"thermal": thermal_thread, "CIC": CIC_thread, "auto": autonomous_thread}
 
     # Start threads and run sandbox
     thermal_thread.start()
