@@ -48,15 +48,18 @@ class Sandbox(MQTTModule):
   
         # Flight Controller vars
         self.states: dict[str, str] = {"flightEvent": "UNKNOWN", "flightMode": "UNKNOWN"} # Dict of current events/modes that pertain to drone operation
-        possibleEvents: list[str] = ["IN_AIR", "LANDING", "ON_GROUND", "TAKING_OFF", "GOTO_FINISH", "MISSION_UPLOAD_GOOD", "MISSION_UPLOAD_BAD", "UNKNOWN"]
+        self.possibleEvents: dict[str, str] = {
+            "landed_state_in_air_event": "IN_AIR",
+            "landed_state_landing_event": "LANDING",
+            "landed_state_on_ground_event": "ON_GROUND",
+            "landed_state_taking_off_event": "TAKING_OFF",
+            "go_to_started_event": "GOTO_START",
+            "goto_complete_event": "GOTO_FINISH",
+            "mission_upload_success_event": "MISSION_UPLOAD_GOOD",
+            "mission_upload_failed_event": "MISSION_UPLOAD_BAD"
+        }
         possibleModes: list[str] = ["UNKNOWN", "READY", "TAKEOFF", "HOLD", "MISSION", "RETURN_TO_LAUNCH", "LAND", "OFFBOARD", "FOLLOW_ME", "MANUAL", "ALTCTL", "POSCTL", "ACRO", "STABILIZED", "RATTITUDE"]
-        self.possibleStates: dict[str, list[str]] = {"flightEvent": possibleEvents, "flightMode": possibleModes}
-        self.disposableEvents: list[str] = [ # List of all the "junk" events that we want to ignore. 3/4 of these are flight mode updates, which are tracked in the status handler
-            "fcc_busy_event", "fcc_telemetry_connected_event", "fcc_telemetry_disconnected_event", "fcc_armed_event", "fcc_disarmed_event",
-            "fcc_unknown_mode_event", "fcc_ready_mode_event", "fcc_takeoff_mode_event", "fcc_hold_mode_event", "fcc_mission_mode_event",
-            "fcc_rtl_mode_event", "fcc_land_mode_event", "fcc_offboard_mode_event", "fcc_follow_mode_event", "fcc_manual_mode_event",
-            "fcc_alt_mode_event", "fcc_pos_mode_event", "fcc_acro_mode_event", "fcc_stabilized_mode_event", "fcc_rattitude_mode_event"
-            ]
+        self.possibleStates: dict[str, list[str]] = {"flightEvent": self.possibleEvents.values(), "flightMode": possibleModes}
         self.isArmed: bool = False
         
         # Apriltag vars
@@ -155,31 +158,10 @@ class Sandbox(MQTTModule):
         self.send_message("avr/sandbox/test", {"testName": name, "testState": False})
             
     def handle_events(self, payload: AvrFcmEventsPayload):
-        """Event names are transformed to help weed out all the extra events. Only the important events are recorded and logged"""
+        # Handle flight events
         eventName = payload["name"]
 
-        if eventName in self.disposableEvents: # Discard unwanted events
-            return
-        
-        # Handle flight events (match-case statements do not work on the drone's version of Python [2.7.17])
-        if eventName == "landed_state_in_air_event":
-            newState = "IN_AIR"
-        elif eventName == "landed_state_landing_event":
-            newState = "LANDING"
-        elif eventName == "landed_state_on_ground_event":
-            newState = "ON_GROUND"
-        elif eventName == "landed_state_taking_off_event":
-            newState = "TAKING_OFF"
-        elif eventName == "go_to_started_event":
-            newState = "GOTO_START"
-        elif eventName == "goto_complete_event":
-            newState = "GOTO_FINISH"
-        elif eventName == "mission_upload_success_event":
-            newState = "MISSION_UPLOAD_GOOD"
-        elif eventName == "mission_upload_failed_event":
-            newState = "MISSION_UPLOAD_BAD"
-        else:
-            newState = "UNKNOWN"
+        newState = self.possibleEvents.get(eventName, "UNKNOWN")
         
         if newState != self.states["flightEvent"]:
             logger.debug(f"New Flight Event: {newState}")
