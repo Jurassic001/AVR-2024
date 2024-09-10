@@ -252,7 +252,7 @@ def prepare_compose_file(local: bool = False, simulation=False) -> str:
     fusion_service(compose_services, local)
     mavp2p_service(compose_services, local)
     mqtt_service(compose_services, local)
-    pcm_service(compose_services, local)
+    pcm_service(compose_services)
     sandbox_service(compose_services)
     thermal_service(compose_services, local)
     vio_service(compose_services, local)
