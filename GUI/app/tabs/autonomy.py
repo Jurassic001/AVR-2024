@@ -366,7 +366,7 @@ class AutonomyWidget(BaseTabWidget):
             state = payload["enabled"]
 
             text = "Magnet Enabled" if state else "Magnet Disabled"
-            color == "green" if state else "red"
+            color = "green" if state else "red"
 
             self.magnet_label.setText(wrap_text(text, color))
         elif topic == "avr/sandbox/status":

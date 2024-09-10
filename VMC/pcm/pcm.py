@@ -96,9 +96,9 @@ class PeripheralControlModule(MQTTModule):
     
     def set_magnet(self, payload: dict[str, bool]) -> None:
         if payload["state"]:
-            command = self.pcc.commands["SET_LASER_ON"]
+            command = self.pcc.commands["SET_MAGNET_ON"]
         else:
-            command = self.pcc.commands["SET_LASER_OFF"]
+            command = self.pcc.commands["SET_MAGNET_OFF"]
 
         length = 1
         data = self.pcc._construct_payload(command, length)
