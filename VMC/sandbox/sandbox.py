@@ -298,13 +298,13 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (0, 0, 1), acceptanceRad=1)
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.set_position()
 
             # loiter forever, one meter above starting point
             if self.auton_position == 2:
                 self.add_mission_waypoint("loiter", (0, 0, 1))
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.set_position()
             
             # complex test pattern
             if self.auton_position == 3:
@@ -314,14 +314,14 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (3, 2, 1)) # fwd 1m
                 self.add_mission_waypoint("land", LZ["start"]) # back to start
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.set_position()
 
             # go fwd one meter, accurate to one centimeter (?)
             if self.auton_position == 4:
                 self.add_mission_waypoint("goto", (1, 0, 1), acceptanceRad=0.01)
                 self.add_mission_waypoint("land", (1, 0, 0))
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.set_position()
             
             # test float("nan") as heading setting
             if self.auton_position == 5:
@@ -333,7 +333,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (0, 0, 1), float("nan"))
                 self.add_mission_waypoint("goto", LZ["start"], 0)
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.set_position()
 
             # phase one auton v1 (intended to be as fast as possible)
             if self.auton_position == 6:
@@ -343,11 +343,16 @@ class Sandbox(MQTTModule):
 
                 time.sleep(5)
                 self.wait_for_state("flightEvent", "ON_GROUND", 25)
+                self.set_magnet(True)
 
                 self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
                 self.add_mission_waypoint("land", (0.105, 4.516, 0))
                 self.upload_and_engage_mission()
-                self.setPosition()
+                self.set_position()
+
+                time.sleep(5)
+                self.wait_for_state("flightEvent", "ON_GROUND", 25)
+                self.set_magnet(False)
     # endregion
     
 
@@ -436,14 +441,20 @@ class Sandbox(MQTTModule):
         else:
             topic = "avr/pcm/set_laser_off"
             payload = AvrPcmSetLaserOffPayload()
+
         self.send_message(topic, payload)
     
-    def setAutonomous(self, isEnabled: bool) -> None:
+    def set_magnet(self, enabled: bool) -> None:
+        """Enable/disable magnet power. The magnet should be wired into the `high power load` terminal on the MOSFET, where the laser is typically wired (https://the-avr.github.io/AVR-2022/drone-peripheral-assembly/gimbal-assembly/#powering-laser-and-the-fpv)
+        """
+        self.send_message("avr/pcm/set_magnet", {"enabled": enabled})
+    
+    def set_autonomous(self, isEnabled: bool) -> None:
         """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI.
         """
         self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=isEnabled))
     
-    def setPosition(self, number: int = 0) -> None:
+    def set_position(self, number: int = 0) -> None:
         """Broadcast current auton position
         """
         self.send_message("avr/autonomous/position", {"position": number})

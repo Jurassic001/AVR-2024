@@ -154,57 +154,29 @@ class AutonomyWidget(BaseTabWidget):
         custom_layout.addWidget(thermal_laser_groupbox)
 
 
-        # region Sphero Holder
-        # TODO: Convert to magcontrol
-        sphero_groupbox = QtWidgets.QGroupBox('Sphero Holder')
-        sphero_layout = QtWidgets.QGridLayout()
-        sphero_groupbox.setLayout(sphero_layout)
+        # region Magnet control
+        """
+        NOTE: Magnets and lasers are mutually exclusive, because they are attached to the same power terminal on the drone
+        These commands don't know what device they are controlling, they just control the flow of power to the device
+        """
+        magnet_groupbox = QtWidgets.QGroupBox("Magnet Control")
+        magnet_layout = QtWidgets.QVBoxLayout()
+        magnet_groupbox.setLayout(magnet_layout)
         
-        sphero_groupbox1 = QtWidgets.QGroupBox('Holder 1')
-        sphero_layout1 = QtWidgets.QVBoxLayout()
-        sphero_groupbox1.setLayout(sphero_layout1)
-        sphero_go_button1 = QtWidgets.QPushButton('Open')
-        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(1, 'open'))
-        sphero_layout1.addWidget(sphero_go_button1)
-        sphero_stop_button1 = QtWidgets.QPushButton('Close')
-        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(1, 'close'))
-        sphero_layout1.addWidget(sphero_stop_button1)
-        sphero_layout.addWidget(sphero_groupbox1, 0, 0)
+        magnet_on_btn = QtWidgets.QPushButton("Activate Magnet")
+        magnet_on_btn.clicked.connect(lambda: self.set_magnet(True))
+        magnet_layout.addWidget(magnet_on_btn)
 
-        sphero_groupbox1 = QtWidgets.QGroupBox('Holder 2')
-        sphero_layout1 = QtWidgets.QVBoxLayout()
-        sphero_groupbox1.setLayout(sphero_layout1)
-        sphero_go_button1 = QtWidgets.QPushButton('Open')
-        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(2, 'open'))
-        sphero_layout1.addWidget(sphero_go_button1)
-        sphero_stop_button1 = QtWidgets.QPushButton('Close')
-        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(2, 'close'))
-        sphero_layout1.addWidget(sphero_stop_button1)
-        sphero_layout.addWidget(sphero_groupbox1, 0, 1)
-        
-        sphero_groupbox1 = QtWidgets.QGroupBox('Holder 3')
-        sphero_layout1 = QtWidgets.QVBoxLayout()
-        sphero_groupbox1.setLayout(sphero_layout1)
-        sphero_go_button1 = QtWidgets.QPushButton('Open')
-        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(3, 'open'))
-        sphero_layout1.addWidget(sphero_go_button1)
-        sphero_stop_button1 = QtWidgets.QPushButton('Close')
-        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(3, 'close'))
-        sphero_layout1.addWidget(sphero_stop_button1)
-        sphero_layout.addWidget(sphero_groupbox1, 0, 2)
+        magnet_off_btn = QtWidgets.QPushButton("Deactivate Magnet")
+        magnet_off_btn.clicked.connect(lambda: self.set_magnet(False))
+        magnet_layout.addWidget(magnet_off_btn)
 
-        sphero_all_groupbox = QtWidgets.QGroupBox('All')
-        sphero_all_layout = QtWidgets.QGridLayout()
-        sphero_all_groupbox.setLayout(sphero_all_layout)
-        sphero_go_button1 = QtWidgets.QPushButton('Open')
-        sphero_go_button1.clicked.connect(lambda: self.set_sphero_holder(0, 'open'))
-        sphero_all_layout.addWidget(sphero_go_button1, 1, 1)
-        sphero_stop_button1 = QtWidgets.QPushButton('Close')
-        sphero_stop_button1.clicked.connect(lambda: self.set_sphero_holder(0, 'close'))
-        sphero_all_layout.addWidget(sphero_stop_button1, 1, 2)
-        sphero_layout.addWidget(sphero_all_groupbox, 1, 0, 1, 3)
+        self.magnet_label = QtWidgets.QLabel()
+        self.magnet_label.setText(wrap_text("Magnet Disabled", "red"))
+        self.magnet_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        magnet_layout.addWidget(self.magnet_label)
         
-        custom_layout.addWidget(sphero_groupbox)
+        custom_layout.addWidget(magnet_groupbox)
         
         # region Testing
         testing_groupbox = QtWidgets.QGroupBox("Test Commands")
@@ -328,20 +300,14 @@ class AutonomyWidget(BaseTabWidget):
         self.send_message(topic, payload)
     
     # =======================
-    # Sphero holder messenger
-    def set_sphero_holder(self, door: int, open_close: str) -> None:
-        """ Open sphero gates. \n\n`door` = 0 opens/closes all.  """
-        if door == 0:
-            for i in range (5, 8):
-                self.send_message(
-                "avr/pcm/set_servo_open_close",
-                AvrPcmSetServoOpenClosePayload(servo= i, action= open_close)
-                )
-        else:
-            self.send_message(
-                "avr/pcm/set_servo_open_close",
-                AvrPcmSetServoOpenClosePayload(servo= 4+door, action= open_close)
-            )
+    # Magnet messenger
+    def set_magnet(self, enabled: bool) -> None:
+        """Enable/disable magnet power
+
+        MAGNETS AND LASERS ARE MUTUALLY EXCLUSIVE
+        """
+        self.send_message("avr/pcm/set_magnet", {"enabled": enabled})
+    
 
     # region MQTT Handler
     def process_message(self, topic: str, payload: dict) -> None:
@@ -396,6 +362,13 @@ class AutonomyWidget(BaseTabWidget):
             color = "green" if topic == "avr/pcm/set_laser_on" else "red"
 
             self.laser_toggle_label.setText(wrap_text(text, color))
+        elif topic == "avr/pcm/set_magnet":
+            state = payload["enabled"]
+
+            text = "Magnet Enabled" if state else "Magnet Disabled"
+            color == "green" if state else "red"
+
+            self.magnet_label.setText(wrap_text(text, color))
         elif topic == "avr/sandbox/status":
             for key in payload.keys():
                 self.topic_status_map[key].set_health(payload[key])
