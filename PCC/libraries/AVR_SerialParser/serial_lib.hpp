@@ -27,7 +27,9 @@ typedef enum
     SET_LASER_OFF,
     RESET_AVR_PERIPH,
     CHECK_SERVO_CONTROLLER,
-    COMMAND_END
+    COMMAND_END,
+    SET_MAGNET_ON,
+    SET_MAGNET_OFF
 } commands;
 
 typedef struct

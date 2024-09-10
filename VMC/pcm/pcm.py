@@ -14,6 +14,7 @@ from bell.avr.mqtt.payloads import (
 from bell.avr.serial.client import SerialLoop
 from bell.avr.serial.pcc import PeripheralControlComputer
 
+from loguru import logger
 
 class PeripheralControlModule(MQTTModule):
     def __init__(self, port: str, baud_rate: int):
@@ -27,6 +28,10 @@ class PeripheralControlModule(MQTTModule):
 
         self.pcc = PeripheralControlComputer(self.ser)
 
+        # Add magnet command IDs to the dict of command IDs
+        self.pcc.commands["SET_MAGNET_ON"] = 13
+        self.pcc.commands["SET_MAGNET_OFF"] = 14
+
         # MQTT topics
         self.topic_map = {
             "avr/pcm/set_base_color": self.set_base_color,
@@ -39,6 +44,7 @@ class PeripheralControlModule(MQTTModule):
             "avr/pcm/set_laser_off": self.set_laser_off,
             "avr/pcm/set_servo_pct": self.set_servo_pct,
             "avr/pcm/set_servo_abs": self.set_servo_abs,
+            "avr/pcm/set_magnet": self.set_magnet,
         }
 
     def run(self) -> None:
@@ -87,6 +93,18 @@ class PeripheralControlModule(MQTTModule):
 
     def set_laser_off(self, payload: AvrPcmSetLaserOffPayload) -> None:
         self.pcc.set_laser_off()
+    
+    def set_magnet(self, payload: dict[str, bool]) -> None:
+        if payload["state"]:
+            command = self.pcc.commands["SET_LASER_ON"]
+        else:
+            command = self.pcc.commands["SET_LASER_OFF"]
+
+        length = 1
+        data = self.pcc._construct_payload(command, length)
+
+        logger.debug(f"Setting magnet: {data}")
+        self.pcc.ser.write(data)
 
 
 if __name__ == "__main__":

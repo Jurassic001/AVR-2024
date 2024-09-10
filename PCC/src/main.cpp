@@ -220,6 +220,15 @@ void loop()
       }
     }
     break;
+    case SET_MAGNET_ON:
+    {
+      digitalWrite(LASER_PIN,HIGH);
+    }
+    break;
+    case SET_MAGNET_OFF:
+    {
+      digitalWrite(LASER_PIN,LOW);
+    }
     }
   }
 
