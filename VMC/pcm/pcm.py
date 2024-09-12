@@ -12,7 +12,7 @@ from bell.avr.mqtt.payloads import (
     AvrPcmSetTempColorPayload,
 )
 from bell.avr.serial.client import SerialLoop
-from bell.avr.serial.pcc import PeripheralControlComputer
+from Z_PCC import Zephyrus_PeripheralControlComputer
 
 from loguru import logger
 
@@ -26,11 +26,7 @@ class PeripheralControlModule(MQTTModule):
         self.ser.baudrate = baud_rate
         self.ser.open()
 
-        self.pcc = PeripheralControlComputer(self.ser)
-
-        # Add magnet command IDs to the dict of command IDs
-        self.pcc.commands["SET_MAGNET_ON"] = 13
-        self.pcc.commands["SET_MAGNET_OFF"] = 14
+        self.pcc = Zephyrus_PeripheralControlComputer(self.ser)
 
         # MQTT topics
         self.topic_map = {
@@ -95,16 +91,10 @@ class PeripheralControlModule(MQTTModule):
         self.pcc.set_laser_off()
     
     def set_magnet(self, payload: dict[str, bool]) -> None:
-        if payload["state"]:
-            command = self.pcc.commands["SET_MAGNET_ON"]
+        if payload["enabled"]:
+            self.pcc.set_magnet_on()
         else:
-            command = self.pcc.commands["SET_MAGNET_OFF"]
-
-        length = 1
-        data = self.pcc._construct_payload(command, length)
-
-        logger.debug(f"Setting magnet: {data}")
-        self.pcc.ser.write(data)
+            self.pcc.set_magnet_off()
 
 
 if __name__ == "__main__":

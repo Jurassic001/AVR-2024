@@ -132,22 +132,6 @@ def mqtt_service(compose_services: dict, local: bool = False) -> None:
     compose_services["mqtt"] = mqtt_data
 
 
-# def pcm_service(compose_services: dict, local: bool = False) -> None:
-#     # region pcm
-#     pcm_data = {
-#         "depends_on": ["mqtt"],
-#         "restart": "unless-stopped",
-#         "devices": ["/dev/ttyACM0:/dev/ttyACM0"],
-#     }
-
-#     if local:
-#         pcm_data["build"] = os.path.join(THIS_DIR, "pcm")
-#     else:
-#         pcm_data["image"] = f"{IMAGE_BASE}pcm:latest"
-
-#     compose_services["pcm"] = pcm_data
-
-
 def pcm_service(compose_services: dict) -> None:
     # region pcm
     pcm_data = {
