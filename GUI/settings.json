@@ -6,5 +6,5 @@
     "serial_baud_rate": 115200,
     "joystick_inverted": false,
     "log_file_directory": "GUI\\MQTT Logs",
-    "num_servos": 12 // servos 13-16 (4-7 on the second FeatherWing) don't work for some reason
+    "num_servos": 12
 }
