@@ -7,6 +7,7 @@ import serial
 class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):
     def __init__(self, Z_ser: serial.Serial):
         super().__init__(Z_ser)
+        self.Z_serial = Z_ser
     
         self.commands = {
             "SET_SERVO_OPEN_CLOSE": 0,
@@ -33,7 +34,7 @@ class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):
         data = self._construct_payload(command, length)
 
         logger.debug(f"Setting the magnet on: {data}")
-        self.ser.write(data)
+        self.Z_serial.write(data)
 
     def set_magnet_off(self):
         command = self.commands["SET_MAGNET_OFF"]
@@ -42,4 +43,4 @@ class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):
         data = self._construct_payload(command, length)
 
         logger.debug(f"Setting the magnet off: {data}")
-        self.ser.write(data)
+        self.Z_serial.write(data)
