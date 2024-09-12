@@ -154,7 +154,7 @@ def pcm_service(compose_services: dict) -> None:
         "depends_on": ["mqtt"],
         "restart": "unless-stopped",
         "devices": ["/dev/ttyACM0:/dev/ttyACM0"],
-        "image": f"{IMAGE_BASE}pcm:latest",
+        "build": os.path.join(THIS_DIR, "pcm"),
     }
 
     compose_services["pcm"] = pcm_data
