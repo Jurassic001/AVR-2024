@@ -37,14 +37,12 @@ AVRServo servos2 = AVRServo(0x41);
 
 ///////////////////////////////////////////////////////////////
 
-void setup()
-{
+void setup() {
   // put your setup code here, to run once:
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(PWR_PIN, OUTPUT);
   digitalWrite(PWR_PIN, HIGH);
-  pinMode(LASER_PIN,OUTPUT);
-
+  pinMode(LASER_PIN, OUTPUT);
 
   //////////// N E O - P I X E L  S E T U P ////////////////////
   strip.begin();
@@ -73,26 +71,20 @@ double next_allow_laser = -1;
 double next_force_laser_off = 999999999999;
 double next_force_laser_on = 0;
 unsigned long light_on = 0;
-unsigned long laser_on = 0;
+bool laser_on = false;
 
-
-
-
-void loop()
-{
+void loop() {
   // put your main code here, to run repeatedly:
   serial.poll();
 
-  if (serial.available > 0)
-  {
+  if (serial.available > 0) {
     packet_t message;
     cmd_result res = serial.get_command(&message);
-    //Serial.printf("res: %d", res);
+    // Serial.printf("res: %d", res);
     digitalWrite(LED_BUILTIN, HIGH);
     light_on = millis();
 
-    switch (message.command)
-    {
+    switch (message.command) {
     case SET_BASE_COLOR:
     {
       uint8_t white = message.data[0];
@@ -100,7 +92,7 @@ void loop()
       uint8_t green = message.data[2];
       uint8_t blue = message.data[3];
       strip.set_base_color_target(white, red, green, blue);
-      //onboard.set_color_target(0,red,green,blue);
+      // onboard.set_color_target(0,red,green,blue);
     }
     break;
     case SET_TEMP_COLOR:
@@ -114,42 +106,36 @@ void loop()
 
       memcpy(&time, &message.data[4], sizeof(float));
 
-      //Serial.printf("Time %f",time);
+      // Serial.printf("Time %f",time);
 
       strip.set_temp_color_target(white, red, green, blue);
 
       uint32_t long_time = (uint32_t)(time * 1000.0);
       strip.show_temp_color(long_time);
-      //onboard.set_temp_color_target(0,red,green,blue);
+      // onboard.set_temp_color_target(0,red,green,blue);
     }
     break;
     case SET_SERVO_OPEN_CLOSE:
     {
       uint8_t which_servo = message.data[0];
       uint8_t value = message.data[1];
-      if (which_servo < 8)
-      {
-        if (value > 127)
-        {
+      if (which_servo < 8) {
+        if (value > 127) {
           servos.open_servo(which_servo);
           onboard.set_base_color_target(0, 255, 0, 0);
         }
-        else
-        {
+        else {
           servos.close_servo(which_servo);
           onboard.set_base_color_target(0, 0, 255, 0);
         }
       }
-      else
-      {
-        if (value > 127)
-        {
-          servos2.open_servo(which_servo-8);
+      else {
+        if (value > 127) {
+          servos2.open_servo(which_servo - 8);
           onboard.set_base_color_target(0, 255, 0, 0);
         }
-        else
-        {
-          servos2.close_servo(which_servo-8);
+        else {
+          servos2.close_servo(which_servo - 8);
           onboard.set_base_color_target(0, 0, 255, 0);
         }
       }
@@ -159,13 +145,11 @@ void loop()
     {
       uint8_t which_servo = message.data[0];
       uint8_t percent = message.data[1];
-      if (which_servo < 8)
-      {
+      if (which_servo < 8) {
         servos.set_servo_percent(which_servo, percent);
       }
-      else
-      {
-        servos2.set_servo_percent(which_servo-8, percent);
+      else {
+        servos2.set_servo_percent(which_servo - 8, percent);
       }
     }
     break;
@@ -175,79 +159,86 @@ void loop()
       uint8_t absolute_high = message.data[1];
       uint8_t absolute_low = message.data[2];
       uint16_t absolute = ((uint16_t)absolute_high << 8) | absolute_low;
-      if (which_servo < 8)
-      {
+      if (which_servo < 8) {
         servos.set_servo_absolute(which_servo, absolute);
       }
-      else
-      {
-        servos2.set_servo_absolute(which_servo-8, absolute);
+      else {
+        servos2.set_servo_absolute(which_servo - 8, absolute);
       }
     }
     break;
     case RESET_AVR_PERIPH:
     {
-      //digitalWrite(RST_PIN,LOW);
+      // digitalWrite(RST_PIN,LOW);
     }
     break;
     case CHECK_SERVO_CONTROLLER:
     {
-      //Serial.printf("Checking controller...\n");
+      // Serial.printf("Checking controller...\n");
       uint8_t res = servos.check_controller();
-      //Serial.printf("Res: %d\n",res);
+      // Serial.printf("Res: %d\n",res);
     }
     break;
     case SET_LASER_OFF:
     {
-        laser_on = 0;
-        digitalWrite(LED_BUILTIN, LOW);
+      laser_on = false;
+      digitalWrite(LED_BUILTIN, LOW);
     }
     break;
     case SET_LASER_ON:
     {
-        laser_on = 1;
-        digitalWrite(LASER_PIN,HIGH);
-        next_force_laser_off = millis() + LASER_BLIP_SECONDS * 1000;
-        next_force_laser_on = millis() + LASER_NEXT_BLIP_SECONDS * 1000;
+      laser_on = true;
+      digitalWrite(LASER_PIN, HIGH);
+      // Refresh the interval of the laser timing loop
+      next_force_laser_off = millis() + LASER_BLIP_SECONDS * 1000;
+      next_force_laser_on = millis() + LASER_NEXT_BLIP_SECONDS * 1000;
     }
     break;
     case FIRE_LASER:
     {
       if (millis() > next_allow_laser) {
-        digitalWrite(LASER_PIN,HIGH);
+        digitalWrite(LASER_PIN, HIGH);
         next_force_laser_off = millis() + LASER_ON_SECONDS * 1000;
         next_allow_laser = millis() + LASER_NEXT_ALLOW_SECONDS * 1000;
       }
     }
     break;
-    case SET_MAGNET_ON:
-    {
-      digitalWrite(LASER_PIN,HIGH);
-    }
-    break;
     case SET_MAGNET_OFF:
     {
-      digitalWrite(LASER_PIN,LOW);
+      digitalWrite(LASER_PIN, LOW);
+      // Restart the laser timing loop
+      next_force_laser_off = millis() + LASER_BLIP_SECONDS * 1000;
+      next_force_laser_on = millis() + LASER_NEXT_BLIP_SECONDS * 1000;
     }
+    break;
+    case SET_MAGNET_ON:
+    {
+      digitalWrite(LASER_PIN, HIGH);
+      // Suspend the laser timing loop
+      next_force_laser_off = 999999999999;
+      next_force_laser_on = 999999999999;
+    }
+    break;
     }
   }
 
-  if (millis() - light_on > 100)
-  {
+  if (millis() - light_on > 100) {
     digitalWrite(LED_BUILTIN, LOW);
   }
 
-  if (millis() > next_force_laser_off)
-  {
-    digitalWrite(LASER_PIN,LOW);
+  // Laser timing loop conditionals
+  if (millis() > next_force_laser_off) {
+    // If the laser's active blip period has timed out, then turn the laser off and stop checking if it needs to be off
+    digitalWrite(LASER_PIN, LOW);
     next_force_laser_off = 999999999999;
   }
 
-  if (millis() > next_force_laser_on)
-  {
+  if (millis() > next_force_laser_on) {
+    // If the laser is supposed to be on, then turn it on
     if (laser_on) {
-        digitalWrite(LASER_PIN,HIGH);
+      digitalWrite(LASER_PIN, HIGH);
     }
+    // Set new laser on/off timeouts
     next_force_laser_off = millis() + LASER_BLIP_SECONDS * 1000;
     next_force_laser_on = millis() + LASER_NEXT_BLIP_SECONDS * 1000;
   }
