@@ -27,9 +27,9 @@ typedef enum
     SET_LASER_OFF,
     RESET_AVR_PERIPH,
     CHECK_SERVO_CONTROLLER,
-    COMMAND_END,
     SET_MAGNET_ON,
-    SET_MAGNET_OFF
+    SET_MAGNET_OFF,
+    COMMAND_END
 } commands;
 
 typedef struct
@@ -44,8 +44,8 @@ typedef enum
     SUCCESS,
 } cmd_result;
 
-static char *outgoing_preamble = "$P>"; //towards arduino
-static char *incoming_preamble = "$P<"; //towards jetson
+static char* outgoing_preamble = "$P>"; //towards arduino
+static char* incoming_preamble = "$P<"; //towards jetson
 
 class AVRSerialParser
 {
@@ -53,7 +53,7 @@ public:
     AVRSerialParser(Adafruit_USBD_CDC port, cppQueue queue_q);
     void poll(void);
     uart_states get_state(void);
-    cmd_result get_command(packet_t *msg);
+    cmd_result get_command(packet_t* msg);
     uint32_t available = 0;
 
 private:
@@ -62,15 +62,15 @@ private:
     unsigned long last_byte_received = 0;
 
     //temp space for receiving sm to work with...
-    uint8_t length_bytes[2] = {0};
+    uint8_t length_bytes[2] = { 0 };
     uint16_t length = 0;
-    uint8_t data_bytes[512] = {0};
+    uint8_t data_bytes[512] = { 0 };
     uint16_t write_index = 0;
-    uint8_t crc_bytes[2] = {0};
+    uint8_t crc_bytes[2] = { 0 };
     uint8_t messages_available = 0;
 
     uint8_t crc8_dvb_s2(uint8_t crc, unsigned char a);
-    uint8_t calc_crc(uint8_t *buffer, uint16_t length);
+    uint8_t calc_crc(uint8_t* buffer, uint16_t length);
 
     uint32_t messages_dropped = 0;
 

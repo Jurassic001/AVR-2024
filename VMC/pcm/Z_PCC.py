@@ -27,8 +27,8 @@ class Zephyrus_PeripheralControlComputer:
             "SET_LASER_OFF": 9,
             "RESET_AVR_PERIPH": 10,
             "CHECK_SERVO_CONTROLLER": 11,
-            "SET_MAGNET_ON": 13,
-            "SET_MAGNET_OFF": 14,
+            "SET_MAGNET_ON": 12,
+            "SET_MAGNET_OFF": 13,
         }
 
         self.shutdown: bool = False
