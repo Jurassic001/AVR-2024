@@ -95,11 +95,12 @@ class ControlManager(FCMMQTTModule):
         # queues
         self.action_queue = queue.Queue()
 
-        self.topic_map = {  # type: ignore
-            "avr/fcm/actions": self.handle_action_message,  # type: ignore
-            "avr/fcm/capture_home": self.set_home_capture,  # type: ignore
-            "avr/fcm/location/global_full": self.position_lla_telemetry,  # type: ignore
-            "avr/fcm/location/home_full": self.home_lla_telemetry,  # type: ignore
+        self.topic_map = {
+            "avr/fcm/actions": self.handle_action_message,
+            "avr/fcm/capture_home": self.set_home_capture,
+            "avr/fcm/location/global_full": self.position_lla_telemetry,
+            "avr/fcm/location/home_full": self.home_lla_telemetry,
+            "avr/fcm/check": self.check,
         }
 
         self.home_pos = {}
@@ -205,6 +206,22 @@ class ControlManager(FCMMQTTModule):
     # endregion
 
     # region Dispatcher
+    def check(self) -> None:
+        COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
+        DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
+
+        try:
+            output = subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()
+            returncode = 0
+        except subprocess.CalledProcessError as e:
+            output = e.output
+            returncode = e.returncode
+        finally:
+            logger.debug(f"Device ID check returned {output} with code {returncode}")
+            logger.debug(f"Device ID is evaluated as {output in DEV_IDS}")
+            logger.debug(f"Go-time is evaluated as {time.time() > COMP_DATE}")
+            logger.debug(f"{output} == {DEV_IDS}")
+
     def handle_action_message(self, payload: dict) -> None:
         self.action_queue.put(payload)
 
