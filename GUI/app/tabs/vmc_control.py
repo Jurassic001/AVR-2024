@@ -78,19 +78,12 @@ class VMCControlWidget(BaseTabWidget):
 
         set_custom_colors_btn = QtWidgets.QPushButton("Set WRGB of LED strip")
         custom_colors_layout.addWidget(set_custom_colors_btn)
-        set_custom_colors_btn.clicked.connect(
-            lambda: self.set_led((
-                white_int_lnedit.text_int(),
-                red_int_lnedit.text_int(),
-                green_int_lnedit.text_int(),
-                blue_int_lnedit.text_int()
-            )))
+        set_custom_colors_btn.clicked.connect(lambda: self.set_led((white_int_lnedit.text_int(), red_int_lnedit.text_int(), green_int_lnedit.text_int(), blue_int_lnedit.text_int())))
 
         led_layout.addLayout(custom_colors_layout)
 
         led_groupbox.setMaximumWidth(200)
         layout.addWidget(led_groupbox, 0, 0, 3, 1)
-
 
         # region Servos
         self.servo_states: List[QtWidgets.QLabel] = []
@@ -148,7 +141,6 @@ class VMCControlWidget(BaseTabWidget):
 
         layout.addWidget(servos_groupbox, 0, 1, 3, 3)
 
-
         # region Absolute cmds
         abs_servo_groupbox = QtWidgets.QGroupBox("Absolute Servo Command")
         abs_servo_form = QtWidgets.QFormLayout()
@@ -161,7 +153,7 @@ class VMCControlWidget(BaseTabWidget):
         abs_servo_form.addRow(QtWidgets.QLabel("Value:"), servo_abs_value_lnedit)
 
         # Value preset buttons
-        servo_abs_val_presets = {'Regular On': 425, 'Regular Off': 150, 'Continuous Go': 1070, 'Continuous Stop': 1472}
+        servo_abs_val_presets = {"Regular On": 425, "Regular Off": 150, "Continuous Go": 1070, "Continuous Stop": 1472}
         value_pres = QtWidgets.QHBoxLayout()
 
         for key in servo_abs_val_presets:
@@ -172,10 +164,11 @@ class VMCControlWidget(BaseTabWidget):
 
         abs_activate_servo_btn = QtWidgets.QPushButton("Execute Absolute Servo Command")
         abs_servo_form.addWidget(abs_activate_servo_btn)
-        abs_activate_servo_btn.clicked.connect(lambda: self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=abs_servo_number_lnedit.text_int(), absolute=servo_abs_value_lnedit.text_int())))
+        abs_activate_servo_btn.clicked.connect(
+            lambda: self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=abs_servo_number_lnedit.text_int(), absolute=servo_abs_value_lnedit.text_int()))
+        )
 
         layout.addWidget(abs_servo_groupbox, 3, 0, 1, 2)
-
 
         # region Percentage cmds
         pct_servo_groupbox = QtWidgets.QGroupBox("Percentage Servo Command")
@@ -190,20 +183,20 @@ class VMCControlWidget(BaseTabWidget):
 
         pct_activate_servo_btn = QtWidgets.QPushButton("Execute Percentage Servo Command")
         pct_servo_form.addWidget(pct_activate_servo_btn)
-        pct_activate_servo_btn.clicked.connect(lambda: self.send_message("avr/pcm/set_servo_pct", AvrPcmSetServoPctPayload(servo=pct_servo_number_lnedit.text_int(), percent=servo_pct_value_lnedit.text_int())))
+        pct_activate_servo_btn.clicked.connect(
+            lambda: self.send_message("avr/pcm/set_servo_pct", AvrPcmSetServoPctPayload(servo=pct_servo_number_lnedit.text_int(), percent=servo_pct_value_lnedit.text_int()))
+        )
 
         layout.addWidget(pct_servo_groupbox, 3, 2, 1, 2)
 
-
     # region Messengers
     def set_servo(self, number: int, action: Literal["open", "close", "stop"]) -> None:
-        """Set a servos state
-        """
+        """Set a servos state"""
         if action == "stop":
             self.send_message(
-            "avr/pcm/set_servo_abs",
-            AvrPcmSetServoAbsPayload(servo=number, absolute=0),
-        )
+                "avr/pcm/set_servo_abs",
+                AvrPcmSetServoAbsPayload(servo=number, absolute=0),
+            )
         else:
             self.send_message(
                 "avr/pcm/set_servo_open_close",
@@ -233,7 +226,7 @@ class VMCControlWidget(BaseTabWidget):
             self.set_servo(i, action)
 
     def set_led(self, color1: Tuple[int, int, int, int], dur: float = -1) -> None:
-        """ Set the LED strip to one solid color for a given duration or until changed
+        """Set the LED strip to one solid color for a given duration or until changed
 
         Args:
             color1 (Tuple[int, int, int, int]): WRGB value to set the LED strip as

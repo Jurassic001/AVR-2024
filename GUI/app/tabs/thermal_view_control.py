@@ -68,10 +68,7 @@ class ThermalView(QtWidgets.QWidget):
         self.camera_total = self.camera_x * self.camera_y
 
         # create list of x/y points
-        self.points = [
-            (math.floor(ix / self.camera_x), (ix % self.camera_y))
-            for ix in range(self.camera_total)
-        ]
+        self.points = [(math.floor(ix / self.camera_x), (ix % self.camera_y)) for ix in range(self.camera_total)]
         # i'm not fully sure what this does
         self.grid_x, self.grid_y = np.mgrid[
             0 : self.camera_x - 1 : self.camera_total / 2j,
@@ -79,12 +76,7 @@ class ThermalView(QtWidgets.QWidget):
         ]
 
         # create avaiable colors
-        self.colors = [
-            (int(c.red * 255), int(c.green * 255), int(c.blue * 255))
-            for c in list(
-                colour.Color("indigo").range_to(colour.Color("red"), self.COLORDEPTH)
-            )
-        ]
+        self.colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in list(colour.Color("indigo").range_to(colour.Color("red"), self.COLORDEPTH))]
 
         # create canvas
         layout = QtWidgets.QVBoxLayout()
@@ -110,14 +102,11 @@ class ThermalView(QtWidgets.QWidget):
     def toggle_updates(self) -> None:
         self.update = not self.update
         self.canvas.clear()
-    
+
     def update_canvas(self, pixels: List[int]) -> None:
         if not self.update:
             return
-        float_pixels = [
-            map_value(p, self.MINTEMP, self.MAXTEMP, 0, self.COLORDEPTH - 1)
-            for p in pixels
-        ]
+        float_pixels = [map_value(p, self.MINTEMP, self.MAXTEMP, 0, self.COLORDEPTH - 1) for p in pixels]
 
         # Rotate 90° to orient for mounting correctly
         float_pixels_matrix = np.reshape(float_pixels, (self.camera_x, self.camera_y))
@@ -136,11 +125,7 @@ class ThermalView(QtWidgets.QWidget):
 
         for ix, row in enumerate(bicubic):
             for jx, pixel in enumerate(row):
-                brush = QtGui.QBrush(
-                    QtGui.QColor(
-                        *self.colors[int(constrain(pixel, 0, self.COLORDEPTH - 1))]
-                    )
-                )
+                brush = QtGui.QBrush(QtGui.QColor(*self.colors[int(constrain(pixel, 0, self.COLORDEPTH - 1))]))
                 self.canvas.addRect(
                     self.pixel_width * jx,
                     self.pixel_height * ix,
@@ -172,7 +157,7 @@ class JoystickWidget(BaseTabWidget):
         self.servoymax = 99
 
         self.gimbal_num = 1
-        
+
         self.gimbal_servos = {1: (2, 3), 2: (4, 8), 3: (9, 10)}
 
         # servo declarations
@@ -197,15 +182,15 @@ class JoystickWidget(BaseTabWidget):
         )
 
     def move_gimbal_absolute(self, x_servo_abs: int, y_servo_abs: int) -> None:
-        if self.gimbal_num == 0: # Potential Idea: Add a system where any gimbal number outside of the given gimbal numbers would control all gimbals (i.e gimbal number == 4 would control all)
+        if self.gimbal_num == 0:  # Potential Idea: Add a system where any gimbal number outside of the given gimbal numbers would control all gimbals (i.e gimbal number == 4 would control all)
             for i in range(len(self.gimbal_servos)):
                 self.send_message(
                     "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[i+1][0], absolute=x_servo_abs),
+                    AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[i + 1][0], absolute=x_servo_abs),
                 )
                 self.send_message(
                     "avr/pcm/set_servo_abs",
-                    AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[i+1][1], absolute=y_servo_abs),
+                    AvrPcmSetServoAbsPayload(servo=self.gimbal_servos[i + 1][1], absolute=y_servo_abs),
                 )
         else:
             self.send_message(
@@ -249,14 +234,8 @@ class JoystickWidget(BaseTabWidget):
         y_reversed = 225 - self.current_y
         # side to side  270 left, 360 right
 
-        x_servo_abs = round(
-            map_value(
-                self.current_x + 25, 25, 225, self.SERVO_ABS_MIN, self.SERVO_ABS_MAX
-            )
-        )
-        y_servo_abs = round(
-            map_value(y_reversed, 25, 225, self.SERVO_ABS_MIN, self.SERVO_ABS_MAX)
-        )
+        x_servo_abs = round(map_value(self.current_x + 25, 25, 225, self.SERVO_ABS_MIN, self.SERVO_ABS_MAX))
+        y_servo_abs = round(map_value(y_reversed, 25, 225, self.SERVO_ABS_MIN, self.SERVO_ABS_MAX))
 
         self.move_gimbal_absolute(x_servo_abs, y_servo_abs)
 
@@ -343,9 +322,7 @@ class JoystickWidget(BaseTabWidget):
             moving_offset_y = self.height() - moving_offset_y
 
         # print(self.joystick_direction())
-        self.current_x = (
-            self.moving_offset.x() - self._center().x() + self.__max_distance
-        )
+        self.current_x = self.moving_offset.x() - self._center().x() + self.__max_distance
         self.current_y = moving_offset_y - self._center().y() + self.__max_distance
 
         rate_limit(self.update_servos, frequency=50)
@@ -418,12 +395,12 @@ class ThermalViewControlWidget(BaseTabWidget):
 
         self.joystick = JoystickWidget(self)
         sub_joystick_layout.addWidget(self.joystick)
-        
+
         gimbal_picker_layout = QtWidgets.QFormLayout()
         gimbal_picker = FloatLineEdit()
         gimbal_picker_layout.addRow(QtWidgets.QLabel("Gimbal:"), gimbal_picker)
         gimbal_picker.setText(str(1))
-        
+
         set_gimbal_button = QtWidgets.QPushButton("Set Gimbal")
         gimbal_picker_layout.addWidget(set_gimbal_button)
 
@@ -439,16 +416,14 @@ class ThermalViewControlWidget(BaseTabWidget):
 
         laser_off_button = QtWidgets.QPushButton("Laser Off")
         laser_toggle_layout.addWidget(laser_off_button)
-        
+
         fire_laser_button = QtWidgets.QPushButton("Fire Laser (Pulse)")
         joystick_layout.addWidget(fire_laser_button)
 
         self.laser_toggle_label = QtWidgets.QLabel()
         self.laser_toggle_label.setText(wrap_text("Laser Off", "red"))
         self.laser_toggle_label.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred))
-        self.laser_toggle_label.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter
-        )
+        self.laser_toggle_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignRight | QtCore.Qt.AlignmentFlag.AlignVCenter)
         laser_toggle_layout.addWidget(self.laser_toggle_label)
 
         joystick_layout.addLayout(laser_toggle_layout)
@@ -468,9 +443,7 @@ class ThermalViewControlWidget(BaseTabWidget):
 
         center_gimbal_button.clicked.connect(lambda: self.joystick.center_gimbal())
 
-        fire_laser_button.clicked.connect(  # type: ignore
-            lambda: self.send_message("avr/pcm/fire_laser", AvrPcmFireLaserPayload())
-        )
+        fire_laser_button.clicked.connect(lambda: self.send_message("avr/pcm/fire_laser", AvrPcmFireLaserPayload()))  # type: ignore
 
         laser_on_button.clicked.connect(lambda: self.set_laser(True))  # type: ignore
         laser_off_button.clicked.connect(lambda: self.set_laser(False))  # type: ignore

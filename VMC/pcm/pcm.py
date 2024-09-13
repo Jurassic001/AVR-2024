@@ -16,6 +16,7 @@ from Z_PCC import Zephyrus_PeripheralControlComputer
 
 from loguru import logger
 
+
 class PeripheralControlModule(MQTTModule):
     def __init__(self, port: str, baud_rate: int):
         super().__init__()
@@ -89,7 +90,7 @@ class PeripheralControlModule(MQTTModule):
 
     def set_laser_off(self, payload: AvrPcmSetLaserOffPayload) -> None:
         self.pcc.set_laser_off()
-    
+
     def set_magnet(self, payload: dict[str, bool]) -> None:
         if payload["enabled"]:
             self.pcc.set_magnet_on()

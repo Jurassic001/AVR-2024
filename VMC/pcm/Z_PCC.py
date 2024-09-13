@@ -8,7 +8,7 @@ class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):
     # region __init__
     def __init__(self, Z_ser: serial.Serial):
         super().__init__(Z_ser)
-    
+
         self.commands = {
             "SET_SERVO_OPEN_CLOSE": 0,
             "SET_SERVO_MIN": 1,
@@ -25,7 +25,7 @@ class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):
             "SET_MAGNET_ON": 12,
             "SET_MAGNET_OFF": 13,
         }
-    
+
     # region set_magnet_on
     def set_magnet_on(self):
         # sourcery skip: class-extract-method

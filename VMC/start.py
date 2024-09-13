@@ -23,9 +23,7 @@ def check_sudo() -> None:
         return
 
     # Check if Docker requires sudo
-    result = subprocess.run(
-        ["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+    result = subprocess.run(["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if result.returncode == 0:
         # either we have permission to run docker as non-root or we have sudo
         return
@@ -34,9 +32,7 @@ def check_sudo() -> None:
     print("Needing sudo privileges to run docker, re-launching")
 
     try:
-        sys.exit(
-            subprocess.run(["sudo", sys.executable, __file__] + sys.argv[1:]).returncode
-        )
+        sys.exit(subprocess.run(["sudo", sys.executable, __file__] + sys.argv[1:]).returncode)
     except PermissionError:
         sys.exit(0)
     except KeyboardInterrupt:
@@ -68,13 +64,14 @@ def fcm_service(compose_services: dict, simulation=False) -> None:
 
     compose_services["fcm"] = fcm_data
 
+
 def simulator_service(compose_services: dict, local: bool = False) -> None:
     # region simulator
     sim_data = {
         "restart": "unless-stopped",
         "tty": True,
         "stdin_open": True,
-        "ports": ["5760:5760/tcp","5761:5761/tcp", "14541:14541/udp"],
+        "ports": ["5760:5760/tcp", "5761:5761/tcp", "14541:14541/udp"],
     }
 
     if local:
@@ -105,7 +102,7 @@ def mavp2p_service(compose_services: dict, local: bool = False) -> None:
     mavp2p_data = {
         "restart": "unless-stopped",
         "devices": ["/dev/ttyTHS1:/dev/ttyTHS1"],
-        "ports": ["5760:5760/tcp","5761:5761/tcp", "14541:14541/udp"],
+        "ports": ["5760:5760/tcp", "5761:5761/tcp", "14541:14541/udp"],
         "command": "serial:/dev/ttyTHS1:500000 tcps:0.0.0.0:5760 tcps:0.0.0.0:5761 udps:0.0.0.0:14541",
     }
 
@@ -214,9 +211,7 @@ def vio_service(compose_services: dict, local: bool = False) -> None:
         "depends_on": ["mqtt"],
         "restart": "unless-stopped",
         "privileged": True,
-        "volumes": [
-            f"{os.path.join(THIS_DIR, 'vio', 'settings')}:/usr/local/zed/settings/"
-        ],
+        "volumes": [f"{os.path.join(THIS_DIR, 'vio', 'settings')}:/usr/local/zed/settings/"],
     }
 
     if local:
@@ -225,6 +220,7 @@ def vio_service(compose_services: dict, local: bool = False) -> None:
         vio_data["image"] = f"{IMAGE_BASE}vio:latest"
 
     compose_services["vio"] = vio_data
+
 
 def prepare_compose_file(local: bool = False, simulation=False) -> str:
     # region prep compose
@@ -316,7 +312,6 @@ if __name__ == "__main__":
     zephyrus_modules = all_modules
     zephyrus_modules.remove("apriltag")
 
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l",
@@ -325,9 +320,7 @@ if __name__ == "__main__":
         help="Build containers locally rather than using pre-built ones from GitHub",
     )
 
-    parser.add_argument(
-        "action", choices=["run", "build", "pull", "stop"], help="Action to perform"
-    )
+    parser.add_argument("action", choices=["run", "build", "pull", "stop"], help="Action to perform")
     parser.add_argument(
         "modules",
         nargs="*",
@@ -371,7 +364,7 @@ if __name__ == "__main__":
 
     if args.zephyrus:
         # Modules specifically for the 2024-25 Bell AVR Season
-        args.modules = [module for module in zephyrus_modules if module not in args.modules] # Remove modules in args.modules from zephyrus_modules
+        args.modules = [module for module in zephyrus_modules if module not in args.modules]  # Remove modules in args.modules from zephyrus_modules
     elif args.min:
         # minimal modules selected
         args.modules += min_modules

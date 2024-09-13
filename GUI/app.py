@@ -15,6 +15,7 @@ from app.tabs.vmc_telemetry import VMCTelemetryWidget
 from loguru import logger
 from PySide6 import QtCore, QtGui, QtWidgets
 
+
 class TabBar(QtWidgets.QTabBar):
     """
     Custom QTabBar for a QTabWidget to allow the tabs to be popped in/out
@@ -109,8 +110,8 @@ class MainWindow(QtWidgets.QWidget):
         self.mainMonitor = QApp.primaryScreen().size()
         self.move(0, 0)
         self.setMaximumSize(self.mainMonitor.width(), self.mainMonitor.height())
-        self.setMinimumSize(self.mainMonitor.width() * .2, self.mainMonitor.width() * .2)
-        self.curMod = .8
+        self.setMinimumSize(self.mainMonitor.width() * 0.2, self.mainMonitor.width() * 0.2)
+        self.curMod = 0.8
         self.resize(self.mainMonitor.width() * self.curMod, self.mainMonitor.height() * self.curMod)
 
     def resize_window(self, change: int) -> None:
@@ -119,7 +120,7 @@ class MainWindow(QtWidgets.QWidget):
         Args:
             change (int): The change in window scale modifier
         """
-        if self.curMod + change < .2 or self.curMod + change > 1:
+        if self.curMod + change < 0.2 or self.curMod + change > 1:
             return
         self.curMod += change
         self.resize(self.mainMonitor.width() * self.curMod, self.mainMonitor.height() * self.curMod)
@@ -134,7 +135,6 @@ class MainWindow(QtWidgets.QWidget):
         self.tabs = TabWidget(self)
         layout.addWidget(self.tabs)
 
-
         # add tabs
 
         # connection widget
@@ -142,29 +142,19 @@ class MainWindow(QtWidgets.QWidget):
         self.main_connection_widget = MainConnectionWidget(self)
         self.main_connection_widget.build(self)
         self.main_connection_widget.pop_in.connect(self.tabs.pop_in)
-        self.tabs.addTab(
-            self.main_connection_widget, self.main_connection_widget.windowTitle()
-        )
+        self.tabs.addTab(self.main_connection_widget, self.main_connection_widget.windowTitle())
 
-        self.main_connection_widget.mqtt_connection_widget.connection_state.connect(
-            self.set_mqtt_connected_state
-        )
-        self.main_connection_widget.serial_connection_widget.connection_state.connect(
-            self.set_serial_connected_state
-        )
+        self.main_connection_widget.mqtt_connection_widget.connection_state.connect(self.set_mqtt_connected_state)
+        self.main_connection_widget.serial_connection_widget.connection_state.connect(self.set_serial_connected_state)
 
         # vmc telemetry widget
 
         self.vmc_telemetry_widget = VMCTelemetryWidget(self)
         self.vmc_telemetry_widget.build()
         self.vmc_telemetry_widget.pop_in.connect(self.tabs.pop_in)
-        self.tabs.addTab(
-            self.vmc_telemetry_widget, self.vmc_telemetry_widget.windowTitle()
-        )
+        self.tabs.addTab(self.vmc_telemetry_widget, self.vmc_telemetry_widget.windowTitle())
 
-        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
-            self.vmc_telemetry_widget.process_message
-        )
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.vmc_telemetry_widget.process_message)
 
         # moving map widget
 
@@ -173,9 +163,7 @@ class MainWindow(QtWidgets.QWidget):
         self.moving_map_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.moving_map_widget, self.moving_map_widget.windowTitle())
 
-        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
-            self.moving_map_widget.process_message
-        )
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.moving_map_widget.process_message)
 
         # vmc control widget
 
@@ -184,9 +172,7 @@ class MainWindow(QtWidgets.QWidget):
         self.vmc_control_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.vmc_control_widget, self.vmc_control_widget.windowTitle())
 
-        self.vmc_control_widget.emit_message.connect(
-            self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish
-        )
+        self.vmc_control_widget.emit_message.connect(self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish)
 
         # thermal view widget
 
@@ -198,13 +184,9 @@ class MainWindow(QtWidgets.QWidget):
             self.thermal_view_control_widget.windowTitle(),
         )
 
-        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
-            self.thermal_view_control_widget.process_message
-        )
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.thermal_view_control_widget.process_message)
 
-        self.thermal_view_control_widget.emit_message.connect(
-            self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish
-        )
+        self.thermal_view_control_widget.emit_message.connect(self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish)
 
         # autonomy widget
 
@@ -213,13 +195,9 @@ class MainWindow(QtWidgets.QWidget):
         self.autonomy_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.autonomy_widget, self.autonomy_widget.windowTitle())
 
-        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
-            self.autonomy_widget.process_message
-        )
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.autonomy_widget.process_message)
 
-        self.autonomy_widget.emit_message.connect(
-            self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish
-        )
+        self.autonomy_widget.emit_message.connect(self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish)
 
         # mqtt debug widget
 
@@ -228,12 +206,8 @@ class MainWindow(QtWidgets.QWidget):
         self.mqtt_debug_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.mqtt_debug_widget, self.mqtt_debug_widget.windowTitle())
 
-        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
-            self.mqtt_debug_widget.process_message
-        )
-        self.mqtt_debug_widget.emit_message.connect(
-            self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish
-        )
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.mqtt_debug_widget.process_message)
+        self.mqtt_debug_widget.emit_message.connect(self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish)
 
         # mqtt logger widget
 
@@ -242,15 +216,11 @@ class MainWindow(QtWidgets.QWidget):
         self.mqtt_logger_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.mqtt_logger_widget, self.mqtt_logger_widget.windowTitle())
 
-        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(
-            self.mqtt_logger_widget.process_message
-        )
+        self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.mqtt_logger_widget.process_message)
 
         # pcc tester widget
 
-        self.pcc_tester_widget = PCCTesterWidget(
-            self, self.main_connection_widget.serial_connection_widget.serial_client
-        )
+        self.pcc_tester_widget = PCCTesterWidget(self, self.main_connection_widget.serial_connection_widget.serial_client)
         self.pcc_tester_widget.build()
         self.pcc_tester_widget.pop_in.connect(self.tabs.pop_in)
         self.tabs.addTab(self.pcc_tester_widget, self.pcc_tester_widget.windowTitle())
@@ -262,10 +232,10 @@ class MainWindow(QtWidgets.QWidget):
         # =====================================================================
         # Create keybinds for changing window size
         shrink_keybind = QtGui.QShortcut(QtGui.QKeySequence("-"), self)
-        shrink_keybind.activated.connect(lambda: self.resize_window(-.10))
+        shrink_keybind.activated.connect(lambda: self.resize_window(-0.10))
 
         grow_keybind = QtGui.QShortcut(QtGui.QKeySequence("="), self)
-        grow_keybind.activated.connect(lambda: self.resize_window(.10))
+        grow_keybind.activated.connect(lambda: self.resize_window(0.10))
 
     def set_mqtt_connected_state(self, connection_state: ConnectionState) -> None:
         self.mqtt_connected = connection_state == ConnectionState.connected
@@ -309,7 +279,7 @@ class MainWindow(QtWidgets.QWidget):
             self.tabs.setTabToolTip(idx, "Serial not connected")
         else:
             self.tabs.setTabToolTip(idx, "")
-    
+
     def setActiveTabs(self, enabled: bool) -> None:
         # Set all MQTT enabled tabs to either active or inactive. PCC tester requires serial to be enabled
         widgets = [
@@ -326,7 +296,7 @@ class MainWindow(QtWidgets.QWidget):
         for widget in widgets:
             idx = self.tabs.indexOf(widget)
             self.tabs.setTabEnabled(idx, enabled)
-        
+
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """
         Override close event to close all connections.
@@ -338,7 +308,7 @@ class MainWindow(QtWidgets.QWidget):
             self.main_connection_widget.serial_connection_widget.serial_client.logout()
 
         event.accept()
-    
+
 
 def main() -> None:
     # create Qt Application instance

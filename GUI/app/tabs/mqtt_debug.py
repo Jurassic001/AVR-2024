@@ -10,9 +10,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from .base import BaseTabWidget
 
 
-def _get_or_create_child(
-    parent: QtWidgets.QTreeWidgetItem, name: str
-) -> QtWidgets.QTreeWidgetItem:
+def _get_or_create_child(parent: QtWidgets.QTreeWidgetItem, name: str) -> QtWidgets.QTreeWidgetItem:
     """
     Gets the child QTreeWidgetItem of a QTreeWidgetItem matching the given name.
     If one does not exists, creates and returns a new one.
@@ -195,9 +193,7 @@ class MQTTDebugWidget(BaseTabWidget):
         self.topic_combo_box.setEditable(True)
         self.topic_combo_box.setInsertPolicy(QtWidgets.QComboBox.InsertPolicy.NoInsert)
         # change completer to have a popup
-        self.topic_combo_box.completer().setCompletionMode(
-            QtWidgets.QCompleter.CompletionMode.PopupCompletion
-        )
+        self.topic_combo_box.completer().setCompletionMode(QtWidgets.QCompleter.CompletionMode.PopupCompletion)
         self.topic_combo_box.setCurrentText("")
         sender_layout.addRow(QtWidgets.QLabel("Topic:"), self.topic_combo_box)
 
@@ -217,11 +213,7 @@ class MQTTDebugWidget(BaseTabWidget):
 
         self.topic_combo_box.textActivated.connect(self.topic_selected)  # type: ignore
         self.payload_text_edit.textChanged.connect(self.reset_payload_text_edit_interaction)  # type: ignore
-        self.send_button.clicked.connect(  # type: ignore
-            lambda: self.send_message(
-                self.topic_combo_box.currentText(), self.payload_text_edit.toPlainText()
-            )
-        )
+        self.send_button.clicked.connect(lambda: self.send_message(self.topic_combo_box.currentText(), self.payload_text_edit.toPlainText()))  # type: ignore
 
     def clear(self) -> None:
         """
@@ -328,9 +320,7 @@ class MQTTDebugWidget(BaseTabWidget):
         # set the data
         self.data_view.setText(payload)
 
-    def set_item_background(
-        self, item: QtWidgets.QTreeWidgetItem, color: Tuple[int, int, int]
-    ) -> None:
+    def set_item_background(self, item: QtWidgets.QTreeWidgetItem, color: Tuple[int, int, int]) -> None:
         """
         Set the background color for an item.
         """

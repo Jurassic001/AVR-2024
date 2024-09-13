@@ -129,17 +129,11 @@ class SerialConnectionWidget(QtWidgets.QWidget):
         self.set_connected_state(ConnectionState.disconnected)
 
         self.com_port_combo.addItems(serial_ports)
-        self.com_port_combo.setCurrentIndex(
-            self.com_port_combo.findText(config.serial_port)
-        )
+        self.com_port_combo.setCurrentIndex(self.com_port_combo.findText(config.serial_port))
         self.baud_rate_line_edit.setText(str(config.serial_baud_rate))
 
         # set up connections
-        self.connect_button.clicked.connect(  # type: ignore
-            lambda: self.serial_client.login(
-                self.com_port_combo.currentText(), self.baud_rate_line_edit.text_int()
-            )
-        )
+        self.connect_button.clicked.connect(lambda: self.serial_client.login(self.com_port_combo.currentText(), self.baud_rate_line_edit.text_int()))  # type: ignore
         self.disconnect_button.clicked.connect(self.serial_client.logout)  # type: ignore
 
     def set_connected_state(self, connection_state: ConnectionState) -> None:
@@ -157,9 +151,7 @@ class SerialConnectionWidget(QtWidgets.QWidget):
             ConnectionState.disconnected,
         ]
 
-        self.state_label.setText(
-            f"State: {wrap_text(connection_state.name.title(), color_lookup[connection_state])}"
-        )
+        self.state_label.setText(f"State: {wrap_text(connection_state.name.title(), color_lookup[connection_state])}")
 
         self.disconnect_button.setEnabled(connected)
         self.connect_button.setDisabled(connected)

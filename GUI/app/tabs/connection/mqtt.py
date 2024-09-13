@@ -34,9 +34,7 @@ class MQTTClient(QtCore.QObject):
         self.client.on_message = self.on_message
         self.client.on_disconnect = self.on_disconnect
 
-    def on_connect(
-        self, client: mqtt.Client, userdata: Any, flags: dict, rc: int
-    ) -> None:
+    def on_connect(self, client: mqtt.Client, userdata: Any, flags: dict, rc: int) -> None:
         """
         Callback when the MQTT client connects
         """
@@ -44,9 +42,7 @@ class MQTTClient(QtCore.QObject):
         logger.debug("Subscribing to all topics")
         client.subscribe("#")
 
-    def on_message(
-        self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
-    ) -> None:
+    def on_message(self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
         """
         Callback for every MQTT message
         """
@@ -129,7 +125,7 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         self.mqtt_client.connection_state.connect(self.set_connected_state)
 
     def hostnameSetter(self, hostLine: QtWidgets.QLineEdit) -> None:
-        """ Set the value of the host based on the localHost boolean
+        """Set the value of the host based on the localHost boolean
 
         Args:
             hostLine (QtWidgets.QLineEdit): The hostLine object
@@ -194,11 +190,7 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
 
         # set up connections
         self.hostname_line_edit.returnPressed.connect(self.connect_button.click)  # type: ignore
-        self.connect_button.clicked.connect(  # type: ignore
-            lambda: self.mqtt_client.login(
-                self.localHost_checkbox.isChecked(), self.hostname_line_edit.text(), self.port_line_edit.text_int()
-            )
-        )
+        self.connect_button.clicked.connect(lambda: self.mqtt_client.login(self.localHost_checkbox.isChecked(), self.hostname_line_edit.text(), self.port_line_edit.text_int()))  # type: ignore
         self.disconnect_button.clicked.connect(self.mqtt_client.logout)  # type: ignore
         self.localHost_checkbox.stateChanged.connect(lambda: self.hostnameSetter(self.hostname_line_edit))
         self.forceEnableTabs_checkbox.stateChanged.connect(lambda: app.setActiveTabs(self.forceEnableTabs_checkbox.isChecked()))
@@ -221,9 +213,7 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
             ConnectionState.disconnected,
         ]
 
-        self.state_label.setText(
-            f"State: {wrap_text(connection_state.name.title(), color_lookup[connection_state])}"
-        )
+        self.state_label.setText(f"State: {wrap_text(connection_state.name.title(), color_lookup[connection_state])}")
 
         self.disconnect_button.setEnabled(connected)
         self.connect_button.setDisabled(connected)

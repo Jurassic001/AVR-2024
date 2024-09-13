@@ -32,9 +32,7 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         # top groupbox
         top_groupbox = QtWidgets.QGroupBox("FCC Status")
-        top_groupbox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
-        )
+        top_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         top_layout = QtWidgets.QFormLayout()
         top_groupbox.setLayout(top_layout)
 
@@ -60,7 +58,7 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         self.armed_label = QtWidgets.QLabel("")
         armed_layout.addWidget(self.armed_label)
-        
+
         """
         NOTE: None of these buttons work, this specific tab hates send_message commands for some reason
 
@@ -77,7 +75,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         kill_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "kill", 'payload': {}}))
         armed_layout.addWidget(kill_button)
         """
-        
+
         top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
         # flight mode row
@@ -88,9 +86,7 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         # bottom groupbox
         bottom_group = QtWidgets.QFrame()
-        bottom_group.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
-        )
+        bottom_group.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         bottom_layout = QtWidgets.QHBoxLayout()
         bottom_group.setLayout(bottom_layout)
 
@@ -111,9 +107,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.fcm_z_line_edit = DisplayLineEdit("")
         loc_xyz_layout.addWidget(self.fcm_z_line_edit)
 
-        bottom_left_layout.addRow(
-            QtWidgets.QLabel("FCM Local (x, y, z):"), loc_xyz_layout
-        )
+        bottom_left_layout.addRow(QtWidgets.QLabel("FCM Local (x, y, z):"), loc_xyz_layout)
 
         # FUS NED row
         fus_xyz_layout = QtWidgets.QHBoxLayout()
@@ -127,9 +121,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.fus_z_line_edit = DisplayLineEdit("")
         fus_xyz_layout.addWidget(self.fus_z_line_edit)
 
-        bottom_left_layout.addRow(
-            QtWidgets.QLabel("FUS Local (n, e, d):"), fus_xyz_layout
-        )
+        bottom_left_layout.addRow(QtWidgets.QLabel("FUS Local (n, e, d):"), fus_xyz_layout)
 
         # VIO NED row
         vio_xyz_layout = QtWidgets.QHBoxLayout()
@@ -143,9 +135,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.vio_z_line_edit = DisplayLineEdit("")
         vio_xyz_layout.addWidget(self.vio_z_line_edit)
 
-        bottom_left_layout.addRow(
-            QtWidgets.QLabel("VIO Local (n, e, d):"), vio_xyz_layout
-        )
+        bottom_left_layout.addRow(QtWidgets.QLabel("VIO Local (n, e, d):"), vio_xyz_layout)
 
         # lat, lon, alt row
         loc_lla_layout = QtWidgets.QHBoxLayout()
@@ -159,9 +149,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.glo_alt_line_edit = DisplayLineEdit("")
         loc_lla_layout.addWidget(self.glo_alt_line_edit)
 
-        bottom_left_layout.addRow(
-            QtWidgets.QLabel("Global (lat, lon, alt):"), loc_lla_layout
-        )
+        bottom_left_layout.addRow(QtWidgets.QLabel("Global (lat, lon, alt):"), loc_lla_layout)
 
         bottom_layout.addWidget(bottom_left_groupbox)
 
@@ -198,7 +186,6 @@ class VMCTelemetryWidget(BaseTabWidget):
 
         bottom_right_layout.addRow(QtWidgets.QLabel("Velocity (fwd, right, up)"), fcm_vel_layout)
 
-
         bottom_layout.addWidget(bottom_right_groupbox)
 
         layout.addWidget(bottom_group)
@@ -206,9 +193,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         # ==========================
         # Status
         module_status_groupbox = QtWidgets.QGroupBox("Module Status")
-        module_status_groupbox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
-        )
+        module_status_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         module_status_layout = QtWidgets.QHBoxLayout()
         module_status_groupbox.setLayout(module_status_layout)
 
@@ -280,9 +265,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         """
         Update satellites information
         """
-        self.satellites_label.setText(
-            f"{payload['num_satellites']} visible, {payload['fix_type']}"
-        )
+        self.satellites_label.setText(f"{payload['num_satellites']} visible, {payload['fix_type']}")
 
     def update_battery(self, payload: AvrFcmBatteryPayload) -> None:
         """
@@ -298,9 +281,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.battery_voltage_label.setText(f"{round(payload['voltage'], 4)} Volts")
 
         # this is required to change the progress bar color as the value changes
-        color = smear_color(
-            (135, 0, 16), (11, 135, 0), value=soc, min_value=0, max_value=100
-        )
+        color = smear_color((135, 0, 16), (11, 135, 0), value=soc, min_value=0, max_value=100)
 
         stylesheet = f"""
             QProgressBar {{
@@ -337,7 +318,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.fcm_x_line_edit.setText(str(payload["dX"]))
         self.fcm_y_line_edit.setText(str(payload["dY"]))
         self.fcm_z_line_edit.setText(str(payload["dZ"]))
-    
+
     def update_local_FUS_location(self, payload: AvrFusionPositionNedPayload) -> None:
         """
         Update local location information reported by the Fusion module
@@ -369,7 +350,7 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.att_p_line_edit.setText(str(payload["pitch"]))
         self.att_r_line_edit.setText(str(payload["roll"]))
         self.att_y_line_edit.setText(str(payload["yaw"]))
-    
+
     def update_FCM_velocity(self, payload: AvrFcmVelocityPayload) -> None:
         """
         Update velocity information reported by the Flight Control Module
@@ -381,7 +362,6 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.vel_x_line_edit.setText(str(x_velo))
         self.vel_y_line_edit.setText(str(y_velo))
         self.vel_z_line_edit.setText(str(z_velo))
-
 
     def process_message(self, topic: str, payload: str) -> None:
         """

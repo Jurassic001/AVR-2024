@@ -16,10 +16,9 @@ class IntLineEdit(QtWidgets.QLineEdit):
         """
         super().__init__(*args, **kwargs)
         self.setValidator(QtGui.QIntValidator(min, max))
-    
+
     def text_int(self) -> int:
-        """Returns the content of the IntLineEdit widget as an integer.
-        """
+        """Returns the content of the IntLineEdit widget as an integer."""
         return int(super().text())
 
 
@@ -37,10 +36,9 @@ class FloatLineEdit(QtWidgets.QLineEdit):
         self.setValidator(QtGui.QDoubleValidator(bottom, top, decimals))
 
     def text_float(self) -> float:
-        """Returns the content of the FloatLineEdit widget as an float.
-        """
+        """Returns the content of the FloatLineEdit widget as an float."""
         return float(super().text())
-    
+
 
 class DisplayLineEdit(QtWidgets.QLineEdit):
     # region DisplayLineEdit
@@ -67,7 +65,7 @@ class DisplayLineEdit(QtWidgets.QLineEdit):
         Args:
             arg__1 (str): The text to be set as the widget's text.
         """
-        if self.round_digits is not None: # round incoming float values
+        if self.round_digits is not None:  # round incoming float values
             with contextlib.suppress(ValueError):
                 arg__1 = str(round(float(arg__1), self.round_digits))
 

@@ -14,7 +14,7 @@ class MainConnectionWidget(BaseTabWidget):
         super().__init__(parent)
 
         self.setWindowTitle("Connections")
-    
+
     def build(self, app: QtWidgets.QWidget) -> None:
         """
         Build the GUI layout
@@ -71,9 +71,7 @@ class MainConnectionWidget(BaseTabWidget):
         self.mqtt_connection_widget.build(app)
         mqtt_layout.addWidget(self.mqtt_connection_widget)
 
-        mqtt_groupbox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
-        )
+        mqtt_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         layout.addWidget(mqtt_groupbox)
 
         # ======================================================
@@ -86,7 +84,5 @@ class MainConnectionWidget(BaseTabWidget):
         self.serial_connection_widget.build()
         serial_layout.addWidget(self.serial_connection_widget)
 
-        serial_groupbox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
-        )
+        serial_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         layout.addWidget(serial_groupbox)

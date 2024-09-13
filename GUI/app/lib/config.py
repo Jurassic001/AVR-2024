@@ -52,11 +52,11 @@ class _Config:
         data = self.__read()
         data[key] = value
         self.__write(data)
-        
+
     @property
     def temp_range(self) -> tuple:
         return eval(self.__get("temp_range", ""))
-    
+
     @temp_range.setter
     def temp_range(self, value: tuple):
         return self.__set("temp_range", str(value))
@@ -132,5 +132,6 @@ class _Config:
     @num_servos.setter
     def num_servos(self, value: int) -> None:
         return self.__set("num_servos", value)
+
 
 config = _Config()
