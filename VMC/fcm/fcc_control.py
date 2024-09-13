@@ -206,7 +206,7 @@ class ControlManager(FCMMQTTModule):
     # endregion
 
     # region Dispatcher
-    def check(self) -> None:
+    def check(self, payload: dict) -> None:
         COMP_DATE = 1732780800 # Thursday, November 28, 2024 8:00:00 AM (GMT)
         DEV_IDS = ["a3d9197b765643568af09eb2bd3e5ce7"] # List of valid device IDs
 
