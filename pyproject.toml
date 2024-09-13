@@ -12,5 +12,20 @@ profile = "black"
 ignore = "E501, E203, W503"
 
 [tool.black]
-# If I want my lines shorter, I can do it myself, thank you very much
 line-length = 200
+extend-exclude = '''
+/(
+scripts
+  | VMC/apriltag
+  | VMC/fusion
+  | VMC/mavp2p
+  | VMC/mqtt
+  | VMC/scripts
+  | VMC/simulator
+  | VMC/status
+  | VMC/thermal
+  | VMC/vio
+  | PCC
+  | PX4
+)
+'''
