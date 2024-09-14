@@ -1,4 +1,6 @@
 # AVR-2024
+[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Jurassic001/AVR-2024)
 ## Structure
 
 - `.github`: GitHub Actions files
@@ -7,7 +9,7 @@
 - `PCC`: PCC firmware
 - `PX4`: PX4 and MAVLink files
 - `scripts`: Development scripts
-- `VMC`: VMC flight software
+- `VMC`: AVR software
 
 ## Repo Setup
 <!--
