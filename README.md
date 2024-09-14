@@ -1,6 +1,7 @@
 # AVR-2024
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Jurassic001/AVR-2024)
+[![Static Badge](https://img.shields.io/badge/code_style-black-black?style=for-the-badge)](https://github.com/psf/black)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Jurassic001/AVR-2024?style=for-the-badge&logo=github)](https://github.com/Jurassic001/AVR-2024/activity)
+[![GitHub branch check runs](https://img.shields.io/github/check-runs/Jurassic001/AVR-2024/main?style=for-the-badge)](https://github.com/Jurassic001/AVR-2024/actions)
 ## Structure
 
 - `.github`: GitHub Actions files
