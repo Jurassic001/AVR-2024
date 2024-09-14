@@ -34,42 +34,6 @@ jobs:
 
       - name: Install Packages
         run: python scripts/install_requirements.py --directory GUI --strict
-
-      - name: Build GUI
-        run: python GUI/build.py
-
-      - name: Test GUI
-        shell: pwsh
-        run: ./GUI/dist/AVRGUI.*.exe --test-bundle
-
-      # - name: Upload GUI to Pipeline
-      #   if: github.event_name != 'push'
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: GUI
-      #     path: GUI/dist/*.exe
-
-      # - name: Get Latest Release
-      #   if: github.event_name != 'pull_request'
-      #   id: latest_release
-      #   uses: gregziegan/fetch-latest-release@v2.0.0
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-
-      # - name: Delete Existing GUI
-      #   if: github.event_name != 'pull_request'
-      #   uses: mknejp/delete-release-assets@v1
-      #   with:
-      #     token: ${{ github.token }}
-      #     tag: ${{ steps.latest_release.outputs.tag_name }}
-      #     assets: '*.exe'
-
-      # - name: Upload GUI to Release
-      #   if: github.event_name != 'pull_request'
-      #   uses: svenstaro/upload-release-action@v2
-      #   with:
-      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
-      #     file: GUI/dist/*.exe
-      #     file_glob: true
-      #     tag: ${{ steps.latest_release.outputs.tag_name }}
-      #     overwrite: true
+      
+      - name: Run app.py
+        run: python GUI/app.py
