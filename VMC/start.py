@@ -311,6 +311,7 @@ if __name__ == "__main__":
 
     zephyrus_modules = all_modules
     zephyrus_modules.remove("apriltag")
+    zephyrus_modules.remove("status")
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
