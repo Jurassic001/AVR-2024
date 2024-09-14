@@ -2,6 +2,7 @@
     "version": "2.0.0",
     "tasks": [
         {
+            // Default build tasks & dependencies
             "label": "Format using config",
             "type": "shell",
             "command": "black . --config pyproject.toml",
@@ -9,6 +10,10 @@
                 "reveal": "never",
                 "revealProblems": "onProblem",
                 "close": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
             }
         },
         {
@@ -19,6 +24,10 @@
                 "reveal": "never",
                 "revealProblems": "onProblem",
                 "close": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
             }
         },
         {
@@ -33,6 +42,18 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            // Other tasks
+            "label": "Install reqs",
+            "type": "shell",
+            "command": "python scripts/install_requirements.py",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "onProblem",
+                "close": true
+            },
+            "problemMatcher": []
         }
     ]
 }
