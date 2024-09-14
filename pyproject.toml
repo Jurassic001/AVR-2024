@@ -1,15 +1,20 @@
-[tool.autoflake]
-recursive = true
-in-place = true
-
 [tool.isort]
 profile = "black"
-
-[tool.flake8]
-# E501 is line too long
-# E203 is whitespace before ':'
-# W503 is line break before binary operator
-ignore = "E501, E203, W503"
+multi_line_output = 3
+skip_glob = [
+  "scripts/*",
+  "VMC/apriltag/*",
+  "VMC/fusion/*",
+  "VMC/mavp2p/*",
+  "VMC/mqtt/*",
+  "VMC/scripts/wifi.py",
+  "VMC/simulator/*",
+  "VMC/status/*",
+  "VMC/thermal/*",
+  "VMC/vio/*",
+  "PCC/*",
+  "PX4/*",
+]
 
 [tool.black]
 line-length = 200
@@ -20,7 +25,7 @@ scripts
   | VMC/fusion
   | VMC/mavp2p
   | VMC/mqtt
-  | VMC/scripts
+  | VMC/scripts/wifi.py
   | VMC/simulator
   | VMC/status
   | VMC/thermal
@@ -29,3 +34,14 @@ scripts
   | PX4
 )
 '''
+
+# Haven't found a good use for these tools, don't plan on looking
+[tool.autoflake]
+recursive = true
+in-place = true
+
+[tool.flake8]
+# E501 is line too long
+# E203 is whitespace before ':'
+# W503 is line break before binary operator
+ignore = ["E501, E203, W503"]

@@ -1,6 +1,7 @@
 # .vscode folder
 .vscode/**
 !.vscode/extensions.json
+!.vscode/tasks.json
 
 # python cache files
 __pycache__/

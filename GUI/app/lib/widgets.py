@@ -1,4 +1,5 @@
-import contextlib, os
+import contextlib
+import os
 
 from PySide6 import QtGui, QtWidgets
 

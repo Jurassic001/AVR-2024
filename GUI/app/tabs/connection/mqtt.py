@@ -1,10 +1,9 @@
+import socket
 from typing import Any
 
 import paho.mqtt.client as mqtt
 from loguru import logger
 from PySide6 import QtCore, QtGui, QtWidgets
-
-import socket
 
 from ...lib.color import wrap_text
 from ...lib.config import config

@@ -12,9 +12,8 @@ from bell.avr.mqtt.payloads import (
     AvrPcmSetTempColorPayload,
 )
 from bell.avr.serial.client import SerialLoop
-from Z_PCC import Zephyrus_PeripheralControlComputer
-
 from loguru import logger
+from Z_PCC import Zephyrus_PeripheralControlComputer
 
 
 class PeripheralControlModule(MQTTModule):

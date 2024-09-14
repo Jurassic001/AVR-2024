@@ -1,7 +1,6 @@
+import serial
 from bell.avr.serial.pcc import PeripheralControlComputer
 from loguru import logger
-
-import serial
 
 
 class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):

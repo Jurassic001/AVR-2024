@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Format using config",
+            "type": "shell",
+            "command": "black . --config pyproject.toml",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "onProblem",
+                "close": true
+            }
+        },
+        {
+            "label": "Sort imports",
+            "type": "shell",
+            "command": "isort .",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "onProblem",
+                "close": true
+            }
+        },
+        {
+            "label": "Open source control manager",
+            "type": "shell",
+            "command": "${command:workbench.view.scm}",
+            "dependsOn": [
+                "Format using config",
+                "Sort imports"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

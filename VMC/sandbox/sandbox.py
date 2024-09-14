@@ -1,11 +1,14 @@
-import base64, cv2, time
-import numpy as np
+import base64
+import time
 from threading import Thread
-from scipy import ndimage
-from scipy.interpolate import interp1d
+
+import cv2
+import numpy as np
 from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from loguru import logger
+from scipy import ndimage
+from scipy.interpolate import interp1d
 
 
 class Sandbox(MQTTModule):

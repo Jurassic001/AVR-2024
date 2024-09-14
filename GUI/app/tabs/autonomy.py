@@ -1,21 +1,21 @@
 from __future__ import annotations
 
-import functools, json, playsound  # Use functools.partial to assign different button press actions to buttons inside for-loops
-from typing import List, Dict
+import functools  # Use functools.partial to assign different button press actions to buttons inside for-loops
+import json
+from ctypes import POINTER, cast
+from typing import Dict, List
 
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from comtypes import CLSCTX_ALL
-from ctypes import cast, POINTER
-
+import playsound
 from bell.avr.mqtt.payloads import *
+from comtypes import CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from PySide6 import QtCore, QtWidgets
+from scipy.interpolate import interp1d
 
 from ..lib.color import wrap_text
-from ..lib.widgets import FloatLineEdit, StatusLabel
 from ..lib.config import config
+from ..lib.widgets import FloatLineEdit, StatusLabel
 from .base import BaseTabWidget
-
-from scipy.interpolate import interp1d
 
 
 class AutonomyWidget(BaseTabWidget):

@@ -1,7 +1,7 @@
 import asyncio
 import math
-import time
 import subprocess
+import time
 
 import mavsdk
 from bell.avr.mqtt.payloads import (
