@@ -6,6 +6,8 @@ on:
     branches:
       - main
       - develop
+      - dev
+      - dependabot
     paths:
       - "VMC/thermal/**"
   push:

@@ -6,6 +6,13 @@ on:
     branches:
       - main
       - develop
+      - dev
+      - dependabot
+    paths:
+      - "VMC/sandbox/**"
+  push:
+    branches:
+      - main
     paths:
       - "VMC/sandbox/**"
 

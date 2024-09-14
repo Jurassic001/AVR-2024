@@ -65,7 +65,7 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: VMC/${{ inputs.image }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false  # prevent pushing the image, we lack the permissions. This workflow has been modified to test if a software module will build without error
           tags: |
             ghcr.io/bellflight/avr/2022/${{ inputs.image }}:latest
             ghcr.io/bellflight/avr/2022/${{ inputs.image }}:${{ env.DATE_TAG }}

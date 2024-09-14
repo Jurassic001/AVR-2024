@@ -6,6 +6,8 @@ on:
     branches:
       - main
       - develop
+      - dev
+      - dependabot
     paths:
       - "VMC/status/**"
   push:
@@ -13,6 +15,7 @@ on:
       - main
     paths:
       - "VMC/status/**"
+
 jobs:
   status:
     uses: ./.github/workflows/container.yml

@@ -6,6 +6,8 @@ on:
     branches:
       - main
       - develop
+      - dev
+      - dependabot
     paths:
       - "PCC/**"
   push:
@@ -53,34 +55,34 @@ jobs:
         run: python build.py
         working-directory: PCC
 
-      - name: Upload Firmware to Pipeline
-        if: github.event_name != 'push'
-        uses: actions/upload-artifact@v3
-        with:
-          name: PCC Firmware
-          path: PCC/.pio/build/adafruit_feather_m4/*.bin
+      # - name: Upload Firmware to Pipeline
+      #   if: github.event_name != 'push'
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: PCC Firmware
+      #     path: PCC/.pio/build/adafruit_feather_m4/*.bin
 
-      - name: Get Latest Release
-        if: github.event_name != 'pull_request'
-        id: latest_release
-        uses: gregziegan/fetch-latest-release@v2.0.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Get Latest Release
+      #   if: github.event_name != 'pull_request'
+      #   id: latest_release
+      #   uses: gregziegan/fetch-latest-release@v2.0.0
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Existing Firmware
-        if: github.event_name != 'pull_request'
-        uses: mknejp/delete-release-assets@v1
-        with:
-          token: ${{ github.token }}
-          tag: ${{ steps.latest_release.outputs.tag_name }}
-          assets: '*.bin'
+      # - name: Delete Existing Firmware
+      #   if: github.event_name != 'pull_request'
+      #   uses: mknejp/delete-release-assets@v1
+      #   with:
+      #     token: ${{ github.token }}
+      #     tag: ${{ steps.latest_release.outputs.tag_name }}
+      #     assets: '*.bin'
 
-      - name: Upload Firmware to Release
-        if: github.event_name != 'pull_request'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: PCC/.pio/build/adafruit_feather_m4/*.bin
-          file_glob: true
-          tag: ${{ steps.latest_release.outputs.tag_name }}
-          overwrite: true
+      # - name: Upload Firmware to Release
+      #   if: github.event_name != 'pull_request'
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: PCC/.pio/build/adafruit_feather_m4/*.bin
+      #     file_glob: true
+      #     tag: ${{ steps.latest_release.outputs.tag_name }}
+      #     overwrite: true

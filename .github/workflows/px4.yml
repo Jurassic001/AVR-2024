@@ -6,6 +6,8 @@ on:
     branches:
       - main
       - develop
+      - dev
+      - dependabot
     paths:
       - "PX4/**"
   push:
@@ -52,36 +54,36 @@ jobs:
       - name: Build PX4 Firmware
         run: python3 PX4/build.py --px4 --targets ${{ matrix.px4_target }}
 
-      - name: Upload Firmware to Pipeline
-        if: github.event_name != 'push'
-        uses: actions/upload-artifact@v3
-        with:
-          name: PX4 ${{ matrix.px4_target }} Firmware
-          path: PX4/dist/*.px4
+      # - name: Upload Firmware to Pipeline
+      #   if: github.event_name != 'push'
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: PX4 ${{ matrix.px4_target }} Firmware
+      #     path: PX4/dist/*.px4
 
-      - name: Get Latest Release
-        if: github.event_name != 'pull_request'
-        id: latest_release
-        uses: gregziegan/fetch-latest-release@v2.0.0
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Get Latest Release
+      #   if: github.event_name != 'pull_request'
+      #   id: latest_release
+      #   uses: gregziegan/fetch-latest-release@v2.0.0
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete Existing Firmware
-        if: github.event_name != 'pull_request'
-        uses: mknejp/delete-release-assets@v1
-        with:
-          fail-if-no-assets: false
-          fail-if-no-release: false
-          token: ${{ github.token }}
-          tag: ${{ steps.latest_release.outputs.tag_name }}
-          assets: "${{ matrix.px4_target }}.*.px4"
+      # - name: Delete Existing Firmware
+      #   if: github.event_name != 'pull_request'
+      #   uses: mknejp/delete-release-assets@v1
+      #   with:
+      #     fail-if-no-assets: false
+      #     fail-if-no-release: false
+      #     token: ${{ github.token }}
+      #     tag: ${{ steps.latest_release.outputs.tag_name }}
+      #     assets: "${{ matrix.px4_target }}.*.px4"
 
-      - name: Upload Firmware to Release
-        if: github.event_name != 'pull_request'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: PX4/dist/*.px4
-          file_glob: true
-          tag: ${{ steps.latest_release.outputs.tag_name }}
-          overwrite: true
+      # - name: Upload Firmware to Release
+      #   if: github.event_name != 'pull_request'
+      #   uses: svenstaro/upload-release-action@v2
+      #   with:
+      #     repo_token: ${{ secrets.GITHUB_TOKEN }}
+      #     file: PX4/dist/*.px4
+      #     file_glob: true
+      #     tag: ${{ steps.latest_release.outputs.tag_name }}
+      #     overwrite: true
