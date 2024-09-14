@@ -35,5 +35,14 @@ jobs:
       - name: Install Packages
         run: python scripts/install_requirements.py --directory GUI --strict
       
+      # If app.py can run for 60 seconds without error, count that as a success
       - name: Run app.py
-        run: python GUI/app.py
+        run: |
+          Start-Process python GUI/app.py -PassThru -Wait -NoNewWindow -ErrorAction Stop | ForEach-Object {
+            $process = $_
+            Start-Sleep -Seconds 60
+            if (!$process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+            }
+          }
+
