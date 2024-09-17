@@ -60,7 +60,7 @@ def original_user_cmd(username, cmd):
     return ["sudo", "-u", username, "-i"] + cmd
 
 
-def main(development, reboot):
+def main(development, reboot, shutdown):
     if not os.path.isdir(AVR_DIR):
         print(f"AVR repository has not been cloned to {AVR_DIR}")
         print(f"Do this with 'git clone --recurse-submodules https://github.com/Jurassic001/AVR-2024 {AVR_DIR}'")
@@ -331,6 +331,11 @@ def main(development, reboot):
 
 
     print(f"{GREEN}AVR setup has completed{NC}")
+
+    if shutdown: # If the shutdown option was added during terminal runtime
+        print(f"{GREEN}Shutting Down VMC...{NC}")
+        subprocess.run(["shutdown -h now"])
+        return
     
     if reboot: # If the reboot option was added during terminal runtime
         print(f"{GREEN}Rebooting VMC...{NC}")
@@ -350,5 +355,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-r", "--reboot", action="store_true", help="Reboot after the program finishes")
 
+    parser.add_argument("-s", "--shutdown", action="store_true", help="Shutdown after the program finishes. Takes precidence over reboot")
+
     args = parser.parse_args()
-    main(development=args.development, reboot=args.reboot)
+    main(development=args.development, reboot=args.reboot, shutdown=args.shutdown)

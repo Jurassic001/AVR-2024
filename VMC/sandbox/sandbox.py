@@ -179,7 +179,7 @@ class Sandbox(MQTTModule):
 
         newState = self.possibleEvents.get(eventName, "UNKNOWN")
 
-        if newState != self.states["flightEvent"]:
+        if newState not in [self.states["flightEvent"], "UNKNOWN"]:
             logger.debug(f"New Flight Event: {newState}")
             self.states["flightEvent"] = newState
 
@@ -311,7 +311,7 @@ class Sandbox(MQTTModule):
 
             # go to the starting point and land
             if self.auton_position == 1:
-                self.add_mission_waypoint("goto", (0, 0, 1), acceptanceRad=1)
+                self.add_mission_waypoint("goto", (0, 0, 1))
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
                 self.set_position()
@@ -332,9 +332,13 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
                 self.set_position()
 
-            # go fwd one meter, accurate to one centimeter (?)
+            # three meter side strut
             if self.auton_position == 4:
-                self.add_mission_waypoint("goto", (1, 0, 1), acceptanceRad=0.01)
+                self.add_mission_waypoint("goto", (0, 0, 1), 90)
+                self.add_mission_waypoint("goto", (1, 0, 1), 90)
+                self.add_mission_waypoint("goto", (2, 0, 1), 90)
+                self.add_mission_waypoint("goto", (3, 0, 1), 90)
+                self.add_mission_waypoint("goto", (1.5, 0, 1.5), 90)
                 self.add_mission_waypoint("land", (1, 0, 0))
                 self.upload_and_engage_mission()
                 self.set_position()
