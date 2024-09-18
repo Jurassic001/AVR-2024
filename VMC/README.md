@@ -1,5 +1,14 @@
 # AVR-2024/VMC
-## Setup
+## Connecting to the Jetson
+1. Make sure you have [Putty](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) installed
+1. Connect to the `Varsity Bells` wifi network
+    - Password is `May152006!`
+2. Open the run dialogue on Windows or your terminal on any other machine
+    - The run dialogue (<kbd>Windows</kbd> + <kbd>R</kbd>) keeps a history of previous commands, so if you value efficiency and automation I highly recommend using it
+3. Run `putty.exe -ssh avr@drone -pw bellavr22`
+4. You're in :sunglasses:
+
+## Setting things up
 This section contains instructions for setting up the repository on the **Jetson**. For the 2024 team, this has already been done. <br/><br/>
 Run the following commands:
 
@@ -56,8 +65,7 @@ ghcr.io
 
 This may not be an exhaustive list, as upstream sources may change CDNs or domain names.
 
-## Usage
-### Updating AVR Software on the Jetson
+## Updating AVR Software on the Jetson
 If you made changes to the AVR software, you can update the software using the following steps: <br/>
 
 1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
@@ -66,13 +74,14 @@ If you made changes to the AVR software, you can update the software using the f
 2. Run the `setup.py` script. This will automatically build all software modules and apply important updated to your VMC. Once this script finishes you should reboot your Jetson (It will give you the option)
     - This script is located in `AVR-2024/VMC/scripts`
     - You need to put a `./` before all script names when you are running them in Linux. This would look like `./setup.py`
+    - Use `./setup.py -h` to see what options you can run this command with. I've added some options that can streamline your software development experience.
 
 3. Use the `start.py` script to run your desired software modules
     - `start.py` is the primary script for preforming actions on the AVR software modules. It is located in `AVR-2024/VMC`
 
 Here is the syntax of the `start.py` command. It might look confusing, but for the most part you'll be sticking to the "run" action
 
-```bash
+```
 start.py {build/run/stop} [MODULES...] [-m | -n | -a]
 
 
@@ -89,6 +98,7 @@ options:
 
     -a, --all             Perform action on all modules (normal modules + sandbox). Sandbox is the module you need for autonomous control and some other functions like apriltag LED flashing
 ```
+There are some more options here that I haven't gone over, feel free to investigate the `start.py` file (especially using the `-h` option at runtime) to see what else you can do. You can also modify the start script to add custom software configurations or build options.
 <br/>
 
 #### Examples:
@@ -107,6 +117,9 @@ This will run every module except for the apriltag and thermal modules
 
 ***
 
+<!--
+This stuff is finicky so its up to you if you use it or not
+start.py will display the output of the containers while it is active, so 
 ### Viewing the output of software modules
 To view currently running containers, run:
 ```bash
@@ -120,3 +133,4 @@ To prune unused Docker containers, run:
 ```bash
 sudo docker image prune
 ```
+-->

@@ -1,3 +1,6 @@
+This file is depreciated, refer to a README for instructions
+
+
 open "putty"
 connect to wifi "Varsity Bells"
 connect to putty 10.42.0.1, default port
@@ -13,5 +16,3 @@ run app.py script, and connect to 10.42.0.1
 
 ctrl c to close
 right mouse to paste
-
-This information is subject to change. Ask team captains or Max if something isn't working or you have a question
