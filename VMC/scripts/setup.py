@@ -294,21 +294,11 @@ def main(development, reboot, shutdown):
         subprocess.check_call(["docker", "login", "ghcr.io"])
     print_bar()
 
-    # pull images
-    print_title("Pulling images")
-    cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "pull", "--all"]
+    # pull & build images
+    cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "-pb", "--all"]
     if development:
         cmd.append("--local")
     subprocess.check_call(cmd)
-    print_bar()
-
-    # build images
-    print_title("Building images")
-    cmd = ["python3", os.path.join(AVR_DIR, "VMC", "start.py"), "build", "--all"]
-    if development:
-        cmd.append("--local")
-    subprocess.check_call(cmd)
-    print_bar()
 
     # Don't try to run images in this process, it will cause the setup program to lock up
 

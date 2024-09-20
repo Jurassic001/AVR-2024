@@ -58,8 +58,8 @@ def fcm_service(compose_services: dict, simulation=False) -> None:
         "restart": "unless-stopped",
         "network_mode": "host",
         "privileged": True,
-        "build": os.path.join(THIS_DIR, "fcm"),
         "volumes": ["/etc/machine-id:/etc/machine-id"],
+        "build": os.path.join(THIS_DIR, "fcm"),
     }
 
     compose_services["fcm"] = fcm_data
@@ -135,6 +135,8 @@ def pcm_service(compose_services: dict) -> None:
         "depends_on": ["mqtt"],
         "restart": "unless-stopped",
         "devices": ["/dev/ttyACM0:/dev/ttyACM0"],
+        "privileged": True,
+        "volumes": ["/etc/machine-id:/etc/machine-id"],
         "build": os.path.join(THIS_DIR, "pcm"),
     }
 
@@ -255,41 +257,55 @@ def prepare_compose_file(local: bool = False, simulation=False) -> str:
     return compose_file
 
 
-def main(action: str, modules: List[str], local: bool = False, simulation: bool = False) -> None:
+def main(actions: List[bool], modules: List[str], local: bool = False, simulation: bool = False) -> None:
     # region main
     compose_file = prepare_compose_file(local, simulation)
 
     # run docker-compose
-    project_name = "avr2024"
-    if os.name == "nt":
-        # for some reason on Windows docker-compose doesn't like upper case???
-        project_name = project_name.lower()
+    project_name = "avr2024"  # keep your project name lowercase, just trust me
 
     cmd = ["docker-compose", "--project-name", project_name, "--file", compose_file]
+    commands = []
 
-    if action == "build":
-        cmd += ["build"] + modules
-    elif action == "pull":
-        cmd += ["pull"] + modules
-    elif action == "run":
-        cmd += ["up", "--remove-orphans", "--force-recreate"] + modules
-    elif action == "stop":
-        cmd += ["down", "--remove-orphans", "--volumes"]
-    else:
-        # shouldn't happen
-        raise ValueError(f"Unknown action: {action}")
+    if actions[0]:
+        commands += [cmd + ["pull"] + modules]
+    if actions[1]:
+        commands += [cmd + ["build"] + modules]
+    if actions[2]:
+        commands += [cmd + ["up", "--remove-orphans", "--force-recreate"] + modules]
+    if actions[3]:
+        commands += [cmd + ["down", "--remove-orphans", "--volumes"]]
 
-    print(f"Running command: {' '.join(cmd)}")
-    proc = subprocess.Popen(cmd, cwd=THIS_DIR)
 
-    def signal_handler(sig: Any, frame: Any) -> None:
-        if sys.platform == "win32":
-            proc.send_signal(signal.CTRL_BREAK_EVENT)
-        else:
-            proc.send_signal(signal.SIGINT)
+    # Establish vars and methods for running commands
+    ACTION_DICT = {"pull": "Pulling", "build": "Building", "up": "Running", "down": "Stopping"}
+    RED = "\033[0;31m"
+    CYAN = "\033[0;36m"
+    NO_COLOR = "\033[0m"
 
-    signal.signal(signal.SIGINT, signal_handler)
-    proc.wait()
+    def sidebars(length: int = 1) -> str:
+        return "=" * (os.get_terminal_size().columns // length)
+
+
+    # Run command(s)
+    for cmd in commands:
+        # Define and display the name of the current action, in a formatted fashion, along with the containers that the action is being applied to
+        action_name = ACTION_DICT[cmd[5]]
+        print(f"{sidebars(6)} {CYAN}{action_name} containers ({', '.join(sorted(modules))}){NO_COLOR} {sidebars(6)}")
+
+        proc = subprocess.Popen(cmd, cwd=THIS_DIR)
+
+        def signal_handler(sig: Any, frame: Any) -> None:
+            if sys.platform == "win32":
+                proc.send_signal(signal.CTRL_BREAK_EVENT)
+            else:
+                proc.send_signal(signal.SIGINT)
+
+        signal.signal(signal.SIGINT, signal_handler)
+
+        if proc.wait() == 1:
+            # If a command errors, print the command in question (the error itself prints automatically)
+            print(f"\n{RED}Error:{NO_COLOR} {' '.join(cmd)}")
 
     # cleanup
     # try:
@@ -297,6 +313,7 @@ def main(action: str, modules: List[str], local: bool = False, simulation: bool 
     # except PermissionError:
     #     pass
 
+    print(sidebars())
     sys.exit(proc.returncode)
 
 
@@ -305,6 +322,7 @@ if __name__ == "__main__":
     # region runtime
     check_sudo()
 
+    # make our module preset lists
     min_modules = ["fcm", "fusion", "mavp2p", "mqtt", "vio"]
     norm_modules = min_modules + ["apriltag", "pcm", "status", "thermal"]
     all_modules = norm_modules + ["sandbox"]
@@ -313,55 +331,83 @@ if __name__ == "__main__":
     zephyrus_modules.remove("apriltag")
     zephyrus_modules.remove("status")
 
+    # setup the argument parser and add arguments
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "-l",
         "--local",
         action="store_true",
-        help="Build containers locally rather than using pre-built ones from GitHub",
+        help="Build containers locally rather than using pre-built ones from GitHub. The apriltag, sandbox, pcm, and fcm modules will be built locally at all times.",
     )
 
-    parser.add_argument("action", choices=["run", "build", "pull", "stop"], help="Action to perform")
-    parser.add_argument(
-        "modules",
-        nargs="*",
-        help="Explicitly list which module(s) to perform the action one",
+    action_group = parser.add_argument_group("Action(s)", "The action(s) to perform on the specified modules. More than one action can be preformed in a single script execution (run order is: Pull -> Build -> Run -> Stop)")
+    action_group.add_argument(
+        "-p",
+        "--pull",
+        action="store_true",
+        help="Pull containers that are pre-built by Bell so that they\'re available locally (has no effect on local-only modules)",
+    )
+    action_group.add_argument(
+        "-b",
+        "--build",
+        action="store_true",
+        help="Build modules into runnable containers",
+    )
+    action_group.add_argument(
+        "-r",
+        "--run",
+        action="store_true",
+        help="Run built software containers",
+    )
+    action_group.add_argument(
+        "-s",
+        "--stop",
+        action="store_true",
+        help="Stop currently running containers. Will also delete docker-compose config files (that's a good thing)",
     )
 
-    exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument(
+    exclusive_group = parser.add_mutually_exclusive_group()
+    exclusive_group.add_argument(
         "-m",
         "--min",
         action="store_true",
         help=f"Perform action on minimal modules ({', '.join(sorted(min_modules))}). Adds to any modules explicitly specified.",
     )
-    exgroup.add_argument(
+    exclusive_group.add_argument(
         "-n",
         "--norm",
         action="store_true",
         help=f"Perform action on normal modules ({', '.join(sorted(norm_modules))}). Adds to any modules explicitly specified. If nothing else is specified, this is the default.",
     )
-    exgroup.add_argument(
+    exclusive_group.add_argument(
         "-a",
         "--all",
         action="store_true",
         help=f"Perform action on all modules ({', '.join(sorted(all_modules))}). Adds to any modules explicitly specified.",
     )
-    exgroup.add_argument(
+    exclusive_group.add_argument(
         "-z",
         "--zephyrus",
         action="store_true",
         help=f"Perform action on all relevant modules for the 2024-25 Bell AVR Season ({', '.join(sorted(zephyrus_modules))}). Subtracts any modules explicitly specified.",
     )
-
-    exgroup.add_argument(
-        "-s",
+    exclusive_group.add_argument(
         "--sim",
         action="store_true",
         help="Run system in simulation",
     )
 
+    parser.add_argument(
+        "modules",
+        nargs="*",
+        help="Explicitly list which module(s) to perform the action on",
+    )
+
+    # process arguments
     args = parser.parse_args()
+
+    args.actions = [args.pull, args.build, args.run, args.stop]
 
     if args.zephyrus:
         # Modules specifically for the 2024-25 Bell AVR Season
@@ -384,4 +430,4 @@ if __name__ == "__main__":
         min_modules.append("simulator")
 
     args.modules = list(set(args.modules))  # remove duplicates
-    main(action=args.action, modules=args.modules, local=args.local, simulation=args.sim)
+    main(actions=args.actions, modules=args.modules, local=args.local, simulation=args.sim)
