@@ -295,7 +295,7 @@ class Sandbox(MQTTModule):
     def Autonomous(self):
         # sourcery skip: extract-duplicate-method, extract-method
         logger.debug("Autonomous Thread: Online")
-        LZ = {"start": (0.0, 0.0, 0.0), "loading": (0.085, 10.822, 0.0)}  # coordinates of landing zones (LZ's, yes I am a nerd) in meters
+        LZ = {"start": (0.0, 0.0, 0.0), "loading": (0.085, 10.822, 0.0), "train 1": (0.105, 4.516, 0)}  # coordinates of landing zones (LZ's, yes I am a nerd) in meters
         auton_init: bool = False
         while True:
             if not self.autonomous:
@@ -322,26 +322,31 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
                 self.set_position()
 
-            # complex test pattern
-            if self.auton_position == 3:
-                self.add_mission_waypoint("goto", (0, 1.5, 1))  # right 1.5m
-                self.add_mission_waypoint("goto", (2, 1.5, 1))  # fwd 2m
-                self.add_mission_waypoint("goto", (2, 2, 1))  # right .5m
-                self.add_mission_waypoint("goto", (3, 2, 1))  # fwd 1m
-                self.add_mission_waypoint("land", LZ["start"])  # back to start
-                self.upload_and_engage_mission()
-                self.set_position()
-
             # three meter side strut
-            if self.auton_position == 4:
+            if self.auton_position == 3:
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
                 self.add_mission_waypoint("goto", (1, 0, 1), 90)
                 self.add_mission_waypoint("goto", (2, 0, 1), 90)
                 self.add_mission_waypoint("goto", (3, 0, 1), 90)
-                self.add_mission_waypoint("goto", (1.5, 0, 1.5), 90)
-                self.add_mission_waypoint("land", (1, 0, 0))
+                self.add_mission_waypoint("land", (3, 0, 0), 90)
                 self.upload_and_engage_mission()
                 self.set_position()
+
+            # three meter side strut w/ box transport
+            if self.auton_position == 4:
+                self.set_magnet(True)  # start by picking up the box
+
+                self.add_mission_waypoint("goto", (0, 0, 1), 90)
+                self.add_mission_waypoint("goto", (1, 0, 1), 90)
+                self.add_mission_waypoint("goto", (2, 0, 1), 90)
+                self.add_mission_waypoint("goto", (3, 0, 1), 90)
+                self.add_mission_waypoint("land", (3, 0, 0), 90)
+                self.upload_and_engage_mission()
+
+                # wait 5 sec, then start checking to see if we've landed. when we land, drop the magnet. If we haven't landed in 45 seconds, then stop checking.
+                time.sleep(5)
+                reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 45)
+                self.set_magnet(not reached_waypoint)
 
             # test float("nan") as heading setting
             if self.auton_position == 5:
@@ -362,17 +367,18 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
 
                 time.sleep(5)
-                self.wait_for_state("flightEvent", "ON_GROUND", 25)
+                self.wait_for_state("flightEvent", "ON_GROUND", 25)  # engage the magnet as soon as we reach the landing zone
                 self.set_magnet(True)
 
                 self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
-                self.add_mission_waypoint("land", (0.105, 4.516, 0))
+                self.add_mission_waypoint("land", LZ["train 1"])
                 self.upload_and_engage_mission()
-                self.set_position()
 
                 time.sleep(5)
-                self.wait_for_state("flightEvent", "ON_GROUND", 25)
-                self.set_magnet(False)
+                reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 25)
+                self.set_magnet(not reached_waypoint)  # If we reach the drop zone, deactivate the magnet
+
+                self.set_position()
 
     # endregion
 
