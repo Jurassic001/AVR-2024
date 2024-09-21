@@ -276,22 +276,35 @@ def main(actions: List[bool], modules: List[str], local: bool = False, simulatio
     if actions[3]:
         commands += [cmd + ["down", "--remove-orphans", "--volumes"]]
 
-
     # Establish vars and methods for running commands
     ACTION_DICT = {"pull": "Pulling", "build": "Building", "up": "Running", "down": "Stopping"}
     RED = "\033[0;31m"
     CYAN = "\033[0;36m"
     NO_COLOR = "\033[0m"
+    action_modules = f"({', '.join(sorted(modules))})"
 
-    def sidebars(length: int = 1) -> str:
-        return "=" * (os.get_terminal_size().columns // length)
+    def disp_added_sidebars(text: str | None = None, color_code: str = NO_COLOR) -> None:
+        """Adds "sidebars" in the form of `=` to each side of a string and prints it
 
+        Args:
+            text (str | None, optional): The string blessed with "sidebars". Leaving this blank will print a full line of `=`
+            color_code (str, optional): Escape code of a certain color to wrap the text in. Leaving this blank will not color the text. I recommend sourcing color codes from `setup.py`
+        """
+        if text is None:
+            msg = "=" * os.get_terminal_size().columns
+        else:
+            void_len = len(text) + 2  # Define the "void" area where the string will go
+            sidebar_len = (os.get_terminal_size().columns - void_len) // 2  # Define the length of a single sidebar
+            sidebar = "=" * sidebar_len  # Make the sidebars
+            msg = f"{sidebar} {color_code}{text}{NO_COLOR} {sidebar}"
+        print(msg)
 
     # Run command(s)
     for cmd in commands:
         # Define and display the name of the current action, in a formatted fashion, along with the containers that the action is being applied to
-        action_name = ACTION_DICT[cmd[5]]
-        print(f"{sidebars(6)} {CYAN}{action_name} containers ({', '.join(sorted(modules))}){NO_COLOR} {sidebars(6)}")
+        cmd_action = ACTION_DICT[cmd[5]]
+        cmd_msg = f"{cmd_action} containers {action_modules}"
+        disp_added_sidebars(cmd_msg, CYAN)
 
         proc = subprocess.Popen(cmd, cwd=THIS_DIR)
 
@@ -313,7 +326,7 @@ def main(actions: List[bool], modules: List[str], local: bool = False, simulatio
     # except PermissionError:
     #     pass
 
-    print(sidebars())
+    disp_added_sidebars()
     sys.exit(proc.returncode)
 
 
@@ -341,12 +354,14 @@ if __name__ == "__main__":
         help="Build containers locally rather than using pre-built ones from GitHub. The apriltag, sandbox, pcm, and fcm modules will be built locally at all times.",
     )
 
-    action_group = parser.add_argument_group("Action(s)", "The action(s) to perform on the specified modules. More than one action can be preformed in a single script execution (run order is: Pull -> Build -> Run -> Stop)")
+    action_group = parser.add_argument_group(
+        "Action(s)", "The action(s) to perform on the specified modules. More than one action can be preformed in a single script execution (run order is: Pull -> Build -> Run -> Stop)"
+    )
     action_group.add_argument(
         "-p",
         "--pull",
         action="store_true",
-        help="Pull containers that are pre-built by Bell so that they\'re available locally (has no effect on local-only modules)",
+        help="Pull containers that are pre-built by Bell so that they're available locally (has no effect on local-only modules)",
     )
     action_group.add_argument(
         "-b",
