@@ -60,11 +60,10 @@
         },
         {
             // Other tasks
-            "label": "Install reqs",
+            "label": "Install requirements",
             "type": "shell",
             "command": "python scripts/install_requirements.py",
             "presentation": {
-                "reveal": "never",
                 "revealProblems": "onProblem",
                 "close": true
             },
