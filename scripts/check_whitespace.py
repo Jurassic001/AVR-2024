@@ -8,12 +8,7 @@ EXCLUDED_EXTENSIONS = [".patch", ".hex", ".pdf", ".step"]
 
 def main() -> None:
     # get a list of text files tracked by git
-    filenames = (
-        subprocess.check_output(["git", "grep", "-I", "-l", "."], cwd=ROOT)
-        .decode("utf-8")
-        .strip()
-        .splitlines()
-    )
+    filenames = subprocess.check_output(["git", "grep", "-I", "-l", "."], cwd=ROOT).decode("utf-8").strip().splitlines()
 
     found = False
 

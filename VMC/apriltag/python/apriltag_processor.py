@@ -59,9 +59,7 @@ class AprilTagModule(MQTTModule):
 
         for tag, tag_data in self.config["tag_truth"].items():
             name = f"tag_{tag}"
-            rmat = t3d.euler.euler2mat(
-                tag_data["rpy"][0], tag_data["rpy"][1], tag_data["rpy"][2], axes="rxyz"
-            )
+            rmat = t3d.euler.euler2mat(tag_data["rpy"][0], tag_data["rpy"][1], tag_data["rpy"][2], axes="rxyz")
             tag_tf = t3d.affines.compose(tag_data["xyz"], rmat, [1, 1, 1])
 
             H_to_from = f"H_{name}_aeroRef"
@@ -122,9 +120,7 @@ class AprilTagModule(MQTTModule):
 
             tag_list.append(tag)
 
-        self.send_message(
-            "avr/apriltags/visible", AvrApriltagsVisiblePayload(tags=tag_list)
-        )
+        self.send_message("avr/apriltags/visible", AvrApriltagsVisiblePayload(tags=tag_list))
 
         if closest_tag is not None:
             pos_world = tag_list[closest_tag]["pos_world"]
@@ -147,18 +143,14 @@ class AprilTagModule(MQTTModule):
             self.send_message("avr/apriltags/selected", apriltag_position)
 
     def angle_to_tag(self, pos: Tuple[float, float, float]) -> float:
-        deg = math.degrees(
-            math.atan2(pos[1], pos[0])
-        )  # TODO - i think plus pi/2 bc this is respect to +x
+        deg = math.degrees(math.atan2(pos[1], pos[0]))  # TODO - i think plus pi/2 bc this is respect to +x
 
         if deg < 0.0:
             deg += 360.0
 
         return deg
 
-    def world_angle_to_tag(
-        self, pos: Tuple[float, float, float], tag_id: int
-    ) -> Optional[float]:
+    def world_angle_to_tag(self, pos: Tuple[float, float, float], tag_id: int) -> Optional[float]:
         """
         returns the angle with respect to "north" in the "world frame"
         """
@@ -167,9 +159,7 @@ class AprilTagModule(MQTTModule):
 
         del_x = self.config["tag_truth"][str(tag_id)]["xyz"][0] - pos[0]
         del_y = self.config["tag_truth"][str(tag_id)]["xyz"][1] - pos[1]
-        deg = math.degrees(
-            math.atan2(del_y, del_x)
-        )  # TODO - i think plus pi/2 bc this is respect to +x
+        deg = math.degrees(math.atan2(del_y, del_x))  # TODO - i think plus pi/2 bc this is respect to +x
 
         if deg < 0.0:
             deg += 360.0
@@ -198,9 +188,7 @@ class AprilTagModule(MQTTModule):
 
         return H_rot.dot(H_tran)
 
-    def handle_tag(
-        self, tag: AvrApriltagsRawTags
-    ) -> Tuple[
+    def handle_tag(self, tag: AvrApriltagsRawTags) -> Tuple[
         int,
         float,
         float,

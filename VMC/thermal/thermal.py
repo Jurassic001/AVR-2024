@@ -31,9 +31,7 @@ class ThermalModule(MQTTModule):
         base64_encoded = base64.b64encode(reading)
         base64_string = base64_encoded.decode("utf-8")
 
-        self.send_message(
-            "avr/thermal/reading", AvrThermalReadingPayload(data=base64_string)
-        )
+        self.send_message("avr/thermal/reading", AvrThermalReadingPayload(data=base64_string))
 
     def run(self) -> None:
         self.run_non_blocking()

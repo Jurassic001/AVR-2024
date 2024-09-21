@@ -51,9 +51,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", type=str, help="Directory to run in")
-    parser.add_argument(
-        "checks", nargs="*", default=checks, help="Checks to run. Defaults to all"
-    )
+    parser.add_argument("checks", nargs="*", default=checks, help="Checks to run. Defaults to all")
 
     args = parser.parse_args()
 

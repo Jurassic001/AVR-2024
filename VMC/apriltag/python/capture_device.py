@@ -27,9 +27,7 @@ class CaptureDevice:
             if framerate is None:
                 frame_string = "video/x-raw,format=BGRx"
             else:
-                frame_string = (
-                    f"videorate ! video/x-raw,format=BGRx,framerate={framerate}/1"
-                )
+                frame_string = f"videorate ! video/x-raw,format=BGRx,framerate={framerate}/1"
 
             # this is the efficient way of capturing, leveraging the hardware
             # JPEG decoder on the jetson
@@ -39,9 +37,7 @@ class CaptureDevice:
             if framerate is None:
                 frame_string = "video/x-raw,format=BGR"
             else:
-                frame_string = (
-                    f"videorate ! video/x-raw,format=BGR,framerate={framerate}/1"
-                )
+                frame_string = f"videorate ! video/x-raw,format=BGR,framerate={framerate}/1"
 
             connection_string = f"nvarguscamerasrc ! video/x-raw(memory:NVMM), width=1280, height=720,format=NV12, framerate=60/1 ! nvvidconv ! video/x-raw,format=BGRx ! videoconvert ! {frame_string},width={res[0]},height={res[1]} ! appsink"
 
@@ -76,7 +72,5 @@ class CaptureDevice:
 
 
 if __name__ == "__main__":
-    cam = CaptureDevice(
-        protocol="argus", video_device="/dev/video0", res=(1280, 720), framerate=30
-    )
+    cam = CaptureDevice(protocol="argus", video_device="/dev/video0", res=(1280, 720), framerate=30)
     cam.run()

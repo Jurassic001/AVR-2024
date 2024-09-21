@@ -10,9 +10,7 @@ from pupil_apriltags import Detection, Detector
 
 
 class AprilTagWrapper:
-    def __init__(
-        self, camera_params: Tuple[float, float, float, float], tag_size: float
-    ):
+    def __init__(self, camera_params: Tuple[float, float, float, float], tag_size: float):
         self.camera_params = camera_params
         self.tag_size = tag_size
 
@@ -78,9 +76,7 @@ class AprilTagVPS:
         """
         # we will setup 2 processing consumers for the imagery.
         for i in range(2):
-            proc = multiprocessing.Process(
-                target=self.perception_loop, args=[], daemon=True  # type: ignore
-            )
+            proc = multiprocessing.Process(target=self.perception_loop, args=[], daemon=True)  # type: ignore
             proc.start()
 
         # start the capturing process
@@ -123,9 +119,7 @@ class AprilTagVPS:
         is not being overloaded and limits queue size to "max_depth".
         """
         max_depth = 3
-        capture = CaptureDevice(
-            self.protocol, self.video_device, self.res, self.framerate
-        )
+        capture = CaptureDevice(self.protocol, self.video_device, self.res, self.framerate)
 
         logger.success("Capture loop started!")
 

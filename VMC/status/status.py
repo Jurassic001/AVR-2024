@@ -46,9 +46,7 @@ class StatusModule(MQTTModule):
         }
 
         self.spi = board.SPI()
-        self.pixels = neopixel.NeoPixel_SPI(
-            self.spi, NUM_PIXELS, pixel_order=PIXEL_ORDER, auto_write=False
-        )
+        self.pixels = neopixel.NeoPixel_SPI(self.spi, NUM_PIXELS, pixel_order=PIXEL_ORDER, auto_write=False)
 
         # set up handling for turning off the lights on docker shutdown
         self.run_status_check = True
@@ -57,16 +55,12 @@ class StatusModule(MQTTModule):
 
         self.red_status_all()
 
-    def on_message(
-        self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage
-    ) -> None:
+    def on_message(self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
         # run this function on every message recieved before processing topic map
         self.check_status(msg.topic)
         super().on_message(client, userdata, msg)
 
-    def on_connect(
-        self, client: mqtt.Client, userdata: Any, flags: dict, rc: int
-    ) -> None:
+    def on_connect(self, client: mqtt.Client, userdata: Any, flags: dict, rc: int) -> None:
         super().on_connect(client, userdata, flags, rc)
         # additionally subscribe to all topics
         client.subscribe("avr/#")
@@ -77,9 +71,7 @@ class StatusModule(MQTTModule):
         try:
             subprocess.check_call(cmd, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            logger.exception(
-                f"Command '{e.cmd}' return with error ({e.returncode}): {e.output}"
-            )
+            logger.exception(f"Command '{e.cmd}' return with error ({e.returncode}): {e.output}")
 
     def check_status(self, topic: str) -> None:
         lookup: Dict[str, Tuple[int, int]] = {
@@ -122,15 +114,11 @@ class StatusModule(MQTTModule):
 
         cmd = ["/app/nvpmodel", "-f", "/app/nvpmodel.conf", "-q"]
         try:
-            result = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode(
-                "utf-8"
-            )
+            result = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode("utf-8")
             self.pixels[0] = COLORS[1] if "MAXN" in result else COLORS[0]
             self.pixels.show()
         except subprocess.CalledProcessError as e:
-            logger.exception(
-                f"Command '{e.cmd}' return with error ({e.returncode}): {e.output}"
-            )
+            logger.exception(f"Command '{e.cmd}' return with error ({e.returncode}): {e.output}")
 
     def run(self) -> None:
         self.run_non_blocking()

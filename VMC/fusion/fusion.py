@@ -81,9 +81,7 @@ class FusionModule(MQTTModule):
             deg=True,
         )
 
-        geo_update = AvrFusionGeoPayload(
-            lat=float(lla[0]), lon=float(lla[1]), alt=float(lla[2])
-        )
+        geo_update = AvrFusionGeoPayload(lat=float(lla[0]), lon=float(lla[1]), alt=float(lla[2]))
         self.send_message("avr/fusion/geo", geo_update)
 
     @try_except(reraise=True)
@@ -96,9 +94,7 @@ class FusionModule(MQTTModule):
         message onto the fusion topic.
         """
 
-        pos_update = AvrFusionPositionNedPayload(
-            n=payload["n"], e=payload["e"], d=payload["d"]
-        )
+        pos_update = AvrFusionPositionNedPayload(n=payload["n"], e=payload["e"], d=payload["d"])
         self.send_message("avr/fusion/position/ned", pos_update)
 
     @try_except(reraise=True)
@@ -114,9 +110,7 @@ class FusionModule(MQTTModule):
         self.vio_init = True
 
         # forward ned velocity message
-        vmc_vel_update = AvrFusionVelocityNedPayload(
-            Vn=payload["n"], Ve=payload["e"], Vd=payload["d"]
-        )
+        vmc_vel_update = AvrFusionVelocityNedPayload(Vn=payload["n"], Ve=payload["e"], Vd=payload["d"])
         self.send_message("avr/fusion/velocity/ned", vmc_vel_update)
         # logger.debug("avr/fusion/velocity/ned message sent")
 
@@ -140,9 +134,7 @@ class FusionModule(MQTTModule):
             self.send_message("avr/fusion/course", course_update)
 
         m_per_s_2_ft_per_min = 196.85
-        climb_rate_update = AvrFusionClimbratePayload(
-            climb_rate_fps=-1 * payload["d"] * m_per_s_2_ft_per_min
-        )
+        climb_rate_update = AvrFusionClimbratePayload(climb_rate_fps=-1 * payload["d"] * m_per_s_2_ft_per_min)
 
         self.send_message("avr/fusion/climbrate", climb_rate_update)
 
@@ -155,9 +147,7 @@ class FusionModule(MQTTModule):
         Avr doesnt have sophisticated fusion yet, so this just re-routes
         the message onto the fusion topic.
         """
-        quat_update = AvrFusionAttitudeQuatPayload(
-            w=payload["w"], x=payload["x"], y=payload["y"], z=payload["z"]
-        )
+        quat_update = AvrFusionAttitudeQuatPayload(w=payload["w"], x=payload["x"], y=payload["y"], z=payload["z"])
         self.send_message("avr/fusion/attitude/quat", quat_update)
 
     @try_except(reraise=True)
@@ -169,9 +159,7 @@ class FusionModule(MQTTModule):
         Avr doesnt have sophisticated fusion yet, so this just re-routes
         the message onto the fusion topic.
         """
-        euler_update = AvrFusionAttitudeEulerPayload(
-            psi=payload["psi"], theta=payload["theta"], phi=payload["phi"]
-        )
+        euler_update = AvrFusionAttitudeEulerPayload(psi=payload["psi"], theta=payload["theta"], phi=payload["phi"])
         self.send_message("avr/fusion/attitude/euler", euler_update)
 
     @try_except(reraise=True)
@@ -190,13 +178,8 @@ class FusionModule(MQTTModule):
         if "avr/fusion/groundspeed" not in self.message_cache:
             logger.debug("Empty groundspeed in fuse att heading")
 
-        elif (
-            self.message_cache["avr/fusion/groundspeed"]["groundspeed"]
-            < self.config["COURSE_THRESHOLD"]
-        ):
-            self.message_cache["avr/fusion/course"] = AvrFusionCoursePayload(
-                course=payload["degrees"]
-            )
+        elif self.message_cache["avr/fusion/groundspeed"]["groundspeed"] < self.config["COURSE_THRESHOLD"]:
+            self.message_cache["avr/fusion/course"] = AvrFusionCoursePayload(course=payload["degrees"])
 
     @run_forever(frequency=10)
     @try_except(reraise=False)
@@ -243,9 +226,7 @@ class FusionModule(MQTTModule):
             return
 
         if "avr/fusion/attitude/heading" in self.message_cache:
-            heading = int(
-                self.message_cache["avr/fusion/attitude/heading"]["heading"] * 100
-            )
+            heading = int(self.message_cache["avr/fusion/attitude/heading"]["heading"] * 100)
         else:
             logger.debug("Waiting for avr/fusion/attitude/heading to be populated")
             return
@@ -255,9 +236,7 @@ class FusionModule(MQTTModule):
             fix_type=int(self.config["hil_gps_constants"]["fix_type"]),  # 3 - 3D fix
             lat=lat,
             lon=lon,
-            alt=int(
-                self.message_cache["avr/fusion/geo"]["alt"] * 1000
-            ),  # convert m to mm
+            alt=int(self.message_cache["avr/fusion/geo"]["alt"] * 1000),  # convert m to mm
             eph=int(self.config["hil_gps_constants"]["eph"]),  # cm
             epv=int(self.config["hil_gps_constants"]["epv"]),  # cm
             vel=gs,
@@ -265,22 +244,15 @@ class FusionModule(MQTTModule):
             ve=int(self.message_cache["avr/fusion/velocity/ned"]["Ve"]),
             vd=int(self.message_cache["avr/fusion/velocity/ned"]["Vd"]),
             cog=int(crs * 100),
-            satellites_visible=int(
-                self.config["hil_gps_constants"]["satellites_visible"]
-            ),
+            satellites_visible=int(self.config["hil_gps_constants"]["satellites_visible"]),
             heading=heading,
         )
         self.send_message("avr/fusion/hil_gps", hil_gps_update)
 
     @try_except(reraise=True)
     def on_apriltag_message(self, msg: AvrApriltagsSelectedPayload) -> None:
-        if (
-            "avr/fusion/position/ned" not in self.message_cache
-            or "avr/fusion/attitude/heading" not in self.message_cache
-        ):
-            logger.debug(
-                "Waiting for avr/fusion/position/ned and avr/fusion/attitude/heading to be populated"
-            )
+        if "avr/fusion/position/ned" not in self.message_cache or "avr/fusion/attitude/heading" not in self.message_cache:
+            logger.debug("Waiting for avr/fusion/position/ned and avr/fusion/attitude/heading to be populated")
             return
 
         now = time.time()
@@ -305,17 +277,12 @@ class FusionModule(MQTTModule):
             heading_delta = 360 - heading_delta
 
         for idx, val in enumerate(at_ned.keys()):
-            self.deriv[idx] = (at_ned[val] - self.last_pos[idx]) / (
-                now - self.last_apriltag
-            )
+            self.deriv[idx] = (at_ned[val] - self.last_pos[idx]) / (now - self.last_apriltag)
             self.last_pos[idx] = at_ned[val]
 
         deriv_norm = np.linalg.norm(self.deriv)
 
-        if (
-            self.norm > self.config["POS_DETLA_THRESHOLD"]
-            or abs(heading_delta) > self.config["HEADING_DELTA_THRESHOLD"]
-        ) and deriv_norm < self.config["AT_DERIV_THRESHOLD"]:
+        if (self.norm > self.config["POS_DETLA_THRESHOLD"] or abs(heading_delta) > self.config["HEADING_DELTA_THRESHOLD"]) and deriv_norm < self.config["AT_DERIV_THRESHOLD"]:
             logger.debug(f"Resync Triggered! Delta={norm}")
 
             if d_dist > self.config["POS_D_THRESHOLD"]:

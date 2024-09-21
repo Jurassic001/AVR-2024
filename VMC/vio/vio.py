@@ -38,9 +38,7 @@ class VIOModule(MQTTModule):
         # to compensate for sensor drift over time.
         if not self.init_sync or self.continuous_sync:
             heading_ref = payload["heading"]
-            self.coord_trans.sync(
-                heading_ref, {"n": payload["n"], "e": payload["e"], "d": payload["d"]}
-            )
+            self.coord_trans.sync(heading_ref, {"n": payload["n"], "e": payload["e"], "d": payload["d"]})
             self.init_sync = True
 
     @try_except(reraise=False)

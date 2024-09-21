@@ -84,9 +84,7 @@ class CameraCoordinateTransformation:
         H_aeroRefSync_aeroRef = np.eye(4)
         self.tm["H_aeroRefSync_aeroRef"] = H_aeroRefSync_aeroRef
 
-        H_nwu_aeroRef = t3d.affines.compose(
-            [0, 0, 0], t3d.euler.euler2mat(math.pi, 0, 0), [1, 1, 1]
-        )
+        H_nwu_aeroRef = t3d.affines.compose([0, 0, 0], t3d.euler.euler2mat(math.pi, 0, 0), [1, 1, 1])
         self.tm["H_nwu_aeroRef"] = H_nwu_aeroRef
 
     def sync(self, heading_ref: float, pos_ref: ResyncPosRef) -> None:
@@ -126,15 +124,11 @@ class CameraCoordinateTransformation:
         logger.debug(f"TRACKCAM: Resync: Pos offset:{pos_offset}")
 
         # build a translation matrix that corrects the difference between where the sensor thinks we are and were our reference thinks we are
-        H_aeroRefSync_aeroRef = t3d.affines.compose(
-            pos_offset, H_rot_correction[:3, :3], [1, 1, 1]
-        )
+        H_aeroRefSync_aeroRef = t3d.affines.compose(pos_offset, H_rot_correction[:3, :3], [1, 1, 1])
         self.tm["H_aeroRefSync_aeroRef"] = H_aeroRefSync_aeroRef
 
     @try_except(reraise=False)
-    def transform_trackcamera_to_global_ned(
-        self, data: CameraFrameData
-    ) -> Tuple[
+    def transform_trackcamera_to_global_ned(self, data: CameraFrameData) -> Tuple[
         Tuple[float, float, float],
         Tuple[float, float, float],
         Tuple[float, float, float],
@@ -176,23 +170,15 @@ class CameraCoordinateTransformation:
             ]
         )  # cm/s
 
-        H_TRACKCAMRef_TRACKCAMBody = t3d.affines.compose(
-            position, t3d.quaternions.quat2mat(quaternion), [1, 1, 1]
-        )
+        H_TRACKCAMRef_TRACKCAMBody = t3d.affines.compose(position, t3d.quaternions.quat2mat(quaternion), [1, 1, 1])
 
         self.tm["H_TRACKCAMRef_TRACKCAMBody"] = H_TRACKCAMRef_TRACKCAMBody
 
-        H_aeroRef_aeroBody = self.tm["H_aeroRef_TRACKCAMRef"].dot(
-            self.tm["H_TRACKCAMRef_TRACKCAMBody"].dot(
-                self.tm["H_TRACKCAMBody_aeroBody"]
-            )
-        )
+        H_aeroRef_aeroBody = self.tm["H_aeroRef_TRACKCAMRef"].dot(self.tm["H_TRACKCAMRef_TRACKCAMBody"].dot(self.tm["H_TRACKCAMBody_aeroBody"]))
 
         self.tm["H_aeroRef_aeroBody"] = H_aeroRef_aeroBody
 
-        H_aeroRefSync_aeroBody = self.tm["H_aeroRefSync_aeroRef"].dot(
-            H_aeroRef_aeroBody
-        )
+        H_aeroRefSync_aeroBody = self.tm["H_aeroRefSync_aeroRef"].dot(H_aeroRef_aeroBody)
         self.tm["H_aeroRefSync_aeroBody"] = H_aeroRefSync_aeroBody
 
         T, R, Z, S = t3d.affines.decompose44(H_aeroRefSync_aeroBody)

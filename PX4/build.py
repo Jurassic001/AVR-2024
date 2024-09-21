@@ -35,9 +35,7 @@ def check_sudo() -> None:
         return
 
     # Check if Docker requires sudo
-    result = subprocess.run(
-        ["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+    result = subprocess.run(["docker", "info"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     if result.returncode == 0:
         # either we have permission to run docker as non-root
         # or we have sudo
@@ -47,9 +45,7 @@ def check_sudo() -> None:
     print("Needing sudo privileges to run docker, re-launching")
 
     try:
-        sys.exit(
-            subprocess.run(["sudo", sys.executable, __file__] + sys.argv[1:]).returncode
-        )
+        sys.exit(subprocess.run(["sudo", sys.executable, __file__] + sys.argv[1:]).returncode)
     except PermissionError:
         sys.exit(0)
     except KeyboardInterrupt:
@@ -79,9 +75,7 @@ def clone_pymavlink() -> None:
     else:
         # clone fresh
         print2("Cloning pymavlink")
-        subprocess.check_call(
-            ["git", "clone", "https://github.com/ardupilot/pymavlink", PYMAVLINK_DIR]
-        )
+        subprocess.check_call(["git", "clone", "https://github.com/ardupilot/pymavlink", PYMAVLINK_DIR])
 
 
 def clone_px4() -> None:
@@ -123,9 +117,7 @@ def clone_px4() -> None:
     )
 
 
-def container(
-    build_pymavlink: bool, build_px4: bool, git_hash: str, targets: List[str]
-) -> None:
+def container(build_pymavlink: bool, build_px4: bool, git_hash: str, targets: List[str]) -> None:
     # code that runs inside the container
     if PX4_VERSION < "v1.13.0":
         clone_pymavlink()
@@ -133,9 +125,7 @@ def container(
     clone_px4()
 
     print2("Installing Python dependencies")
-    subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "--upgrade", "pip", "wheel"]
-    )
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip", "wheel"])
     subprocess.check_call(
         [
             sys.executable,
@@ -192,14 +182,10 @@ def container(
 
     # changes need to be committed to build
     # git config does not matter, just need *something* to commit
-    subprocess.check_call(
-        ["git", "config", "user.email", "github-bot@bellflight.com"], cwd=PX4_DIR
-    )
+    subprocess.check_call(["git", "config", "user.email", "github-bot@bellflight.com"], cwd=PX4_DIR)
     subprocess.check_call(["git", "config", "user.name", "Github Actions"], cwd=PX4_DIR)
     subprocess.check_call(["git", "add", "."], cwd=PX4_DIR)
-    subprocess.check_call(
-        ["git", "commit", "-m", "Local commit to facilitate build"], cwd=PX4_DIR
-    )
+    subprocess.check_call(["git", "commit", "-m", "Local commit to facilitate build"], cwd=PX4_DIR)
 
     if build_pymavlink:
         print2("Generating pymavlink package")
@@ -284,16 +270,8 @@ def host(build_pymavlink: bool, build_px4: bool) -> None:
             os.path.abspath(os.path.join(THIS_DIR, "..")),
         ]
     )
-    git_hash = (
-        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=THIS_DIR)
-        .decode("utf-8")
-        .strip()
-    )
-    script_cmd = (
-        ["python3", "build.py"]
-        + sys.argv[1:]
-        + ["--container", f"--git-hash={git_hash}"]
-    )
+    git_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=THIS_DIR).decode("utf-8").strip()
+    script_cmd = ["python3", "build.py"] + sys.argv[1:] + ["--container", f"--git-hash={git_hash}"]
 
     docker_image = "docker.io/px4io/px4-dev-nuttx-focal:latest"
     if build_pymavlink and not build_px4:
@@ -323,18 +301,14 @@ def host(build_pymavlink: bool, build_px4: bool) -> None:
         # copy new files
         for filename in os.listdir(DIST_DIR):
             if filename.endswith(".whl") or filename.endswith(".tar.gz"):
-                shutil.copyfile(
-                    os.path.join(DIST_DIR, filename), os.path.join(fcm_dir, filename)
-                )
+                shutil.copyfile(os.path.join(DIST_DIR, filename), os.path.join(fcm_dir, filename))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate a PX4/Pymavlink build")
     parser.add_argument("--container", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--git-hash", type=str, help=argparse.SUPPRESS)
-    parser.add_argument(
-        "--pymavlink", action="store_true", help="Build Pymavlink package"
-    )
+    parser.add_argument("--pymavlink", action="store_true", help="Build Pymavlink package")
     parser.add_argument("--px4", action="store_true", help="Build PX4 firmware")
     # pixhawk v5X, v6x, v6c and NXP
     parser.add_argument(

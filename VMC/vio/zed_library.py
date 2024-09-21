@@ -36,9 +36,7 @@ class ZEDCamera(object):
 
         # Create a InitParameters object and set configuration parameters
         init_params = sl.InitParameters()
-        init_params.camera_resolution = (
-            sl.RESOLUTION.HD720
-        )  # Use HD720 video mode (default fps: 60)
+        init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode (default fps: 60)
         # Use a right-handed Y-up coordinate system
         init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
         init_params.coordinate_units = sl.UNIT.METER  # Set units in meters
@@ -53,12 +51,8 @@ class ZEDCamera(object):
         logger.success("Zed Camera Loaded")
 
         # Enable positional tracking with default parameters
-        py_transform = (
-            sl.Transform()
-        )  # First create a Transform object for TrackingParameters object
-        self.tracking_parameters = sl.PositionalTrackingParameters(
-            _init_pos=py_transform
-        )
+        py_transform = sl.Transform()  # First create a Transform object for TrackingParameters object
+        self.tracking_parameters = sl.PositionalTrackingParameters(_init_pos=py_transform)
         self.tracking_parameters.set_floor_as_origin = True
         err = self.zed.enable_positional_tracking(self.tracking_parameters)
         if err != sl.ERROR_CODE.SUCCESS:
@@ -95,9 +89,7 @@ class ZEDCamera(object):
         tz = self.zed_pose.get_translation(py_translation).get()[2]
 
         # Calculate Velocity
-        current_time = self.zed.get_timestamp(
-            sl.TIME_REFERENCE.IMAGE
-        ).get_milliseconds()
+        current_time = self.zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_milliseconds()
         diffx = tx - self.last_pos[0]
         diffy = ty - self.last_pos[1]
         diffz = tz - self.last_pos[2]
