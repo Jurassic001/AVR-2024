@@ -1,5 +1,6 @@
-black==24.3.0
-isort==5.10.1
+black==24.8.0
+isort==5.13.2
 autoflake==1.7.7
 pyleft==1.1.1
 pyproject-flake8==5.0.4.post1
+pre-commit==3.8.0

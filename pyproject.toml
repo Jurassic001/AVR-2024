@@ -2,45 +2,30 @@
 profile = "black"
 multi_line_output = 3
 skip_glob = [
-  "scripts/*",
-  "VMC/apriltag/*",
-  "VMC/fusion/*",
-  "VMC/mavp2p/*",
-  "VMC/mqtt/*",
-  "VMC/scripts/wifi.py",
-  "VMC/simulator/*",
-  "VMC/status/*",
-  "VMC/thermal/*",
-  "VMC/vio/*",
-  "PCC/*",
-  "PX4/*",
-]
+  "VMC/apriltag/c/libraries/*",
+  "PCC/libraries/Queue/*",
+] # Exclude submodules
 
 [tool.black]
 line-length = 200
+# Exclude submodules
 extend-exclude = '''
 /(
-scripts
-  | VMC/apriltag
-  | VMC/fusion
-  | VMC/mavp2p
-  | VMC/mqtt
-  | VMC/scripts/wifi.py
-  | VMC/simulator
-  | VMC/status
-  | VMC/thermal
-  | VMC/vio
-  | PCC
-  | PX4
+VMC/apriltag/c/libraries
+  | PCC/libraries/Queue/
 )
 '''
 
-# Haven't found a good use for these tools, don't plan on looking
 [tool.autoflake]
 recursive = true
 in-place = true
+exclude = [
+  "cpplint.py",
+  "mqttsas.py",
+  "MQTTV5.py",
+] # Ignore a couple problematic files in submodules
 
-[tool.flake8]
+[tool.flake8] # flake8 is kinda niche, just reports problems, doesn't fix them. Also yaps a lot about errors that aren't real/don't matter
 # E501 is line too long
 # E203 is whitespace before ':'
 # W503 is line break before binary operator

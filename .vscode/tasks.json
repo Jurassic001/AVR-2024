@@ -3,9 +3,9 @@
     "tasks": [
         {
             // Default build tasks & dependencies
-            "label": "Format using config",
+            "label": "Remove unused imports",
             "type": "shell",
-            "command": "black . --config pyproject.toml",
+            "command": "autoflake .",
             "presentation": {
                 "reveal": "never",
                 "revealProblems": "onProblem",
@@ -31,12 +31,27 @@
             }
         },
         {
+            "label": "Format using black",
+            "type": "shell",
+            "command": "black . --config pyproject.toml",
+            "presentation": {
+                "reveal": "never",
+                "revealProblems": "onProblem",
+                "close": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
             "label": "Open source control manager",
             "type": "shell",
             "command": "${command:workbench.view.scm}",
             "dependsOn": [
-                "Format using config",
-                "Sort imports"
+                "Remove unused imports",
+                "Sort imports",
+                "Format using black",
             ],
             "group": {
                 "kind": "build",
