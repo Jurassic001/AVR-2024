@@ -8,14 +8,14 @@ CYAN = "\033[0;36m"
 NO_COLOR = "\033[0m"
 
 
-def disp_added_sidebars(text: str | None = None, color_code: str = NO_COLOR) -> None:
+def disp_added_sidebars(text: str = "", color_code: str = NO_COLOR) -> None:
     """Adds "sidebars" in the form of `=` to each side of a string and prints it
 
     Args:
-        text (str | None, optional): The string blessed with "sidebars". Leaving this blank will print a full line of `=`
+        text (str, optional): The string blessed with "sidebars". Leaving this blank will print a full line of `=`
         color_code (str, optional): Escape code of a certain color to wrap the text in. Leaving this blank will not color the text. I recommend sourcing color codes from `setup.py`
     """
-    if text is None:
+    if not text:
         msg = "=" * os.get_terminal_size().columns
     else:
         void_len = len(text) + 2  # Define the "void" area where the string will go
