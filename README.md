@@ -1,7 +1,6 @@
 # AVR-2024
-[![Static Badge](https://img.shields.io/badge/code_style-black-black?style=for-the-badge)](https://github.com/psf/black)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/t/Jurassic001/AVR-2024?style=for-the-badge&logo=github)](https://github.com/Jurassic001/AVR-2024/activity)
-[![GitHub branch check runs](https://img.shields.io/github/check-runs/Jurassic001/AVR-2024/main?style=for-the-badge)](https://github.com/Jurassic001/AVR-2024/actions)
+[![Code style](https://img.shields.io/badge/code_style-black-black?style=for-the-badge)](https://github.com/psf/black)
+[![Commit activity](https://img.shields.io/github/commit-activity/t/Jurassic001/AVR-2024?style=for-the-badge&logo=github)](https://github.com/Jurassic001/AVR-2024/activity)
 ## Structure
 
 - `.github`: GitHub Actions files
@@ -84,4 +83,4 @@ Follow the instructions inside
 [VMC/README.md](VMC/README.md) to build & run the AVR software on the Jetson
 
 ### Local Development
-If you want to build/run Docker images not on a Jetson, look at [VMC/Docker_instructions.md](VMC/Docker_instructions.md)
+If you want to build/run Docker images not on a Jetson, look at [VMC/simulator/README.md](VMC/simulator/README.md)

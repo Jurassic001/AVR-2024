@@ -1,5 +1,5 @@
 # Docker Instructions
-### **IMPORTANT** <br/> This guide is for building/running Docker containers outside of the Jetson's enviroment
+### **IMPORTANT** <br/> This guide is for building/running Docker containers outside of the Jetson's environment
 ## Docker setup
 - First, [install Docker Desktop](https://docs.docker.com/desktop/install/windows-install/)
 - Then, run `pip install docker` if you haven't yet
@@ -18,14 +18,14 @@ Make sure you're in the VMC directory so you can run start.py
 
 ### You'll need to build the containers through start.py before running them:
 ```bash
-start.py build {Container Name(s)}
+start.py -b {Container Name(s)}
 ```
 
 Note: If you update a VMC module you'll need to rebuild it
 
 ### Then simulate running the containers you want using this command:
 ```bash
-start.py -s run {Container Name(s)}
+start.py -r --sim {Container Name(s)}
 ```
 
 Finally open up docker desktop and take a look at your glorious new container <br/>
@@ -35,7 +35,7 @@ You can also run `app.py` in the GUI folder and connect to your container <br/>
 
 If you're in a hurry, here's the only command you'll ever need:
 ```bash
-start.py -s run sandbox fcm
+start.py -r --sim sandbox fcm
 ```
 ### Misc:
 

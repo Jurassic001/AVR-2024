@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+# region setup
 import argparse
 import os
 import shutil
@@ -12,8 +12,41 @@ from typing import Any, List
 
 import yaml
 
+# set up paths
 IMAGE_BASE = "ghcr.io/bellflight/avr/2022/"
 THIS_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# set up dict to transform docker actions into displayable verbage
+ACTION_DICT = {"pull": "Pulling", "build": "Building", "up": "Running", "down": "Stopping"}
+
+# set up color codes
+RED = "\033[0;31m"
+LIGHTRED = "\033[1;31m"
+GREEN = "\033[0;32m"
+LIGHTGREEN = "\033[1;32m"
+CYAN = "\033[0;36m"
+NC = "\033[0m"  # No color
+
+
+# set up method for formatting terminal output
+def disp_added_sidebars(text: str = "", color_code: str = NC) -> None:
+    """Adds "sidebars" in the form of `=` to each side of a string and prints it
+
+    Args:
+        text (str, optional): The string blessed with "sidebars". Leaving this blank will print a full line of `=`
+        color_code (str, optional): Escape code of a certain color to wrap the text in. Leaving this blank will not color the text
+    """
+    # Check to see if standard output is connected to a terminal. If yes get the terminal width, otherwise set a default value
+    terminal_width = os.get_terminal_size().columns if os.isatty(sys.stdout.fileno()) else 80
+
+    if not text:
+        msg = "=" * terminal_width
+    else:
+        void_len = len(text) + 2  # Define the "void" area where the string will go
+        sidebar_len = (terminal_width - void_len) // 2  # Define the length of a single sidebar
+        sidebar = "=" * sidebar_len  # Make the sidebars
+        msg = f"{sidebar} {color_code}{text}{NC} {sidebar}"
+    print(msg)
 
 
 def check_sudo() -> None:
@@ -276,28 +309,7 @@ def main(actions: List[bool], modules: List[str], local: bool = False, simulatio
     if actions[3]:
         commands += [cmd + ["down", "--remove-orphans", "--volumes"]]
 
-    # Establish vars and methods for running commands
-    ACTION_DICT = {"pull": "Pulling", "build": "Building", "up": "Running", "down": "Stopping"}
-    RED = "\033[0;31m"
-    CYAN = "\033[0;36m"
-    NO_COLOR = "\033[0m"
     action_modules = f"({', '.join(sorted(modules))})"
-
-    def disp_added_sidebars(text: str = "", color_code: str = NO_COLOR) -> None:
-        """Adds "sidebars" in the form of `=` to each side of a string and prints it
-
-        Args:
-            text (str, optional): The string blessed with "sidebars". Leaving this blank will print a full line of `=`
-            color_code (str, optional): Escape code of a certain color to wrap the text in. Leaving this blank will not color the text. I recommend sourcing color codes from `setup.py`
-        """
-        if not text:
-            msg = "=" * os.get_terminal_size().columns
-        else:
-            void_len = len(text) + 2  # Define the "void" area where the string will go
-            sidebar_len = (os.get_terminal_size().columns - void_len) // 2  # Define the length of a single sidebar
-            sidebar = "=" * sidebar_len  # Make the sidebars
-            msg = f"{sidebar} {color_code}{text}{NO_COLOR} {sidebar}"
-        print(msg)
 
     # Run command(s)
     for cmd in commands:
@@ -318,13 +330,7 @@ def main(actions: List[bool], modules: List[str], local: bool = False, simulatio
 
         if proc.wait() == 1:
             # If a command errors, print the command in question (the error itself prints automatically)
-            print(f"\n{RED}Error:{NO_COLOR} {' '.join(cmd)}")
-
-    # cleanup
-    # try:
-    #     os.remove(compose_file)
-    # except PermissionError:
-    #     pass
+            print(f"\n{RED}Error:{NC} {' '.join(cmd)}")
 
     disp_added_sidebars()
     sys.exit(proc.returncode)
