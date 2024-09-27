@@ -1,4 +1,4 @@
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtWidgets
 
 from ..base import BaseTabWidget
 from .mqtt import MQTTConnectionWidget
@@ -39,7 +39,7 @@ class MainConnectionWidget(BaseTabWidget):
         top1_btn = QtWidgets.QPushButton("Top Row Button One")
         top1_btn.clicked.connect(lambda: " Put button action here ")
         topBtns_layout.addWidget(top1_btn)
-        
+
         top2_btn = QtWidgets.QPushButton("Top Row Button Two")
         top2_btn.clicked.connect(lambda: " Put button action here ")
         topBtns_layout.addWidget(top2_btn)

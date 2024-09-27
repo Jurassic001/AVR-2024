@@ -6,11 +6,14 @@ from ctypes import POINTER, cast
 from typing import Dict, List
 
 import playsound
-from bell.avr.mqtt.payloads import *
+from bell.avr.mqtt.payloads import (
+    AvrAutonomousEnablePayload,
+    AvrPcmSetLaserOffPayload,
+    AvrPcmSetLaserOnPayload,
+)
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from PySide6 import QtCore, QtWidgets
-from scipy.interpolate import interp1d
 
 from ..lib.color import wrap_text
 from ..lib.config import config

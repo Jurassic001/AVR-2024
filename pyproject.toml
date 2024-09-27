@@ -19,6 +19,10 @@ VMC/apriltag/c/libraries
 [tool.autoflake]
 recursive = true
 in-place = true
+remove-all-unused-imports = true
+expand-star-imports = true
+remove-duplicate-keys = true
+remove-unused-variables = true
 exclude = [
   "cpplint.py",
   "mqttsas.py",

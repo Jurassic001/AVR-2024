@@ -246,7 +246,7 @@ class TelemetryManager(FCMMQTTModule):
             if mode != fcc_mode:
                 try:
                     self._publish_event(fcc_mode_map[str(mode)])
-                except Exception as e:
+                except Exception:
                     self._publish_event("fcc_mode_error_event")
                     logger.debug(f"Got mode {mode} not in mode map")
                 finally:

@@ -8,7 +8,6 @@ from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import *
 from loguru import logger
 from scipy import ndimage
-from scipy.interpolate import interp1d
 
 
 class Sandbox(MQTTModule):
@@ -88,9 +87,9 @@ class Sandbox(MQTTModule):
         )  # Dict containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = []  # List containing every apriltag ID that has been detected
         self.flash_queue: list = []  # List containing all the IDs that are queued for LED flashing
-        self.normal_color: tuple[int, int, int, int] = [255, 78, 205, 196]  # wrgb (white, red, green, blue)
-        self.flash_color: tuple[int, int, int, int] = [255, 255, 0, 0]  # wrgb
-        self.hotspot_color: tuple[int, int, int, int] = [255, 0, 0, 0]  # wrgb
+        self.normal_color: tuple[int, int, int, int] = (255, 78, 205, 196)  # wrgb (white, red, green, blue)
+        self.flash_color: tuple[int, int, int, int] = (255, 255, 0, 0)  # wrgb
+        self.hotspot_color: tuple[int, int, int, int] = (255, 0, 0, 0)  # wrgb
 
         self.threads: dict[str, Thread] = {}
 
@@ -209,8 +208,6 @@ class Sandbox(MQTTModule):
             # calc sum of each label, this gives the number of pixels belonging to the blob
             s = ndimage.sum(blobs, labels, np.arange(nlabels) + 1)
             heat_center = [float(x) for x in t[s.argmax()][::-1]]
-            move_range = [15, -15]
-            m = interp1d([0, 8], move_range)
             logger.debug(heat_center)
 
             if self.thermal_state < 2:  # If you aren't targeting then don't target
