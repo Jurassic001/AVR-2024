@@ -133,5 +133,13 @@ class _Config:
     def num_servos(self, value: int) -> None:
         return self.__set("num_servos", value)
 
+    @property
+    def network_name(self) -> str:
+        return self.__get("network_name", "Varsity Bells")
+
+    @network_name.setter
+    def network_name(self, value: str) -> None:
+        return self.__set("network_name", value)
+
 
 config = _Config()

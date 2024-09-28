@@ -2,6 +2,7 @@ from PySide6 import QtWidgets
 
 from ..base import BaseTabWidget
 from .mqtt import MQTTConnectionWidget
+from .networking import WIFIConnectionWidget
 from .serial import SerialConnectionWidget
 
 
@@ -23,46 +24,19 @@ class MainConnectionWidget(BaseTabWidget):
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
 
-        """
-        # Create the Button and Label Examples box
-        example_groupbox = QtWidgets.QGroupBox("Button and Label Examples")
-        example_layout = QtWidgets.QVBoxLayout()
-        example_groupbox.setLayout(example_layout)
+        # region WIFI connection
+        wifi_groupbox = QtWidgets.QGroupBox("WiFi")
+        wifi_layout = QtWidgets.QVBoxLayout()
+        wifi_groupbox.setLayout(wifi_layout)
 
-        # Create the top button layout
-        topBtns_layout = QtWidgets.QHBoxLayout()
+        self.wifi_connection_widget = WIFIConnectionWidget(self)
+        self.wifi_connection_widget.build()
+        wifi_layout.addWidget(self.wifi_connection_widget)
 
-        topBtns_text = QtWidgets.QLabel("Scaling text label:")
-        topBtns_text.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-        topBtns_layout.addWidget(topBtns_text)
+        wifi_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
+        layout.addWidget(wifi_groupbox)
 
-        top1_btn = QtWidgets.QPushButton("Top Row Button One")
-        top1_btn.clicked.connect(lambda: " Put button action here ")
-        topBtns_layout.addWidget(top1_btn)
-
-        top2_btn = QtWidgets.QPushButton("Top Row Button Two")
-        top2_btn.clicked.connect(lambda: " Put button action here ")
-        topBtns_layout.addWidget(top2_btn)
-
-        # Create the bottom button layout
-        bottomBtns_layout = QtWidgets.QHBoxLayout()
-
-        bottom1_btn = QtWidgets.QPushButton("Button Row Button")
-        bottomBtns_layout.addWidget(bottom1_btn)
-
-        # Add button layouts to the Options layout
-        example_layout.addLayout(topBtns_layout)
-        example_layout.addLayout(bottomBtns_layout)
-
-        # Set Button and Label Examples box size policies
-        example_groupbox.setSizePolicy(
-            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed
-        )
-        layout.addWidget(example_groupbox)
-        """
-
-        # ===================================
-        # Create the MQTT connections box
+        # region MQTT connection
         mqtt_groupbox = QtWidgets.QGroupBox("MQTT")
         mqtt_layout = QtWidgets.QVBoxLayout()
         mqtt_groupbox.setLayout(mqtt_layout)
@@ -74,8 +48,7 @@ class MainConnectionWidget(BaseTabWidget):
         mqtt_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         layout.addWidget(mqtt_groupbox)
 
-        # ======================================================
-        # Create the serial connections box (cereal box hehe)
+        # region serial connection
         serial_groupbox = QtWidgets.QGroupBox("Serial")
         serial_layout = QtWidgets.QVBoxLayout()
         serial_groupbox.setLayout(serial_layout)
