@@ -177,7 +177,6 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(testing_groupbox, 1, 2, 1, 1)
 
         self.testing_items: list[str] = ["kill", "arm", "disarm", "zero ned"]  # List of tests. If you want to add a test just add the name to this list
-        self.testing_states: dict[str, QtWidgets.QLabel] = {}
 
         # Create a name label, state label, and on/off buttons for each test
         for item in self.testing_items:
@@ -187,11 +186,6 @@ class AutonomyWidget(BaseTabWidget):
             test_name = QtWidgets.QLabel(f"{item.title()} test")
             test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             test_layout.addWidget(test_name)
-
-            test_state = QtWidgets.QLabel()  # Only show the state of the test if it's active
-            test_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            self.testing_states.update({item: test_state})  # Add the state label to this dict so we can modify it
-            test_layout.addWidget(test_state)
 
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
             test_exec_btn.clicked.connect(functools.partial(self.set_test, item.lower(), True))
@@ -314,13 +308,6 @@ class AutonomyWidget(BaseTabWidget):
                 return
             else:
                 self.position_states[pos_num - 1].setText(wrap_text("Executing position command...", "red"))
-        elif topic == "avr/sandbox/test":  # If we're activating or deactivating a test
-            name = payload["testName"]
-            state = payload["testState"]
-            if state:
-                self.testing_states[name].setText(wrap_text("Executing...", "red"))
-            else:
-                self.testing_states[name].setText("")
         elif topic == "avr/autonomous/thermal_data":
             match payload["state"]:
                 case 2:

@@ -169,9 +169,6 @@ class Sandbox(MQTTModule):
         elif name == "zero ned":
             self.send_message("avr/fcm/capture_home", {})
 
-        # Once the test has been run, mark it as inactive
-        self.send_message("avr/sandbox/test", {"testName": name, "testState": False})
-
     def handle_events(self, payload: AvrFcmEventsPayload):
         # Handle flight events
         eventName = payload["name"]
@@ -329,8 +326,19 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
                 self.set_position()
 
-            # three meter side strut w/ box transport
+            # three meter side strut safe
             if self.auton_position == 4:
+                self.add_mission_waypoint("goto", (0, 0, 1), 0)
+                self.add_mission_waypoint("goto", (0, 0, 1), 90)
+                self.add_mission_waypoint("goto", (1, 0, 1), 90)
+                self.add_mission_waypoint("goto", (2, 0, 1), 90)
+                self.add_mission_waypoint("goto", (3, 0, 1), 90)
+                self.add_mission_waypoint("land", (3, 0, 0), 90)
+                self.upload_and_engage_mission()
+                self.set_position()
+
+            # three meter side strut w/ box transport
+            if self.auton_position == 5:
                 self.set_magnet(True)  # start by picking up the box
 
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
@@ -344,18 +352,6 @@ class Sandbox(MQTTModule):
                 time.sleep(5)
                 reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 45)
                 self.set_magnet(not reached_waypoint)
-
-            # test float("nan") as heading setting
-            if self.auton_position == 5:
-                self.add_mission_waypoint("goto", (1, 0, 1), float("nan"))
-                self.add_mission_waypoint("goto", (1, 1, 1), float("nan"))
-                self.add_mission_waypoint("goto", (2, 1, 1), float("nan"))
-                self.add_mission_waypoint("goto", (3, 1, 1), float("nan"))
-                self.add_mission_waypoint("goto", (1, 1, 1), float("nan"))
-                self.add_mission_waypoint("goto", (0, 0, 1), float("nan"))
-                self.add_mission_waypoint("goto", LZ["start"], 0)
-                self.upload_and_engage_mission()
-                self.set_position()
 
             # phase one auton v1 (intended to be as fast as possible)
             if self.auton_position == 6:
