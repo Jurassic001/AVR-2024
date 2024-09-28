@@ -78,6 +78,8 @@ If you made changes to the AVR software, you can update the software using the f
     - You need to put a `./` before all script names when you are running them in Linux. This would look like `./start.py`
     - `start.py` uses Docker to run our software modules as containers on the Jetson. You can read the AVR documentation on Docker [here](https://the-avr.github.io/AVR-2022/autonomy-and-beyond/docker/).
 
+3. If `start.py` errors, re-run the setup script (`VMC/scripts/setup.py`)
+
 <details><summary>Here is the syntax of start.py:</summary>
 
 <br/>

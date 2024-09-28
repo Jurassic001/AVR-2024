@@ -2,7 +2,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            // Default build tasks & dependencies
             "label": "Remove unused imports",
             "type": "shell",
             "command": "autoflake .",
@@ -10,10 +9,6 @@
                 "reveal": "never",
                 "revealProblems": "onProblem",
                 "close": true
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": false
             }
         },
         {
@@ -24,10 +19,6 @@
                 "reveal": "never",
                 "revealProblems": "onProblem",
                 "close": true
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": false
             }
         },
         {
@@ -38,28 +29,19 @@
                 "reveal": "never",
                 "revealProblems": "onProblem",
                 "close": true
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": false
             }
         },
         {
-            "label": "Open source control manager",
+            "label": "Format code and open SCM",
             "type": "shell",
             "command": "${command:workbench.view.scm}",
             "dependsOn": [
                 "Remove unused imports",
                 "Sort imports",
-                "Format using black",
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+                "Format using black"
+            ]
         },
         {
-            // Other tasks
             "label": "Install requirements",
             "type": "shell",
             "command": "python scripts/install_requirements.py",
@@ -68,6 +50,20 @@
                 "close": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Launch GUI",
+            "type": "shell",
+            "command": "python GUI/app.py",
+            "presentation": {
+                "reveal": "never",
+                "close": true
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
         }
     ]
 }

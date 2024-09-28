@@ -32,8 +32,10 @@ class WIFIConnectionWidget(QtWidgets.QWidget):
 
         layout.addLayout(network_layout)
 
+        self.network_connect()
+
     def network_connect(self) -> None:
         network_name = self.network_name_lnedit.text()  # Take the value of the line edit
         connect_attempt = subprocess.run(["netsh", "wlan", "connect", f"name={network_name}"], capture_output=True)  # Attempt to connect
         config.network_name = network_name  # Set config as specified network
-        self.connection_label.setText(wrap_text(f"Connection attempt result: {connect_attempt.stdout.decode()}", "DarkGoldenRod"))  # Display the result on the GUI
+        self.connection_label.setText(wrap_text(f"Last connection attempt result: {connect_attempt.stdout.decode()}", "Purple"))  # Display the result on the GUI
