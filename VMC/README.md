@@ -73,18 +73,20 @@ If you made changes to the AVR software, you can update the software using the f
 1. Use `git pull` while in the AVR-2024 repository root to download the changes from GitHub
     - You can use `git log` to verify that the local repository on the Jetson has been updated
 
-2. Use the `start.py` script to run your desired software modules
-    - `start.py` is the primary script for preforming actions on the AVR software modules. It is located in `AVR-2024/VMC`.
-    - You need to put a `./` before all script names when you are running them in Linux. This would look like `./start.py`
-    - `start.py` uses Docker to run our software modules as containers on the Jetson. You can read the AVR documentation on Docker [here](https://the-avr.github.io/AVR-2022/autonomy-and-beyond/docker/).
+2. Re-run the `setup.py` script to build your modules into runnable images, as well as configuring some misc settings
+    - You need to put a `./` before all script names when you are running them in Linux. This would look like `./setup.py`
+    - I highly advise against trying to skip this script and its process. It makes the AVR drone much more reliable in every sense
+    - You can add `-r` or `-s` to the end of the script execution to reboot or shutdown the Jetson after the script is finished
 
-3. If `start.py` errors, re-run the setup script (`VMC/scripts/setup.py`)
+3. Use the `start.py` script to run your desired software modules
+    - `start.py` is the primary script for preforming actions on the AVR software modules. It is located in `AVR-2024/VMC`
+    - `start.py` uses Docker to run our software modules as containers on the Jetson. You can read the AVR documentation on Docker [here](https://the-avr.github.io/AVR-2022/autonomy-and-beyond/docker/)
 
 <details><summary>Here is the syntax of start.py:</summary>
 
 <br/>
 
-It might look confusing, but for the most part you'll be sticking to the "build" and "run" actions. If you need to see this explanation again, add the `-h` option to your command execution
+It might look confusing, but for the most part you'll be sticking to the "run" action. If you need to see this explanation again, add the `-h` option to your command execution
 
 ```console
 start.py [-h] [-l] [-p, -b, -r, -s] [-m | -n | -a | -z | --sim] [modules ...]
