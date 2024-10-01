@@ -188,65 +188,65 @@ class AutonomyWidget(BaseTabWidget):
             test_layout.addWidget(test_name)
 
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
-            test_exec_btn.clicked.connect(functools.partial(self.set_test, item.lower(), True))
+            test_exec_btn.clicked.connect(functools.partial(self.run_test, item.lower()))
             test_layout.addWidget(test_exec_btn)
         # endregion
 
-        # region Auton positions
-        positions_groupbox = QtWidgets.QGroupBox("Positions")
-        positions_layout = QtWidgets.QVBoxLayout()
-        positions_groupbox.setLayout(positions_layout)
-        positions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
-        layout.addWidget(positions_groupbox, 2, 0, 1, 3)
+        # region Auton missions
+        missions_groupbox = QtWidgets.QGroupBox("Missions")
+        missions_layout = QtWidgets.QVBoxLayout()
+        missions_groupbox.setLayout(missions_layout)
+        missions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        layout.addWidget(missions_groupbox, 2, 0, 1, 3)
 
-        positions: List[str] = [  # List of names for each position
+        missions: List[str] = [  # List of names for each mission
             "Land @ Start",
             "Loiter @ Start",
-            "Position 3",
-            "Position 4",
-            "Position 5",
-            "Position 6",
-            "Position 7",
-            "Position 8",
-            "Position 9",
-            "Position 10",
+            "Mission 3",
+            "Mission 4",
+            "Mission 5",
+            "Mission 6",
+            "Mission 7",
+            "Mission 8",
+            "Mission 9",
+            "Mission 10",
         ]
-        self.position_states: List[QtWidgets.QLabel] = []
+        self.mission_states: List[QtWidgets.QLabel] = []
 
-        # Make each line of position buttons
-        for i in range(len(positions)):
-            position_layout = QtWidgets.QHBoxLayout()
-            positions_layout.addLayout(position_layout)
+        # Make each line of mission buttons
+        for i in range(len(missions)):
+            mission_layout = QtWidgets.QHBoxLayout()
+            missions_layout.addLayout(mission_layout)
 
-            position_name = QtWidgets.QLabel(positions[i])
-            position_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            position_layout.addWidget(position_name)
+            mission_name = QtWidgets.QLabel(missions[i])
+            mission_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            mission_layout.addWidget(mission_name)
 
-            position_state = QtWidgets.QLabel("")
-            position_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            position_layout.addWidget(position_state)
-            self.position_states.append(position_state)
+            mission_state = QtWidgets.QLabel("")
+            mission_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+            mission_layout.addWidget(mission_state)
+            self.mission_states.append(mission_state)
 
-            position_exec_btn = QtWidgets.QPushButton("Execute Position Command")
-            position_layout.addWidget(position_exec_btn)
-            position_exec_btn.clicked.connect(functools.partial(self.set_position, i + 1))
+            mission_exec_btn = QtWidgets.QPushButton("Execute Mission Command")
+            mission_layout.addWidget(mission_exec_btn)
+            mission_exec_btn.clicked.connect(functools.partial(self.set_mission, i + 1))
         # endregion
 
     # region Messengers
     """NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
     the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server."""
 
-    def set_position(self, number: int) -> None:
-        """Set the current target position for auton control"""
-        self.send_message("avr/autonomous/position", {"position": number})
+    def set_mission(self, number: int) -> None:
+        """Set the current target mission for auton control"""
+        self.send_message("avr/autonomous/mission", {"mission": number})
 
     def set_autonomous(self, state: bool) -> None:
         """Set autonomous mode"""
         self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=state))
 
-    def set_test(self, test_name: str, test_state: bool) -> None:
+    def run_test(self, test_name: str) -> None:
         """Activate a test"""
-        self.send_message("avr/sandbox/test", {"testName": test_name, "testState": test_state})
+        self.send_message("avr/sandbox/test", {"testName": test_name})
 
     def set_thermal_data(self, state: int | None = None) -> None:
         """Handles sending thermal scanning and targeting data
@@ -287,7 +287,7 @@ class AutonomyWidget(BaseTabWidget):
         # sourcery skip: low-code-quality
         # Yeah, you're telling me
         """Processes incoming messages based on the specified topic and updates the UI accordingly.
-        This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating positions, managing test states, and handling thermal and object scanner data.
+        This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating missions, and handling thermal and object scanner data.
         """
         payload = json.loads(payload)
 
@@ -300,14 +300,14 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/position":
-            pos_num = payload["position"]
-            if pos_num == 0:
-                for state in self.position_states:
+        elif topic == "avr/autonomous/mission":
+            mission_num = payload["mission"]
+            if mission_num == 0:
+                for state in self.mission_states:
                     state.setText("")
                 return
             else:
-                self.position_states[pos_num - 1].setText(wrap_text("Executing position command...", "red"))
+                self.mission_states[mission_num - 1].setText(wrap_text("Executing mission command...", "red"))
         elif topic == "avr/autonomous/thermal_data":
             match payload["state"]:
                 case 2:

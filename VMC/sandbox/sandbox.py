@@ -17,7 +17,7 @@ class Sandbox(MQTTModule):
         self.topic_map = {
             "avr/thermal/reading": self.handle_thermal,
             "avr/fcm/status": self.handle_status,
-            "avr/autonomous/position": self.handle_auton_positions,
+            "avr/autonomous/mission": self.handle_auton_missions,
             "avr/autonomous/enable": self.handle_autonomous,
             "avr/autonomous/thermal_data": self.handle_thermal_data,
             "avr/apriltags/visible": self.handle_apriltags,
@@ -41,7 +41,7 @@ class Sandbox(MQTTModule):
 
         # Auton vars
         self.mission_waypoints: list[dict] = []
-        self.auton_position: int = 0
+        self.auton_mission: int = 0
 
         # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
@@ -118,8 +118,8 @@ class Sandbox(MQTTModule):
             self.states["flightMode"] = mode
         self.fcm_connected = True
 
-    def handle_auton_positions(self, payload: dict) -> None:
-        self.auton_position = payload["position"]
+    def handle_auton_missions(self, payload: dict) -> None:
+        self.auton_mission = payload["mission"]
 
     def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
         self.autonomous = payload["enabled"]
@@ -157,10 +157,7 @@ class Sandbox(MQTTModule):
 
     def handle_testing(self, payload: dict):
         name = payload["testName"]
-        state = payload["testState"]
-        if not state:  # If a test is being deactivated then we don't need to worry about it
-            return
-        elif name == "kill":
+        if name == "kill":
             self.send_action("kill", {})
         elif name == "arm":
             self.set_armed(True)
@@ -300,34 +297,34 @@ class Sandbox(MQTTModule):
                 self.send_message("avr/fcm/capture_home", {})  # Capture home coordinates (zero NED position, like how you zero a scale)
                 auton_init = True
 
-            if self.auton_position == 0:
+            if self.auton_mission == 0:
                 continue
 
             # go to the starting point and land
-            if self.auton_position == 1:
+            if self.auton_mission == 1:
                 self.add_mission_waypoint("goto", (0, 0, 1))
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
-                self.set_position()
+                self.set_mission()
 
             # loiter forever, one meter above starting point
-            if self.auton_position == 2:
+            if self.auton_mission == 2:
                 self.add_mission_waypoint("loiter", (0, 0, 1))
                 self.upload_and_engage_mission()
-                self.set_position()
+                self.set_mission()
 
             # three meter side strut
-            if self.auton_position == 3:
+            if self.auton_mission == 3:
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
                 self.add_mission_waypoint("goto", (1, 0, 1), 90)
                 self.add_mission_waypoint("goto", (2, 0, 1), 90)
                 self.add_mission_waypoint("goto", (3, 0, 1), 90)
                 self.add_mission_waypoint("land", (3, 0, 0), 90)
                 self.upload_and_engage_mission()
-                self.set_position()
+                self.set_mission()
 
             # three meter side strut safe
-            if self.auton_position == 4:
+            if self.auton_mission == 4:
                 self.add_mission_waypoint("goto", (0, 0, 1), 0)
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
                 self.add_mission_waypoint("goto", (1, 0, 1), 90)
@@ -335,10 +332,10 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (3, 0, 1), 90)
                 self.add_mission_waypoint("land", (3, 0, 0), 90)
                 self.upload_and_engage_mission()
-                self.set_position()
+                self.set_mission()
 
             # three meter side strut w/ box transport
-            if self.auton_position == 5:
+            if self.auton_mission == 5:
                 self.set_magnet(True)  # start by picking up the box
 
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
@@ -354,7 +351,7 @@ class Sandbox(MQTTModule):
                 self.set_magnet(not reached_waypoint)
 
             # phase one auton v1 (intended to be as fast as possible)
-            if self.auton_position == 6:
+            if self.auton_mission == 6:
                 self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
                 self.add_mission_waypoint("land", LZ["loading"])
                 self.upload_and_engage_mission()
@@ -371,7 +368,7 @@ class Sandbox(MQTTModule):
                 reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 25)
                 self.set_magnet(not reached_waypoint)  # If we reach the drop zone, deactivate the magnet
 
-                self.set_position()
+                self.set_mission()
 
     # endregion
 
@@ -472,9 +469,9 @@ class Sandbox(MQTTModule):
         """Broadcast given boolean for topic `avr/autonomous/enable`, in the `enabled` payload. This will update values on both the sandbox and the GUI."""
         self.send_message("avr/autonomous/enable", AvrAutonomousEnablePayload(enabled=isEnabled))
 
-    def set_position(self, number: int = 0) -> None:
-        """Broadcast current auton position"""
-        self.send_message("avr/autonomous/position", {"position": number})
+    def set_mission(self, number: int = 0) -> None:
+        """Broadcast current auton mission"""
+        self.send_message("avr/autonomous/mission", {"mission": number})
 
     # endregion
 

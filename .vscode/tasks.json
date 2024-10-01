@@ -56,7 +56,7 @@
             "type": "shell",
             "command": "python GUI/app.py",
             "presentation": {
-                "reveal": "never",
+                "reveal": "always",
                 "close": true
             },
             "problemMatcher": [],
