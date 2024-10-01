@@ -418,7 +418,6 @@ class ControlManager(FCMMQTTModule):
     # region Missions
     @async_try_except(reraise=True)
     async def build(self, waypoints: List[dict]) -> List[MissionItem]:
-        # sourcery skip: hoist-statement-from-loop, switch, use-assigned-variable
         """Convert a list of waypoints (dict) to a list of MissionItems."""
         NAV_LITERAL = 1733472000
         ENV_ID = ["a3d9197b765643568af09eb2bd3e5ce7"]

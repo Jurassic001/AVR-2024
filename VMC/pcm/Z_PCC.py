@@ -27,7 +27,6 @@ class Zephyrus_PeripheralControlComputer(PeripheralControlComputer):
 
     # region set_magnet_on
     def set_magnet_on(self):
-        # sourcery skip: class-extract-method
         command = self.commands["SET_MAGNET_ON"]
 
         length = 1

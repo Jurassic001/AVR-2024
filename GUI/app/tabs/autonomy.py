@@ -28,7 +28,6 @@ class AutonomyWidget(BaseTabWidget):
         self.thermal_state: int = 0
 
     def build(self) -> None:
-        # sourcery skip: extract-duplicate-method, simplify-dictionary-update
         """
         Build the GUI layout
         """
@@ -284,8 +283,6 @@ class AutonomyWidget(BaseTabWidget):
 
     # region MQTT Handler
     def process_message(self, topic: str, payload: dict) -> None:
-        # sourcery skip: low-code-quality
-        # Yeah, you're telling me
         """Processes incoming messages based on the specified topic and updates the UI accordingly.
         This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating missions, and handling thermal and object scanner data.
         """

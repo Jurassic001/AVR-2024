@@ -284,7 +284,6 @@ class Sandbox(MQTTModule):
 
     # region Autonomous Thread
     def Autonomous(self):
-        # sourcery skip: extract-duplicate-method, extract-method
         logger.debug("Autonomous Thread: Online")
         LZ = {"start": (0.0, 0.0, 0.0), "loading": (0.085, 10.822, 0.0), "train 1": (0.105, 4.516, 0)}  # coordinates of landing zones (LZ's, yes I am a nerd) in meters
         auton_init: bool = False
@@ -442,7 +441,6 @@ class Sandbox(MQTTModule):
         self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=id, absolute=angle))
 
     def send_action(self, action: str, payload: dict = {}):
-        # sourcery skip: default-mutable-arg
         """Send one of many possible action payloads to the `avr/fcm/actions` MQTT topic.
 
         Args:
