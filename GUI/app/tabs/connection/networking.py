@@ -1,4 +1,5 @@
 import subprocess
+import time
 
 from PySide6 import QtWidgets
 
@@ -11,9 +12,7 @@ class WIFIConnectionWidget(QtWidgets.QWidget):
         super().__init__(parent)
 
     def build(self) -> None:
-        """
-        Build the GUI layout
-        """
+        """Build the GUI layout for the WiFi Connection widget"""
         layout = QtWidgets.QVBoxLayout(self)
         self.setLayout(layout)
 
@@ -35,7 +34,18 @@ class WIFIConnectionWidget(QtWidgets.QWidget):
         self.network_connect()
 
     def network_connect(self) -> None:
-        network_name = self.network_name_lnedit.text()  # Take the value of the line edit
-        connect_attempt = subprocess.run(["netsh", "wlan", "connect", f"name={network_name}"], capture_output=True)  # Attempt to connect
-        config.network_name = network_name  # Set config as specified network
-        self.connection_label.setText(wrap_text(f"Last connection attempt result: {connect_attempt.stdout.decode()}", "Purple"))  # Display the result on the GUI
+        # attempt to connect to the specified network
+        network_name = self.network_name_lnedit.text()
+        subprocess.run(["netsh", "wlan", "connect", f"name={network_name}"], capture_output=True)
+
+        for _ in range(10):
+            # check if we connected successfully ten times, once every 100ms
+            time.sleep(0.1)
+            check_network = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
+            if network_name in check_network.stdout:
+                # update the status label and network config on successful connection
+                self.connection_label.setText(wrap_text(f'Successfully connected to "{network_name}"', "Green"))
+                config.network_name = network_name
+                return
+        # if the connection cannot be established in one second, then assume the connection attempt has failed
+        self.connection_label.setText(wrap_text(f'Failed to connect to "{network_name}"', "Red"))
