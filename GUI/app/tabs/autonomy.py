@@ -48,11 +48,11 @@ class AutonomyWidget(BaseTabWidget):
         sandbox_layout.addLayout(autonomous_layout)
 
         autonomous_enable_button = QtWidgets.QPushButton("Enable Auton")
-        autonomous_enable_button.clicked.connect(lambda: self.set_autonomous(True))  # type: ignore
+        autonomous_enable_button.clicked.connect(lambda: self.set_autonomous(state=True))  # type: ignore
         autonomous_layout.addWidget(autonomous_enable_button)
 
         autonomous_disable_button = QtWidgets.QPushButton("Disable Auton")
-        autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(False))  # type: ignore
+        autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(state=False))  # type: ignore
         autonomous_layout.addWidget(autonomous_disable_button)
 
         self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
@@ -238,7 +238,7 @@ class AutonomyWidget(BaseTabWidget):
 
             mission_exec_btn = QtWidgets.QPushButton("Execute Mission Command")
             mission_layout.addWidget(mission_exec_btn)
-            mission_exec_btn.clicked.connect(functools.partial(self.set_autonomous, i + 1))
+            mission_exec_btn.clicked.connect(functools.partial(self.set_autonomous, mission_id=i + 1))
         # endregion
 
     # region Messengers
@@ -246,7 +246,12 @@ class AutonomyWidget(BaseTabWidget):
     the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server."""
 
     def set_autonomous(self, state: bool | None = None, mission_id: int | None = None) -> None:
-        """Set autonomous mode on or off and/or set auton mission id"""
+        """Set autonomous mode on or off and/or set auton mission id
+
+        Args:
+            state (bool | None, optional): Whether or not autonomous mode is enabled. Defaults to None.
+            mission_id (int | None, optional): The ID of the autonomous mission. Defaults to None.
+        """
         if state is not None:
             self.auton_enabled = state
         if mission_id is not None:
