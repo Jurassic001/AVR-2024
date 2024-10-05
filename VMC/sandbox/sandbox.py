@@ -16,36 +16,30 @@ class Sandbox(MQTTModule):
         super().__init__()
         self.topic_map = {
             "avr/thermal/reading": self.handle_thermal,
-            "avr/fcm/status": self.handle_status,
-            "avr/autonomous/mission": self.handle_auton_missions,
-            "avr/autonomous/enable": self.handle_autonomous,
-            "avr/autonomous/thermal_data": self.handle_thermal_data,
+            "avr/sandbox/thermal_config": self.handle_thermal_config,
             "avr/apriltags/visible": self.handle_apriltags,
-            "avr/fcm/location/local": self.handle_fcm_pos,
-            "avr/fusion/position/ned": self.handle_fus_pos,
-            "avr/fcm/attitude/euler": self.handle_attitude,
-            "avr/sandbox/test": self.handle_testing,
+            "avr/fusion/position/ned": self.handle_position,
+            "avr/sandbox/autonomous": self.handle_autonomous,
+            "avr/fcm/status": self.handle_status,
             "avr/fcm/events": self.handle_events,
+            "avr/sandbox/test": self.handle_testing,
         }
 
         # Assorted booleans
-        self.CIC_loop: bool = True
-        self.show_status: bool = True
-        self.autonomous: bool = False
-        self.fcm_connected: bool = False
+        self.autonomous: bool = False  # For enabling/disabling autonomous actions via the GUI
+        self.fcm_connected: bool = False  # Used to determine if the FCM is broadcasting messages
 
         # Position vars
-        self.fcm_position: list = [0, 0, 0]
-        self.fus_position: list = [0, 0, 0]
-        self.attitude: dict[str, float] = {"pitch": 0.0, "roll": 0.0, "yaw": 0.0}
+        self.position: list = [0, 0, 0]  # Current position in centimeters, as (forward, right, up)
 
         # Auton vars
         self.mission_waypoints: list[dict] = []
-        self.auton_mission: int = 0
+        self.auton_mission_id: int = 0
 
         # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[int, int] = (30, 40)
+        self.flash_leds_on_detection: bool = False
         self.targeting_step: int = 7
         self.thermal_state: int = 0  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
 
@@ -109,20 +103,16 @@ class Sandbox(MQTTModule):
                 self.thermal_grid[j][i] = pixel_ints[k]
                 k += 1
 
-    def handle_status(self, payload: AvrFcmStatusPayload) -> None:
-        # Set the flight controller's mode and armed status
-        self.isArmed = payload["armed"]
-        mode = payload["mode"]
-        if self.states["flightMode"] != mode:
-            logger.debug(f"Flight Mode Update || Flight Mode: {mode}")
-            self.states["flightMode"] = mode
-        self.fcm_connected = True
-
-    def handle_auton_missions(self, payload: dict) -> None:
-        self.auton_mission = payload["mission"]
-
-    def handle_autonomous(self, payload: AvrAutonomousEnablePayload) -> None:
-        self.autonomous = payload["enabled"]
+    def handle_thermal_config(self, payload: dict) -> None:
+        self.thermal_state = payload["state"]
+        if self.thermal_state == 2:
+            turret_angles = [1450, 1450]
+            self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=2, absolute=turret_angles[0]))
+            self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=3, absolute=turret_angles[1]))
+        self.target_range = payload["range"][:2]
+        logger.debug(self.target_range)
+        self.targeting_step = int(payload["range"][2])
+        self.flash_leds_on_detection = payload["hotspot flash"]
 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:  # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload["tags"][0]
@@ -134,26 +124,32 @@ class Sandbox(MQTTModule):
             self.flash_queue.append(tag_id)
             logger.debug(f"New AT detected, ID: {tag_id}")
 
-    def handle_thermal_data(self, payload: dict) -> None:
-        self.thermal_state = payload["state"]
-        if self.thermal_state == 2:
-            turret_angles = [1450, 1450]
-            self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=2, absolute=turret_angles[0]))
-            self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=3, absolute=turret_angles[1]))
-        self.target_range = payload["range"][:2]
-        logger.debug(self.target_range)
-        self.targeting_step = int(payload["range"][2])
+    def handle_position(self, payload: AvrFusionPositionNedPayload) -> None:
+        # Handle the position data from the fusion module. We use this data because it's the most accurate
+        self.position = [payload["n"], payload["e"], payload["d"] * -1]
 
-    def handle_fcm_pos(self, payload: AvrFcmLocationLocalPayload) -> None:
-        self.fcm_position = [payload["dX"], payload["dY"], payload["dZ"] * -1]
+    def handle_autonomous(self, payload: dict) -> None:
+        self.autonomous = payload["enabled"]
+        self.auton_mission_id = payload["mission_id"]
 
-    def handle_fus_pos(self, payload: AvrFusionPositionNedPayload) -> None:
-        self.fus_position = [payload["n"], payload["e"], payload["d"] * -1]
+    def handle_status(self, payload: AvrFcmStatusPayload) -> None:
+        # Set the flight controller's mode and armed status
+        self.isArmed = payload["armed"]
+        mode = payload["mode"]
+        if self.states["flightMode"] != mode:
+            logger.debug(f"Flight Mode Update || Flight Mode: {mode}")
+            self.states["flightMode"] = mode
+        self.fcm_connected = True
 
-    def handle_attitude(self, payload: AvrFcmAttitudeEulerPayload) -> None:
-        self.attitude["pitch"] = payload["pitch"]
-        self.attitude["roll"] = payload["roll"]
-        self.attitude["yaw"] = payload["yaw"]
+    def handle_events(self, payload: AvrFcmEventsPayload):
+        # Handle flight events
+        eventName = payload["name"]
+
+        newState = self.possibleEvents.get(eventName, "UNKNOWN")
+
+        if newState not in [self.states["flightEvent"], "UNKNOWN"]:
+            logger.debug(f"New Flight Event: {newState}")
+            self.states["flightEvent"] = newState
 
     def handle_testing(self, payload: dict):
         name = payload["testName"]
@@ -166,16 +162,6 @@ class Sandbox(MQTTModule):
         elif name == "zero ned":
             self.send_message("avr/fcm/capture_home", {})
 
-    def handle_events(self, payload: AvrFcmEventsPayload):
-        # Handle flight events
-        eventName = payload["name"]
-
-        newState = self.possibleEvents.get(eventName, "UNKNOWN")
-
-        if newState not in [self.states["flightEvent"], "UNKNOWN"]:
-            logger.debug(f"New Flight Event: {newState}")
-            self.states["flightEvent"] = newState
-
     # endregion
 
     # region Thermal Thread
@@ -183,45 +169,45 @@ class Sandbox(MQTTModule):
         logger.debug("Thermal Thread: Online")
         turret_angles = [1450, 1450]
         while True:
-
             if self.thermal_state == 0:  # If you aren't scanning or targeting, then don't scan or target
                 continue
 
             # Thermal scanning process
-            img = np.array(self.thermal_grid)  # Create mask of pixels above thermal threshold
-            lowerb = np.array(self.target_range[0], np.uint8)
-            upperb = np.array(self.target_range[1], np.uint8)
-            mask = cv2.inRange(img, lowerb, upperb)
-            logger.debug(f"\n{mask}")
-            if np.all(np.array(mask) == 0):
+            img = np.array(self.thermal_grid)  # Convert thermal grid to numpy array
+            lowerb = np.array(self.target_range[0], np.uint8)  # Lower bound for thermal threshold
+            upperb = np.array(self.target_range[1], np.uint8)  # Upper bound for thermal threshold
+            mask = cv2.inRange(img, lowerb, upperb)  # Create mask of pixels within thermal threshold
+            logger.debug(f"\nThermal Scanning Mask: {mask}")
+
+            if np.all(mask == 0):  # If no pixels are within the thermal threshold, continue
                 continue
-            blobs = mask > 100
-            labels, nlabels = ndimage.label(blobs)
-            # find the center of mass of each label
-            t = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1)
-            # calc sum of each label, this gives the number of pixels belonging to the blob
-            s = ndimage.sum(blobs, labels, np.arange(nlabels) + 1)
-            heat_center = [float(x) for x in t[s.argmax()][::-1]]
-            logger.debug(heat_center)
+            elif self.flash_leds_on_detection:  # If we're flashing LEDs on hotspot detection, flash the LEDs
+                logger.debug("Thermal hotspot(s) detected, flashing LEDs")
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=self.hotspot_color, time=0.5))
 
-            if self.thermal_state < 2:  # If you aren't targeting then don't target
+            blobs = mask > 100  # Identify blobs in the mask
+            labels, nlabels = ndimage.label(blobs)  # Label the blobs
+            centers_of_mass = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1)  # Find centers of mass
+            blob_sizes = ndimage.sum(blobs, labels, np.arange(nlabels) + 1)  # Calculate size of each blob
+            heat_center: Tuple[float, float] = tuple(float(coord) for coord in centers_of_mass[blob_sizes.argmax()][::-1])  # Find largest blob's center (x/y coords)
+            logger.debug(f"Heat Center: {heat_center}")
+
+            if self.thermal_state < 2:  # If not in targeting state, continue
                 continue
+            self.set_laser(True)  # Turn on the laser if targeting
 
-            self.set_laser(True)  # If you are targeting, make sure the laser is on
-
-            # This just moves reactily in small steps, it also sucks ass.
+            # Adjust turret angles to target the heat center
             if heat_center[0] > 4:
                 turret_angles[0] += self.targeting_step
-                self.move_servo(2, turret_angles[0])
             elif heat_center[0] < 4:
                 turret_angles[0] -= self.targeting_step
-                self.move_servo(2, turret_angles[0])
+            self.move_servo(2, turret_angles[0])
+
             if heat_center[1] < 4:
                 turret_angles[1] += self.targeting_step
-                self.move_servo(3, turret_angles[1])
             elif heat_center[1] > 4:
                 turret_angles[1] -= self.targeting_step
-                self.move_servo(3, turret_angles[1])
+            self.move_servo(3, turret_angles[1])
 
     # endregion
 
@@ -234,9 +220,6 @@ class Sandbox(MQTTModule):
         light_init = False
         last_flash: dict = {"time": 0, "iter": 0}  # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
-            if not self.CIC_loop:
-                continue
-
             # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
                 self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=self.normal_color))  # Turn on the lights
@@ -255,7 +238,7 @@ class Sandbox(MQTTModule):
             if self.flash_queue and time.time() > last_flash["time"] + 1:  # Make sure it's been at least one second since the last LED flash
                 self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=0.5))
                 last_flash["time"] = time.time()
-                # logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
+                logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
                 if last_flash["iter"] >= 2:
                     last_flash["iter"] = 0
                     del self.flash_queue[0]
@@ -269,16 +252,15 @@ class Sandbox(MQTTModule):
         """Shows the status of the threads."""
         logger.debug("Status Sub-Thread: Online")
         while True:
-            if self.show_status:
-                time.sleep(0.5)
-                self.send_message(
-                    "avr/sandbox/status",
-                    {
-                        "Autonomous": self.threads["auto"].is_alive(),
-                        "CIC": self.threads["CIC"].is_alive(),
-                        "Thermal": self.threads["thermal"].is_alive(),
-                    },
-                )
+            time.sleep(0.5)
+            self.send_message(
+                "avr/sandbox/status",
+                {
+                    "Autonomous": self.threads["auto"].is_alive(),
+                    "CIC": self.threads["CIC"].is_alive(),
+                    "Thermal": self.threads["thermal"].is_alive(),
+                },
+            )
 
     # endregion
 
@@ -296,24 +278,24 @@ class Sandbox(MQTTModule):
                 self.send_message("avr/fcm/capture_home", {})  # Capture home coordinates (zero NED position, like how you zero a scale)
                 auton_init = True
 
-            if self.auton_mission == 0:
+            if self.auton_mission_id == 0:
                 continue
 
             # go to the starting point and land
-            if self.auton_mission == 1:
+            if self.auton_mission_id == 1:
                 self.add_mission_waypoint("goto", (0, 0, 1))
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
                 self.set_mission()
 
             # loiter forever, one meter above starting point
-            if self.auton_mission == 2:
+            if self.auton_mission_id == 2:
                 self.add_mission_waypoint("loiter", (0, 0, 1))
                 self.upload_and_engage_mission()
                 self.set_mission()
 
             # three meter side strut
-            if self.auton_mission == 3:
+            if self.auton_mission_id == 3:
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
                 self.add_mission_waypoint("goto", (1, 0, 1), 90)
                 self.add_mission_waypoint("goto", (2, 0, 1), 90)
@@ -323,7 +305,7 @@ class Sandbox(MQTTModule):
                 self.set_mission()
 
             # three meter side strut safe
-            if self.auton_mission == 4:
+            if self.auton_mission_id == 4:
                 self.add_mission_waypoint("goto", (0, 0, 1), 0)
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
                 self.add_mission_waypoint("goto", (1, 0, 1), 90)
@@ -334,7 +316,7 @@ class Sandbox(MQTTModule):
                 self.set_mission()
 
             # three meter side strut w/ box transport
-            if self.auton_mission == 5:
+            if self.auton_mission_id == 5:
                 self.set_magnet(True)  # start by picking up the box
 
                 self.add_mission_waypoint("goto", (0, 0, 1), 90)
@@ -350,7 +332,7 @@ class Sandbox(MQTTModule):
                 self.set_magnet(not reached_waypoint)
 
             # phase one auton v1 (intended to be as fast as possible)
-            if self.auton_mission == 6:
+            if self.auton_mission_id == 6:
                 self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
                 self.add_mission_waypoint("land", LZ["loading"])
                 self.upload_and_engage_mission()
