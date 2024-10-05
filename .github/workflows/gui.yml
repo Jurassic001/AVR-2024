@@ -34,7 +34,7 @@ jobs:
 
       - name: Install Packages
         run: python scripts/install_requirements.py --directory GUI --strict
-      
+
       # If app.py can run for 60 seconds without error, count that as a success
       - name: Run app.py
         run: |
@@ -45,4 +45,3 @@ jobs:
               Stop-Process -Id $process.Id -Force
             }
           }
-

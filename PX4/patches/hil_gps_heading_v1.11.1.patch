@@ -5,12 +5,12 @@ index d9c1a66..2f058d4 100644
 @@ -86,7 +86,7 @@ void mavlink_end_uart_send(mavlink_channel_t chan, int length);
  extern mavlink_status_t *mavlink_get_channel_status(uint8_t chan);
  extern mavlink_message_t *mavlink_get_channel_buffer(uint8_t chan);
- 
+
 -#include <v2.0/standard/mavlink.h>
 +#include <v2.0/bell/mavlink.h>
- 
+
  __END_DECLS
- 
+
 diff --git a/src/modules/mavlink/mavlink_messages.cpp b/src/modules/mavlink/mavlink_messages.cpp
 index 1596186..e5cf9c7 100644
 --- a/src/modules/mavlink/mavlink_messages.cpp
@@ -18,7 +18,7 @@ index 1596186..e5cf9c7 100644
 @@ -60,6 +60,8 @@
  #include <systemlib/mavlink_log.h>
  #include <math.h>
- 
+
 +#include <v2.0/bell/mavlink.h>
 +
  #include <uORB/Subscription.hpp>
@@ -31,7 +31,7 @@ index f2d0f56..20e89a3 100644
 @@ -271,6 +271,10 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
  		handle_message_statustext(msg);
  		break;
- 
+
 +	case MAVLINK_MSG_ID_HIL_GPS_HEADING:
 +		handle_message_hil_gps_heading(msg);
 +		break;
@@ -41,8 +41,8 @@ index f2d0f56..20e89a3 100644
  	}
 @@ -305,7 +309,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
  	}
- 
- 
+
+
 -	if (_mavlink->get_hil_enabled() || (_mavlink->get_use_hil_gps() && msg->sysid == mavlink_system.sysid)) {
 +	if (_mavlink->get_hil_enabled() || (_mavlink->get_use_hil_gps())) {
  		switch (msg->msgid) {
@@ -51,7 +51,7 @@ index f2d0f56..20e89a3 100644
 @@ -2296,6 +2300,44 @@ MavlinkReceiver::handle_message_hil_gps(mavlink_message_t *msg)
  	_gps_pub.publish(hil_gps);
  }
- 
+
 +void
 +MavlinkReceiver::handle_message_hil_gps_heading(mavlink_message_t *msg)
 +{
@@ -96,7 +96,7 @@ index f2d0f56..20e89a3 100644
 @@ -2911,6 +2953,20 @@ MavlinkReceiver::Run()
  							_mavlink->set_proto_version(2);
  						}
- 
+
 +						if (msg.msgid)
 +						{
 +							debug_key_value_s debug_topic{};
@@ -113,7 +113,7 @@ index f2d0f56..20e89a3 100644
 +
  						/* handle generic messages and commands */
  						handle_message(&msg);
- 
+
 diff --git a/src/modules/mavlink/mavlink_receiver.h b/src/modules/mavlink/mavlink_receiver.h
 index 709b76b..32afb00 100644
 --- a/src/modules/mavlink/mavlink_receiver.h
@@ -121,11 +121,11 @@ index 709b76b..32afb00 100644
 @@ -103,6 +103,8 @@
  #include <uORB/topics/vehicle_trajectory_bezier.h>
  #include <uORB/topics/vehicle_trajectory_waypoint.h>
- 
+
 +#include <v2.0/bell/mavlink_msg_hil_gps_heading.h>
 +
  class Mavlink;
- 
+
  class MavlinkReceiver : public ModuleParams
 @@ -152,6 +154,7 @@ private:
  	void handle_message_gps_rtcm_data(mavlink_message_t *msg);

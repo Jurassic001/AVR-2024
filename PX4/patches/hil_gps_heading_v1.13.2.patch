@@ -5,7 +5,7 @@ index 91875cd..7248773 100644
 @@ -38,6 +38,8 @@ if(px4_constrained_flash_build)
  	set(MAVLINK_DIALECT "standard")
  endif()
- 
+
 +set(MAVLINK_DIALECT "bell")
 +
  set(MAVLINK_GIT_DIR "${CMAKE_CURRENT_LIST_DIR}/mavlink")
@@ -18,7 +18,7 @@ index 9cee58b..37c9ae4 100644
 @@ -307,6 +307,10 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
  		handle_message_gimbal_device_attitude_status(msg);
  		break;
- 
+
 +	case MAVLINK_MSG_ID_HIL_GPS_HEADING:
 +		handle_message_hil_gps_heading(msg);
 +		break;
@@ -28,8 +28,8 @@ index 9cee58b..37c9ae4 100644
  	}
 @@ -341,7 +345,7 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
  	}
- 
- 
+
+
 -	if (_mavlink->get_hil_enabled() || (_mavlink->get_use_hil_gps() && msg->sysid == mavlink_system.sysid)) {
 +	if (_mavlink->get_hil_enabled() || (_mavlink->get_use_hil_gps())) {
  		switch (msg->msgid) {
@@ -38,7 +38,7 @@ index 9cee58b..37c9ae4 100644
 @@ -2402,6 +2406,62 @@ MavlinkReceiver::handle_message_hil_gps(mavlink_message_t *msg)
  	_sensor_gps_pub.publish(gps);
  }
- 
+
 + void
 + MavlinkReceiver::handle_message_hil_gps_heading(mavlink_message_t *msg)
 + {
@@ -101,7 +101,7 @@ index 9cee58b..37c9ae4 100644
 @@ -3190,6 +3250,20 @@ MavlinkReceiver::run()
  							_mavlink->set_proto_version(2);
  						}
- 
+
 +						if (msg.msgid)
 +						{
 +							debug_key_value_s debug_topic{};
@@ -118,7 +118,7 @@ index 9cee58b..37c9ae4 100644
 +
  						/* handle generic messages and commands */
  						handle_message(&msg);
- 
+
 diff --git a/src/modules/mavlink/mavlink_receiver.h b/src/modules/mavlink/mavlink_receiver.h
 index aae57f2..438c9ea 100644
 --- a/src/modules/mavlink/mavlink_receiver.h
