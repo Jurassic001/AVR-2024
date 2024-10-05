@@ -324,7 +324,7 @@ def main(development, reboot, shutdown):
 
     if shutdown: # If the shutdown option was added during terminal runtime
         print(f"{GREEN}Shutting Down VMC...{NC}")
-        subprocess.run(["shutdown -h now"])
+        subprocess.run(["shutdown",  "-h", "now"])
         return
 
     if reboot: # If the reboot option was added during terminal runtime
