@@ -90,7 +90,15 @@ def main(directory: str, strict: bool = False) -> None:
             ],
             check=strict,
         )
-    disp_added_sidebars("Requirement installation successful", GREEN)
+
+    # Setup pre-commit hooks
+    disp_added_sidebars("Setting up pre-commit hooks", CYAN)
+    subprocess.run(
+        [sys.executable, "-m", "pre_commit", "install"],
+        check=strict,
+    )
+
+    disp_added_sidebars("Requirement installation/setup successful", GREEN)
 
 
 if __name__ == "__main__":

@@ -304,7 +304,7 @@ class AutonomyWidget(BaseTabWidget):
         """
         payload = json.loads(payload)
 
-        if topic == "avr/autonomous/enable":  # If the value of the auton bool is changing
+        if topic == "avr/sandbox/autonomous":  # If the value of the auton bool is changing
             state = payload["enabled"]
             if state:
                 text = "Autonomous Enabled"
@@ -313,14 +313,13 @@ class AutonomyWidget(BaseTabWidget):
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
-        elif topic == "avr/autonomous/mission":
-            mission_num = payload["mission"]
-            if mission_num == 0:
+            mission_id = payload["mission_id"]
+            if mission_id == 0:
                 for state in self.mission_states:
                     state.setText("")
                 return
             else:
-                self.mission_states[mission_num - 1].setText(wrap_text("Executing mission command...", "red"))
+                self.mission_states[mission_id - 1].setText(wrap_text("Executing mission command...", "red"))
         elif topic == "avr/sandbox/thermal_config":
             match payload["state"]:
                 case 2:
