@@ -286,13 +286,13 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (0, 0, 1))
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
-                self.set_autonomous()
+                self.set_mission_id()
 
             # loiter forever, one meter above starting point
             if self.auton_mission_id == 2:
                 self.add_mission_waypoint("loiter", (0, 0, 1))
                 self.upload_and_engage_mission()
-                self.set_autonomous()
+                self.set_mission_id()
 
             # three meter side strut
             if self.auton_mission_id == 3:
@@ -302,7 +302,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (3, 0, 1), 90)
                 self.add_mission_waypoint("land", (3, 0, 0), 90)
                 self.upload_and_engage_mission()
-                self.set_autonomous()
+                self.set_mission_id()
 
             # three meter side strut safe
             if self.auton_mission_id == 4:
@@ -313,7 +313,7 @@ class Sandbox(MQTTModule):
                 self.add_mission_waypoint("goto", (3, 0, 1), 90)
                 self.add_mission_waypoint("land", (3, 0, 0), 90)
                 self.upload_and_engage_mission()
-                self.set_autonomous()
+                self.set_mission_id()
 
             # three meter side strut w/ box transport
             if self.auton_mission_id == 5:
@@ -331,7 +331,7 @@ class Sandbox(MQTTModule):
                 reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 45)
                 self.set_magnet(not reached_waypoint)
 
-                self.set_autonomous()
+                self.set_mission_id()
 
             # phase one auton v1 (intended to be as fast as possible)
             if self.auton_mission_id == 6:
@@ -351,7 +351,7 @@ class Sandbox(MQTTModule):
                 reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 25)
                 self.set_magnet(not reached_waypoint)  # If we reach the drop zone, deactivate the magnet
 
-                self.set_autonomous()
+                self.set_mission_id()
 
     # endregion
 
@@ -447,15 +447,12 @@ class Sandbox(MQTTModule):
         """Enable/disable magnet power. The magnet should be wired into the `high power load` terminal on the MOSFET, where the laser is typically wired (https://the-avr.github.io/AVR-2022/drone-peripheral-assembly/gimbal-assembly/#powering-laser-and-the-fpv)"""
         self.send_message("avr/pcm/set_magnet", {"enabled": enabled})
 
-    def set_autonomous(self, state: bool | None = None, mission_id: int = 0) -> None:
+    def set_mission_id(self, mission_id: int = 0) -> None:
         """Set autonomous mode on or off and/or set auton mission id
 
         Args:
-            state (bool | None, optional): Whether or not autonomous mode is enabled. Defaults to None.
             mission_id (int, optional): The ID of the autonomous mission. Defaults to 0.
         """
-        if state is not None:
-            self.autonomous = state
         self.auton_mission_id = mission_id
         self.send_message("avr/sandbox/autonomous", {"enabled": self.autonomous, "mission_id": self.auton_mission_id})
 
