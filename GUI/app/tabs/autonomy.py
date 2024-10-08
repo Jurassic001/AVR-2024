@@ -21,12 +21,12 @@ class AutonomyWidget(BaseTabWidget):
     def __init__(self, parent: QtWidgets.QWidget) -> None:
         super().__init__(parent)
         self.setWindowTitle("Autonomy")
-        # default vars (changeable)
+        # default variables (mutable)
         self.thermal_state: int = 0
         self.auton_enabled: bool = False
         self.auton_mission: int = 0
 
-        # default values (unchangeable)
+        # default values (immutable)
         self.HOTSPOT_LED_FLASH_DEFAULT: bool = True
 
     def build(self) -> None:
@@ -109,6 +109,13 @@ class AutonomyWidget(BaseTabWidget):
         self.hotspot_flash_togglebtn.clicked.connect(lambda: self.set_thermal_config())
         self.hotspot_flash_togglebtn.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
         thermal_laser_layout.addWidget(self.hotspot_flash_togglebtn)
+
+        # Thermal logging toggle button (thermal data from the sandbox will overwhelm the terminal, FYI)
+        self.thermal_log_togglebtn = QtWidgets.QPushButton("Log Thermal Data from Sandbox")
+        self.thermal_log_togglebtn.setCheckable(True)
+        self.thermal_log_togglebtn.clicked.connect(lambda: self.set_thermal_config())
+        self.thermal_log_togglebtn.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
+        thermal_laser_layout.addWidget(self.thermal_log_togglebtn)
 
         # temp range/step settings
         temp_range_layout = QtWidgets.QFormLayout()
@@ -271,11 +278,12 @@ class AutonomyWidget(BaseTabWidget):
         if state is not None:
             self.thermal_state = state
         hotspot_flash = self.hotspot_flash_togglebtn.isChecked()
+        therm_log = self.thermal_log_togglebtn.isChecked()
         lower = self.temp_min_line_edit.text_float()
         upper = self.temp_max_line_edit.text_float()
         step = self.temp_step_edit.text_float()
 
-        self.send_message("avr/sandbox/thermal_config", {"state": self.thermal_state, "hotspot flash": hotspot_flash, "range": (lower, upper, step)})
+        self.send_message("avr/sandbox/thermal_config", {"state": self.thermal_state, "hotspot flash": hotspot_flash, "logging": therm_log, "range": (lower, upper, step)})
 
     def set_laser(self, state: bool) -> None:
         """Enable/disable laser firing"""

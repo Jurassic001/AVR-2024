@@ -40,6 +40,7 @@ class Sandbox(MQTTModule):
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[int, int] = (30, 40)
         self.flash_leds_on_detection: bool = False
+        self.log_thermal_data: bool = False
         self.targeting_step: int = 7
         self.thermal_state: int = 0  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
 
@@ -81,9 +82,11 @@ class Sandbox(MQTTModule):
         )  # Dict containing the most recently detected apriltag's info. I've added the Bell-provided documentation on the apriltag payload and its content to this pastebin: https://pastebin.com/Wc7mXs7W
         self.apriltag_ids: list = []  # List containing every apriltag ID that has been detected
         self.flash_queue: list = []  # List containing all the IDs that are queued for LED flashing
-        self.normal_color: tuple[int, int, int, int] = (255, 78, 205, 196)  # wrgb (white, red, green, blue)
-        self.flash_color: tuple[int, int, int, int] = (255, 255, 0, 0)  # wrgb
-        self.hotspot_color: tuple[int, int, int, int] = (255, 0, 0, 0)  # wrgb
+
+        # LED color presets in wrgb format (white, red, green, blue)
+        self.normal_color: tuple[int, int, int, int] = (255, 78, 205, 196)  # Cyan
+        self.flash_color: tuple[int, int, int, int] = (255, 255, 0, 0)  # Red
+        self.hotspot_color: tuple[int, int, int, int] = (255, 255, 255, 255)  # White
 
         self.threads: dict[str, Thread] = {}
 
@@ -113,6 +116,7 @@ class Sandbox(MQTTModule):
         logger.debug(self.target_range)
         self.targeting_step = int(payload["range"][2])
         self.flash_leds_on_detection = payload["hotspot flash"]
+        self.log_thermal_data = payload["logging"]
 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:  # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload["tags"][0]
@@ -177,7 +181,8 @@ class Sandbox(MQTTModule):
             lowerb = np.array(self.target_range[0], np.uint8)  # Lower bound for thermal threshold
             upperb = np.array(self.target_range[1], np.uint8)  # Upper bound for thermal threshold
             mask = cv2.inRange(img, lowerb, upperb)  # Create mask of pixels within thermal threshold
-            logger.debug(f"\nThermal Scanning Mask: {mask}")
+            if self.log_thermal_data:
+                logger.debug(f"\nThermal Scanning Mask: {mask}")
 
             if np.all(mask == 0):  # If no pixels are within the thermal threshold, continue
                 continue
@@ -190,7 +195,8 @@ class Sandbox(MQTTModule):
             centers_of_mass = ndimage.center_of_mass(mask, labels, np.arange(nlabels) + 1)  # Find centers of mass
             blob_sizes = ndimage.sum(blobs, labels, np.arange(nlabels) + 1)  # Calculate size of each blob
             heat_center: Tuple[float, float] = tuple(float(coord) for coord in centers_of_mass[blob_sizes.argmax()][::-1])  # Find largest blob's center (x/y coords)
-            logger.debug(f"Heat Center: {heat_center}")
+            if self.log_thermal_data:
+                logger.debug(f"Heat Center: {heat_center}")
 
             if self.thermal_state < 2:  # If not in targeting state, continue
                 continue
