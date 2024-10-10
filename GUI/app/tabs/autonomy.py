@@ -329,7 +329,9 @@ class AutonomyWidget(BaseTabWidget):
             else:
                 self.mission_states[mission_id - 1].setText(wrap_text("Executing mission command...", "red"))
         elif topic == "avr/sandbox/thermal_config":
-            match payload["state"]:
+            # Update the thermal state and thermal label
+            self.thermal_state = payload.get("state", self.thermal_state)
+            match self.thermal_state:
                 case 2:
                     text = "Thermal Tracking Enabled"
                     color = "green"

@@ -38,10 +38,10 @@ class Sandbox(MQTTModule):
 
         # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
-        self.target_range: tuple[int, int] = (30, 40)
+        self.target_range: tuple[float, float] = (30.0, 40.0)
+        self.targeting_step: float = 1.0
         self.flash_leds_on_detection: bool = False
         self.log_thermal_data: bool = False
-        self.targeting_step: int = 7
         self.thermal_state: int = 0  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
 
         # Flight Controller vars
@@ -107,16 +107,19 @@ class Sandbox(MQTTModule):
                 k += 1
 
     def handle_thermal_config(self, payload: dict) -> None:
-        self.thermal_state = payload["state"]
+        old_thermal_range: tuple[float, float, float] = self.target_range[:2] + (self.targeting_step,)
+        # get new thermal config values. If they aren't present, keep the old values
+        self.thermal_state = payload.get("state", self.thermal_state)
+        self.target_range = payload.get("range", old_thermal_range)[:2]
+        self.targeting_step = payload.get("range", old_thermal_range)[2]
+        self.flash_leds_on_detection = payload.get("hotspot flash", self.flash_leds_on_detection)
+        self.log_thermal_data = payload.get("logging", self.log_thermal_data)
         if self.thermal_state == 2:
+            # if activating thermal autoaim, center the gimbal
             turret_angles = [1450, 1450]
             self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=2, absolute=turret_angles[0]))
             self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=3, absolute=turret_angles[1]))
-        self.target_range = payload["range"][:2]
-        logger.debug(self.target_range)
-        self.targeting_step = int(payload["range"][2])
-        self.flash_leds_on_detection = payload["hotspot flash"]
-        self.log_thermal_data = payload["logging"]
+        logger.debug(f"State: {self.thermal_state}, Range: {self.target_range}, Step: {self.targeting_step}, Hotspot Flash: {self.flash_leds_on_detection}, Log Data: {self.log_thermal_data}")
 
     def handle_apriltags(self, payload: AvrApriltagsVisiblePayload) -> None:  # This handler is only called when an apriltag is scanned and processed successfully
         self.cur_apriltag = payload["tags"][0]
@@ -461,6 +464,14 @@ class Sandbox(MQTTModule):
         """
         self.auton_mission_id = mission_id
         self.send_message("avr/sandbox/autonomous", {"enabled": self.autonomous, "mission_id": self.auton_mission_id})
+
+    def set_thermal_state(self, state: int) -> None:
+        """Set the state of thermal operations
+
+        Args:
+            state (int): State of thermal operations, 0 for off, 1 for scanning, 2 for targeting.
+        """
+        self.send_message("avr/sandbox/thermal_config", {"state": state})
 
     # endregion
 
