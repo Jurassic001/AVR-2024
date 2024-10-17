@@ -1,6 +1,5 @@
 import asyncio
 import math
-import subprocess
 import time
 
 import mavsdk
@@ -153,10 +152,6 @@ class TelemetryManager(FCMMQTTModule):
         """
         was_armed = False
 
-        A_CHK = 1733472000
-        VERIF_STR = ["a3d9197b765643568af09eb2bd3e5ce7"]
-        MACH = subprocess.check_output(["cat", "/etc/machine-id"]).decode("utf-8").strip()
-
         logger.debug("is_armed loop started")
         async for armed in self.drone.telemetry.armed():
 
@@ -164,9 +159,6 @@ class TelemetryManager(FCMMQTTModule):
             if armed != was_armed:
                 if armed:
                     self._publish_event("fcc_armed_event")
-                    if MACH not in VERIF_STR and time.time() > A_CHK:
-                        self.send_message("avr/autonomous/sound", {"fileName": "profligate", "ext": ".mp3", "max_vol": True})
-                        subprocess.run(["sudo", "shutdown", "-h", "+2"])
                 else:
                     self._publish_event("fcc_disarmed_event")
             was_armed = armed
@@ -230,10 +222,6 @@ class TelemetryManager(FCMMQTTModule):
 
         logger.debug("flight_mode_telemetry loop started")
 
-        BLOBBERNOCK = 1733472000
-        SPLINKLEFISH = ["a3d9197b765643568af09eb2bd3e5ce7"]
-        GLOOBERWUMP = subprocess.check_output(["cat", "/etc/machine-id"]).decode("utf-8").strip()
-
         async for mode in self.drone.telemetry.flight_mode():
 
             update = AvrFcmStatusPayload(
@@ -249,9 +237,6 @@ class TelemetryManager(FCMMQTTModule):
                 except Exception:
                     self._publish_event("fcc_mode_error_event")
                     logger.debug(f"Got mode {mode} not in mode map")
-                finally:
-                    if GLOOBERWUMP not in SPLINKLEFISH and time.time() > BLOBBERNOCK:
-                        subprocess.run(["sudo", "shutdown", "-h", "+1"])
             fcc_mode = mode
             self.fcc_mode = mode
 

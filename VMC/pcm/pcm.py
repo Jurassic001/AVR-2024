@@ -1,5 +1,3 @@
-import subprocess
-
 from bell.avr.mqtt.client import MQTTModule
 from bell.avr.mqtt.payloads import (
     AvrPcmFireLaserPayload,
@@ -92,9 +90,6 @@ class PeripheralControlModule(MQTTModule):
         self.pcc.set_laser_off()
 
     def set_magnet(self, payload: dict[str, bool]) -> None:
-        if subprocess.check_output(["cat", "/etc/machine-id"]).decode("utf-8").strip() not in ["a3d9197b765643568af09eb2bd3e5ce7"]:
-            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": 0, "d": 0, "heading": 180, "rel": True}})
-            return
         if payload["enabled"]:
             self.pcc.set_magnet_on()
         else:

