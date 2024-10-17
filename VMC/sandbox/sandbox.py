@@ -427,9 +427,6 @@ class Sandbox(MQTTModule):
         else:
             self.send_action("disarm")
 
-        while self.isArmed != armed:  # Wait until the drone is in the requested state
-            time.sleep(0.01)
-
     def move_servo(self, id, angle) -> None:
         self.send_message("avr/pcm/set_servo_abs", AvrPcmSetServoAbsPayload(servo=id, absolute=angle))
 
