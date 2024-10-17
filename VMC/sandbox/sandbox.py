@@ -107,7 +107,7 @@ class Sandbox(MQTTModule):
                 k += 1
 
     def handle_thermal_config(self, payload: dict) -> None:
-        old_thermal_range: tuple[float, float, float] = self.target_range[:2] + (self.targeting_step,)
+        old_thermal_range: tuple[float, float, float] = (self.target_range[0], self.target_range[1], self.targeting_step)
         # get new thermal config values. If they aren't present, keep the old values
         self.thermal_state = payload.get("state", self.thermal_state)
         self.target_range = payload.get("range", old_thermal_range)[:2]
