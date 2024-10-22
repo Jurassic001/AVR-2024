@@ -290,76 +290,86 @@ class Sandbox(MQTTModule):
             if self.auton_mission_id == 0:
                 continue
 
-            # go to the starting point and land
+            # Land @ Start
             if self.auton_mission_id == 1:
                 self.add_mission_waypoint("goto", (0, 0, 1))
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
-            # loiter forever, one meter above starting point
+            # Loiter @ Start
             if self.auton_mission_id == 2:
                 self.add_mission_waypoint("loiter", (0, 0, 1))
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
-            # three meter side strut
+            # Phase 1, Step 1
             if self.auton_mission_id == 3:
-                self.add_mission_waypoint("goto", (0, 0, 1), 90)
-                self.add_mission_waypoint("goto", (1, 0, 1), 90)
-                self.add_mission_waypoint("goto", (2, 0, 1), 90)
-                self.add_mission_waypoint("goto", (3, 0, 1), 90)
-                self.add_mission_waypoint("land", (3, 0, 0), 90)
-                self.upload_and_engage_mission()
-                self.set_mission_id()
-
-            # three meter side strut safe
-            if self.auton_mission_id == 4:
-                self.add_mission_waypoint("goto", (0, 0, 1), 0)
-                self.add_mission_waypoint("goto", (0, 0, 1), 90)
-                self.add_mission_waypoint("goto", (1, 0, 1), 90)
-                self.add_mission_waypoint("goto", (2, 0, 1), 90)
-                self.add_mission_waypoint("goto", (3, 0, 1), 90)
-                self.add_mission_waypoint("land", (3, 0, 0), 90)
-                self.upload_and_engage_mission()
-                self.set_mission_id()
-
-            # three meter side strut w/ box transport
-            if self.auton_mission_id == 5:
-                self.set_magnet(True)  # start by picking up the box
-
-                self.add_mission_waypoint("goto", (0, 0, 1), 90)
-                self.add_mission_waypoint("goto", (1, 0, 1), 90)
-                self.add_mission_waypoint("goto", (2, 0, 1), 90)
-                self.add_mission_waypoint("goto", (3, 0, 1), 90)
-                self.add_mission_waypoint("land", (3, 0, 0), 90)
-                self.upload_and_engage_mission()
-
-                # wait 5 sec, then start checking to see if we've landed. when we land, drop the magnet. If we haven't landed in 45 seconds, then stop checking.
-                time.sleep(5)
-                reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 45)
-                self.set_magnet(not reached_waypoint)
-
-                self.set_mission_id()
-
-            # phase one auton v1 (intended to be as fast as possible)
-            if self.auton_mission_id == 6:
-                self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
+                self.add_mission_waypoint("goto", (0, 5, 1))
                 self.add_mission_waypoint("land", LZ["loading"])
                 self.upload_and_engage_mission()
 
-                time.sleep(5)
-                self.wait_for_state("flightEvent", "ON_GROUND", 25)  # engage the magnet as soon as we reach the landing zone
+                # Wait until liftoff with a timeout of 10 seconds to activate magnet
+                self.wait_for_state("flightEvent", "IN_AIR", 10)
                 self.set_magnet(True)
+                self.set_mission_id()
 
-                self.add_mission_waypoint("goto", (0, 5, 1), acceptanceRad=0.5)
+                """
+                System that automatically activates step two if the first step is 100% successful. Needs testing.
+
+                if self.wait_for_state("flightEvent", "ON_GROUND", 30):
+                    self.set_mission_id(4)
+                else:
+                    self.set_mission_id()
+                """
+
+            # Phase 1, Step 2
+            if self.auton_mission_id == 4:
+                self.add_mission_waypoint("goto", (0, 5, 1))
                 self.add_mission_waypoint("land", LZ["train 1"])
                 self.upload_and_engage_mission()
 
-                time.sleep(5)
-                reached_waypoint = self.wait_for_state("flightEvent", "ON_GROUND", 25)
-                self.set_magnet(not reached_waypoint)  # If we reach the drop zone, deactivate the magnet
+                self.wait_for_state("flightEvent", "IN_AIR", 10)
+                # If we reach the drop zone, deactivate the magnet, otherwise don't mess with it
+                if self.wait_for_state("flightEvent", "ON_GROUND", 30):
+                    self.set_magnet(False)
+                self.set_mission_id()
 
+            # Box transport test - pickup
+            if self.auton_mission_id == 8:
+                self.add_mission_waypoint("goto", (0, 0, 1), 90)
+                self.add_mission_waypoint("goto", (3, 0, 1), 90)
+                self.add_mission_waypoint("land", (3, 0, 0), 90)
+                self.upload_and_engage_mission()
+
+                self.wait_for_state("flightEvent", "IN_AIR", 5)
+                self.set_magnet(True)
+                if self.wait_for_state("flightEvent", "ON_GROUND", 20):
+                    self.set_mission_id(9)
+                else:
+                    self.set_mission_id()
+
+            # Box transport test - dropoff
+            if self.auton_mission_id == 9:
+                self.add_mission_waypoint("goto", (3, 0, 1), 90)
+                self.add_mission_waypoint("goto", (0, 0, 1), 90)
+                self.add_mission_waypoint("land", LZ["start"], 90)
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+                self.wait_for_state("flightEvent", "IN_AIR", 5)
+                if self.wait_for_state("flightEvent", "ON_GROUND", 20):
+                    self.set_magnet(False)
+                    self.set_mission_id(10)
+                else:
+                    self.set_mission_id()
+
+            # Box transport test - landing
+            if self.auton_mission_id == 10:
+                self.add_mission_waypoint("goto", (0, 0, 1), 90)
+                self.add_mission_waypoint("goto", (1.5, 0, 1))
+                self.add_mission_waypoint("land", (1.5, 0, 0))
+                self.upload_and_engage_mission()
                 self.set_mission_id()
 
     # endregion

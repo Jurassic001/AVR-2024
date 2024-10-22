@@ -218,14 +218,14 @@ class AutonomyWidget(BaseTabWidget):
         missions: List[str] = [  # List of names for each mission
             "Land @ Start",
             "Loiter @ Start",
-            "Mission 3",
-            "Mission 4",
+            "Phase 1, Step 1",
+            "Phase 1, Step 2",
             "Mission 5",
             "Mission 6",
             "Mission 7",
-            "Mission 8",
-            "Mission 9",
-            "Mission 10",
+            "Box transport test - pickup",
+            "Box transport test - dropoff",
+            "Box transport test - landing",
         ]
         self.mission_states: List[QtWidgets.QLabel] = []
 
