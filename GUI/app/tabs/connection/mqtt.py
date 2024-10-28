@@ -160,7 +160,8 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         bottom_layout.addWidget(self.state_label)
 
         button_layout = QtWidgets.QHBoxLayout()
-        self.connect_button = QtWidgets.QPushButton("Connect")
+        self.connect_button = QtWidgets.QPushButton("Connect [Backspace]")
+        self.connect_button.setShortcut(QtGui.QKeySequence("Backspace"))
         button_layout.addWidget(self.connect_button)
 
         self.disconnect_button = QtWidgets.QPushButton("Disconnect")
@@ -176,7 +177,8 @@ class MQTTConnectionWidget(QtWidgets.QWidget):
         options_layout.addWidget(self.localHost_checkbox)
 
         # create the force enable tabs checkbox
-        self.forceEnableTabs_checkbox = QtWidgets.QCheckBox("Force Enable Tabs?")
+        self.forceEnableTabs_checkbox = QtWidgets.QCheckBox("Force Enable Tabs? [F]")
+        self.forceEnableTabs_checkbox.setShortcut(QtGui.QKeySequence("F"))
         options_layout.addWidget(self.forceEnableTabs_checkbox)
 
         layout.addLayout(options_layout)

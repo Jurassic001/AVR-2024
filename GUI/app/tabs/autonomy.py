@@ -9,7 +9,7 @@ import playsound
 from bell.avr.mqtt.payloads import AvrPcmSetLaserOffPayload, AvrPcmSetLaserOnPayload
 from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from ..lib.color import wrap_text
 from ..lib.config import config
@@ -47,12 +47,14 @@ class AutonomyWidget(BaseTabWidget):
         autonomous_layout = QtWidgets.QHBoxLayout()
         sandbox_layout.addLayout(autonomous_layout)
 
-        autonomous_enable_button = QtWidgets.QPushButton("Enable Auton")
-        autonomous_enable_button.clicked.connect(lambda: self.set_autonomous(state=True))  # type: ignore
+        autonomous_enable_button = QtWidgets.QPushButton("Enable Auton [E]")
+        autonomous_enable_button.clicked.connect(lambda: self.set_autonomous(state=True))
+        autonomous_enable_button.setShortcut(QtGui.QKeySequence("E"))
         autonomous_layout.addWidget(autonomous_enable_button)
 
-        autonomous_disable_button = QtWidgets.QPushButton("Disable Auton")
-        autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(state=False))  # type: ignore
+        autonomous_disable_button = QtWidgets.QPushButton("Disable Auton [D]")
+        autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(state=False))
+        autonomous_disable_button.setShortcut(QtGui.QKeySequence("D"))
         autonomous_layout.addWidget(autonomous_disable_button)
 
         self.autonomous_label = QtWidgets.QLabel(wrap_text("Autonomous Disabled", "red"))
@@ -90,16 +92,19 @@ class AutonomyWidget(BaseTabWidget):
         thermal_buttons_layout = QtWidgets.QHBoxLayout()
         thermal_laser_layout.addLayout(thermal_buttons_layout)
 
-        thermal_tracking_button = QtWidgets.QPushButton("Start Tracking")
+        thermal_tracking_button = QtWidgets.QPushButton("Start Tracking [U]")
         thermal_tracking_button.clicked.connect(lambda: self.set_thermal_config(2))
+        thermal_tracking_button.setShortcut(QtGui.QKeySequence("U"))
         thermal_buttons_layout.addWidget(thermal_tracking_button)
 
-        thermal_scanning_button = QtWidgets.QPushButton("Start Scanning")
+        thermal_scanning_button = QtWidgets.QPushButton("Start Scanning [H]")
         thermal_scanning_button.clicked.connect(lambda: self.set_thermal_config(1))
+        thermal_scanning_button.setShortcut(QtGui.QKeySequence("H"))
         thermal_buttons_layout.addWidget(thermal_scanning_button)
 
-        thermal_stop_button = QtWidgets.QPushButton("Stop All")
+        thermal_stop_button = QtWidgets.QPushButton("Stop All [B]")
         thermal_stop_button.clicked.connect(lambda: self.set_thermal_config(0))
+        thermal_stop_button.setShortcut(QtGui.QKeySequence("B"))
         thermal_buttons_layout.addWidget(thermal_stop_button)
 
         # Hotspot LED Flash toggle button
@@ -171,12 +176,14 @@ class AutonomyWidget(BaseTabWidget):
         magnet_groupbox.setLayout(magnet_layout)
         layout.addWidget(magnet_groupbox, 1, 1, 1, 1)
 
-        magnet_on_btn = QtWidgets.QPushButton("Activate Magnet")
+        magnet_on_btn = QtWidgets.QPushButton("Activate Magnet [M]")
         magnet_on_btn.clicked.connect(lambda: self.set_magnet(True))
+        magnet_on_btn.setShortcut(QtGui.QKeySequence("M"))
         magnet_layout.addWidget(magnet_on_btn)
 
-        magnet_off_btn = QtWidgets.QPushButton("Deactivate Magnet")
+        magnet_off_btn = QtWidgets.QPushButton("Deactivate Magnet [K]")
         magnet_off_btn.clicked.connect(lambda: self.set_magnet(False))
+        magnet_off_btn.setShortcut(QtGui.QKeySequence("K"))
         magnet_layout.addWidget(magnet_off_btn)
 
         self.magnet_label = QtWidgets.QLabel()

@@ -142,7 +142,9 @@ class MainWindow(QtWidgets.QWidget):
         self.main_connection_widget = MainConnectionWidget(self)
         self.main_connection_widget.build(self)
         self.main_connection_widget.pop_in.connect(self.tabs.pop_in)
-        self.tabs.addTab(self.main_connection_widget, self.main_connection_widget.windowTitle())
+        connection_tab_index = self.tabs.addTab(self.main_connection_widget, self.main_connection_widget.windowTitle() + " [C]")
+        connection_keybind = QtGui.QShortcut(QtGui.QKeySequence("C"), self)
+        connection_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(connection_tab_index))
 
         self.main_connection_widget.mqtt_connection_widget.connection_state.connect(self.set_mqtt_connected_state)
         self.main_connection_widget.serial_connection_widget.connection_state.connect(self.set_serial_connected_state)
@@ -152,7 +154,9 @@ class MainWindow(QtWidgets.QWidget):
         self.vmc_telemetry_widget = VMCTelemetryWidget(self)
         self.vmc_telemetry_widget.build()
         self.vmc_telemetry_widget.pop_in.connect(self.tabs.pop_in)
-        self.tabs.addTab(self.vmc_telemetry_widget, self.vmc_telemetry_widget.windowTitle())
+        vmc_telem_index = self.tabs.addTab(self.vmc_telemetry_widget, self.vmc_telemetry_widget.windowTitle() + " [T]")
+        telemetry_keybind = QtGui.QShortcut(QtGui.QKeySequence("T"), self)
+        telemetry_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(vmc_telem_index))
 
         self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.vmc_telemetry_widget.process_message)
 
@@ -170,7 +174,9 @@ class MainWindow(QtWidgets.QWidget):
         self.vmc_control_widget = VMCControlWidget(self)
         self.vmc_control_widget.build()
         self.vmc_control_widget.pop_in.connect(self.tabs.pop_in)
-        self.tabs.addTab(self.vmc_control_widget, self.vmc_control_widget.windowTitle())
+        vmc_control_index = self.tabs.addTab(self.vmc_control_widget, self.vmc_control_widget.windowTitle() + " [V]")
+        control_keybind = QtGui.QShortcut(QtGui.QKeySequence("V"), self)
+        control_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(vmc_control_index))
 
         self.vmc_control_widget.emit_message.connect(self.main_connection_widget.mqtt_connection_widget.mqtt_client.publish)
 
@@ -193,7 +199,9 @@ class MainWindow(QtWidgets.QWidget):
         self.autonomy_widget = AutonomyWidget(self)
         self.autonomy_widget.build()
         self.autonomy_widget.pop_in.connect(self.tabs.pop_in)
-        self.tabs.addTab(self.autonomy_widget, self.autonomy_widget.windowTitle())
+        auton_tab_index = self.tabs.addTab(self.autonomy_widget, self.autonomy_widget.windowTitle() + " [A]")
+        shrink_keybind = QtGui.QShortcut(QtGui.QKeySequence("A"), self)
+        shrink_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(auton_tab_index))
 
         self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.autonomy_widget.process_message)
 
