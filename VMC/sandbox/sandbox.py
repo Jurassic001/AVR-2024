@@ -276,7 +276,18 @@ class Sandbox(MQTTModule):
     # region Autonomous Thread
     def Autonomous(self):
         logger.debug("Autonomous Thread: Online")
-        LZ = {"start": (0.0, 0.0, 0.0), "loading": (0.085, 10.822, 0.0), "train 1": (0.105, 4.516, 0)}  # coordinates of landing zones (LZ's, yes I am a nerd) in meters
+        LZ: dict[str, tuple[float, float, float]] = {
+            "start": (0.0, 0.0, 0.0),
+            "loading": (0.085, 10.822, 0.0),
+            "train one": (0.105, 1.417, 0.0),
+            "train two": (0.105, 4.516, 0.0),
+            "bridge one": (1.496, 0.757, 1.314),
+            "bridge two": (1.396, 1.976, 1.314),
+            "bridge three": (1.396, 3.957, 1.314),
+            "bridge four": (1.496, 5.176, 1.314),
+            "yard one": (0.20, 6.40, 0.0),
+            "yard two": (0.20, 9.40, 0.0),
+        }  # coordinates of landing zones (LZ's, yes I am a nerd) in meters
         auton_init: bool = False
         while True:
             if not self.autonomous:
@@ -292,83 +303,115 @@ class Sandbox(MQTTModule):
 
             # Land @ Start
             if self.auton_mission_id == 1:
-                self.add_mission_waypoint("goto", (0, 0, 1))
+                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1))
                 self.add_mission_waypoint("land", LZ["start"])
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
-            # Loiter @ Start
+            # Land @ Loading Zone
             if self.auton_mission_id == 2:
-                self.add_mission_waypoint("loiter", (0, 0, 1))
-                self.upload_and_engage_mission()
-                self.set_mission_id()
-
-            # Phase 1, Step 1
-            if self.auton_mission_id == 3:
-                self.add_mission_waypoint("goto", (0, 5, 1))
+                self.add_mission_waypoint("goto", (LZ["loading"][0], LZ["loading"][1], 1))
                 self.add_mission_waypoint("land", LZ["loading"])
                 self.upload_and_engage_mission()
 
-                # Wait until liftoff with a timeout of 10 seconds to activate magnet
-                self.wait_for_state("flightEvent", "IN_AIR", 10)
-                self.set_magnet(True)
+            # Land @ Train One
+            if self.auton_mission_id == 3:
+                self.add_mission_waypoint("goto", (LZ["train one"][0], LZ["train one"][1], 1))
+                self.add_mission_waypoint("land", LZ["train one"])
+                self.upload_and_engage_mission()
                 self.set_mission_id()
 
-                """
-                System that automatically activates step two if the first step is 100% successful. Needs testing.
-
-                if self.wait_for_state("flightEvent", "ON_GROUND", 30):
-                    self.set_mission_id(4)
-                else:
-                    self.set_mission_id()
-                """
-
-            # Phase 1, Step 2
+            # Land @ Train Two
             if self.auton_mission_id == 4:
-                self.add_mission_waypoint("goto", (0, 5, 1))
-                self.add_mission_waypoint("land", LZ["train 1"])
+                self.add_mission_waypoint("goto", (LZ["train two"][0], LZ["train two"][1], 1))
+                self.add_mission_waypoint("land", LZ["train two"])
                 self.upload_and_engage_mission()
-
-                self.wait_for_state("flightEvent", "IN_AIR", 10)
-                # If we reach the drop zone, deactivate the magnet, otherwise don't mess with it
-                if self.wait_for_state("flightEvent", "ON_GROUND", 30):
-                    self.set_magnet(False)
                 self.set_mission_id()
 
-            # Box transport test - pickup
+            # Land @ Bridge One
+            if self.auton_mission_id == 5:
+                self.add_mission_waypoint("goto", (0, LZ["bridge one"][1], 2))
+                self.add_mission_waypoint("goto", (LZ["bridge one"][0], LZ["bridge one"][1], 2))
+                self.add_mission_waypoint("land", LZ["bridge one"])
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+                # make sure the drone can safely exit the bridge at the start of the next mission
+                self.add_mission_waypoint("goto", (0, LZ["bridge one"][1], 2))
+
+            # Land @ Bridge Two
+            if self.auton_mission_id == 6:
+                self.add_mission_waypoint("goto", (0, LZ["bridge two"][1], 2))
+                self.add_mission_waypoint("goto", (LZ["bridge two"][0], LZ["bridge two"][1], 2))
+                self.add_mission_waypoint("land", LZ["bridge two"])
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+                # make sure the drone can safely exit the bridge at the start of the next mission
+                self.add_mission_waypoint("goto", (0, LZ["bridge two"][1], 2))
+
+            # Land @ Bridge Three
+            if self.auton_mission_id == 7:
+                self.add_mission_waypoint("goto", (0, LZ["bridge three"][1], 2))
+                self.add_mission_waypoint("goto", (LZ["bridge three"][0], LZ["bridge three"][1], 2))
+                self.add_mission_waypoint("land", LZ["bridge three"])
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+                # make sure the drone can safely exit the bridge at the start of the next mission
+                self.add_mission_waypoint("goto", (0, LZ["bridge three"][1], 2))
+
+            # Land @ Bridge Four
             if self.auton_mission_id == 8:
-                self.add_mission_waypoint("goto", (0, 0, 1), 90)
-                self.add_mission_waypoint("goto", (3, 0, 1), 90)
-                self.add_mission_waypoint("land", (3, 0, 0), 90)
-                self.upload_and_engage_mission()
-
-                self.wait_for_state("flightEvent", "IN_AIR", 5)
-                self.set_magnet(True)
-                if self.wait_for_state("flightEvent", "ON_GROUND", 20):
-                    self.set_mission_id(9)
-                else:
-                    self.set_mission_id()
-
-            # Box transport test - dropoff
-            if self.auton_mission_id == 9:
-                self.add_mission_waypoint("goto", (3, 0, 1), 90)
-                self.add_mission_waypoint("goto", (0, 0, 1), 90)
-                self.add_mission_waypoint("land", LZ["start"], 90)
+                self.add_mission_waypoint("goto", (0, LZ["bridge four"][1], 2))
+                self.add_mission_waypoint("goto", (LZ["bridge four"][0], LZ["bridge four"][1], 2))
+                self.add_mission_waypoint("land", LZ["bridge four"])
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
-                self.wait_for_state("flightEvent", "IN_AIR", 5)
-                if self.wait_for_state("flightEvent", "ON_GROUND", 20):
-                    self.set_magnet(False)
-                    self.set_mission_id(10)
-                else:
-                    self.set_mission_id()
+                # make sure the drone can safely exit the bridge at the start of the next mission
+                self.add_mission_waypoint("goto", (0, LZ["bridge four"][1], 2))
 
-            # Box transport test - landing
+            # Land @ Container Yard One
+            if self.auton_mission_id == 9:
+                self.add_mission_waypoint("goto", (LZ["yard one"][0], LZ["yard one"][1], 1))
+                self.add_mission_waypoint("land", LZ["yard one"])
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+            # Land @ Container Yard Two
             if self.auton_mission_id == 10:
-                self.add_mission_waypoint("goto", (0, 0, 1), 90)
-                self.add_mission_waypoint("goto", (1.5, 0, 1))
-                self.add_mission_waypoint("land", (1.5, 0, 0))
+                self.add_mission_waypoint("goto", (LZ["yard two"][0], LZ["yard two"][1], 1))
+                self.add_mission_waypoint("land", LZ["yard two"])
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+            # Scan Transformers & Land @ Start
+            if self.auton_mission_id == 11:
+                self.add_mission_waypoint("goto", (0.0, 7.469, 3.5))  # start at the "baseline"
+                self.add_mission_waypoint("goto", (2.524, 7.469, 3.5), goto_hold_time=1)  # transformer one
+                self.add_mission_waypoint("goto", (2.524, 5.729, 3.5), goto_hold_time=1)  # transformer two
+                self.add_mission_waypoint("goto", (2.524, 3.989, 3.5), goto_hold_time=1)  # transformer three
+                self.add_mission_waypoint("goto", (2.524, 2.249, 3.5), goto_hold_time=1)  # transformer four
+                self.add_mission_waypoint("goto", (2.524, 0.509, 3.5), goto_hold_time=1)  # transformer five
+                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 3.5))  # hover above start
+                self.add_mission_waypoint("land", LZ["start"])  # land at start
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+                self.set_thermal_state(1)
+
+            # Land @ (-1, 1.5)
+            if self.auton_mission_id == 13:
+                self.add_mission_waypoint("goto", (-1, 1.5, 1))
+                self.add_mission_waypoint("land", (-1, 1.5, 0))
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+            # Land @ (0, 3)
+            if self.auton_mission_id == 13:
+                self.add_mission_waypoint("goto", (0, 3, 1))
+                self.add_mission_waypoint("land", (0, 3, 0))
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 

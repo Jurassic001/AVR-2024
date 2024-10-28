@@ -209,43 +209,51 @@ class AutonomyWidget(BaseTabWidget):
         # endregion
 
         # region Auton missions
-        missions_groupbox = QtWidgets.QGroupBox("Missions")
-        missions_layout = QtWidgets.QVBoxLayout()
+        missions_groupbox = QtWidgets.QGroupBox("Missions - Drop Missions are numbered by horizontal position on field (left to right)")
+        missions_layout = QtWidgets.QGridLayout()
         missions_groupbox.setLayout(missions_layout)
         missions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
         layout.addWidget(missions_groupbox, 2, 0, 1, 3)
 
         missions: List[str] = [  # List of names for each mission
             "Land @ Start",
-            "Loiter @ Start",
-            "Phase 1, Step 1",
-            "Phase 1, Step 2",
-            "Mission 5",
-            "Mission 6",
-            "Mission 7",
-            "Box transport test - pickup",
-            "Box transport test - dropoff",
-            "Box transport test - landing",
+            "Land @ Loading Zone",
+            "Land @ Train One",
+            "Land @ Train Two",
+            "Land @ Bridge One",
+            "Land @ Bridge Two",
+            "Land @ Bridge Three",
+            "Land @ Bridge Four",
+            "Land @ Container Yard One",
+            "Land @ Container Yard Two",
+            "Scan Transformers & Land @ Start",
+            "Land @ (-1, 1.5)",
+            "Land @ (0, 3)",
         ]
         self.mission_states: List[QtWidgets.QLabel] = []
 
         # Make each line of mission buttons
         for i in range(len(missions)):
-            mission_layout = QtWidgets.QHBoxLayout()
-            missions_layout.addLayout(mission_layout)
+            # If there are more than 10 missions, split them into 2 columns
+            if i > (len(missions) - 1) / 2 and len(missions) > 10:
+                col = 3
+                row = i - (len(missions) / 2)
+            else:
+                col = 0
+                row = i
 
             mission_name = QtWidgets.QLabel(missions[i])
             mission_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            mission_layout.addWidget(mission_name)
+            missions_layout.addWidget(mission_name, row, col)
 
             mission_state = QtWidgets.QLabel("")
             mission_state.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            mission_layout.addWidget(mission_state)
+            missions_layout.addWidget(mission_state, row, col + 1)
             self.mission_states.append(mission_state)
 
             mission_exec_btn = QtWidgets.QPushButton("Execute Mission Command")
-            mission_layout.addWidget(mission_exec_btn)
             mission_exec_btn.clicked.connect(functools.partial(self.set_autonomous, mission_id=i + 1))
+            missions_layout.addWidget(mission_exec_btn, row, col + 2)
         # endregion
 
     # region Messengers
