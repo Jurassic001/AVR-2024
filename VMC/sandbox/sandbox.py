@@ -395,7 +395,7 @@ class Sandbox(MQTTModule):
                 self.set_thermal_state(1)
 
             # Land @ (-1, 1.5)
-            if self.auton_mission_id == 13:
+            if self.auton_mission_id == 12:
                 self.add_mission_waypoint("goto", (-1, 1.5, 1))
                 self.add_mission_waypoint("land", (-1, 1.5, 0))
                 self.upload_and_engage_mission()
