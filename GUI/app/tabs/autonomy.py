@@ -216,11 +216,12 @@ class AutonomyWidget(BaseTabWidget):
         # endregion
 
         # region Auton missions
-        missions_groupbox = QtWidgets.QGroupBox("Missions - Drop Missions are numbered by horizontal position on field (left to right)")
+        self.missions_groupbox = QtWidgets.QGroupBox("Missions - numbered left to right by horizontal position on field")
         missions_layout = QtWidgets.QGridLayout()
-        missions_groupbox.setLayout(missions_layout)
-        missions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
-        layout.addWidget(missions_groupbox, 2, 0, 1, 3)
+        self.missions_groupbox.setLayout(missions_layout)
+        self.missions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
+        layout.addWidget(self.missions_groupbox, 2, 0, 1, 3)
+        self.missions_groupbox.setEnabled(self.auton_enabled)
 
         missions: List[str] = [  # List of names for each mission
             "Land @ Start",
@@ -327,15 +328,18 @@ class AutonomyWidget(BaseTabWidget):
         """
         payload = json.loads(payload)
 
-        if topic == "avr/sandbox/autonomous":  # If the value of the auton bool is changing
-            state = payload["enabled"]
-            if state:
+        if topic == "avr/sandbox/autonomous":
+            # Handle auton enable/disable
+            self.auton_enabled = payload["enabled"]
+            self.missions_groupbox.setEnabled(self.auton_enabled)
+            if self.auton_enabled:
                 text = "Autonomous Enabled"
                 color = "green"
             else:
                 text = "Autonomous Disabled"
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
+            # Handle mission execution
             mission_id = payload["mission_id"]
             if mission_id == 0:
                 for state in self.mission_states:

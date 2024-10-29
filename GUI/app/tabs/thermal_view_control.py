@@ -99,10 +99,6 @@ class ThermalView(QtWidgets.QWidget):
         self.MINTEMP = self.last_lowest_temp + 0.0
         self.MAXTEMP = self.last_lowest_temp + 15.0
 
-    def toggle_updates(self) -> None:
-        self.update = not self.update
-        self.canvas.clear()
-
     def update_canvas(self, pixels: List[int]) -> None:
         if not self.update:
             return
@@ -377,9 +373,12 @@ class ThermalViewControlWidget(BaseTabWidget):
         temp_range_layout.addWidget(set_temp_range_calibrate_button)
         set_temp_range_calibrate_button.clicked.connect(lambda: self.calibrate_temp())
 
-        toggle_update_thermal_button = QtWidgets.QPushButton("Toggle Thermal View Updates")
-        temp_range_layout.addWidget(toggle_update_thermal_button)
-        toggle_update_thermal_button.clicked.connect(lambda: self.viewer.toggle_updates())
+        self.toggle_thermal_updates_btn = QtWidgets.QPushButton("Toggle Thermal View Updates")
+        self.toggle_thermal_updates_btn.setCheckable(True)
+        self.toggle_thermal_updates_btn.setChecked(self.viewer.update)
+        self.toggle_thermal_updates_btn.setStyle(QtWidgets.QStyleFactory.create("Fusion"))
+        self.toggle_thermal_updates_btn.clicked.connect(lambda: self.set_thermal_update())
+        temp_range_layout.addWidget(self.toggle_thermal_updates_btn)
 
         viewer_layout.addLayout(temp_range_layout)
 
@@ -454,6 +453,10 @@ class ThermalViewControlWidget(BaseTabWidget):
         self.setMinimumSize(self.sizeHint())
 
     # region Helper methods
+    def set_thermal_update(self) -> None:
+        self.viewer.update = self.toggle_thermal_updates_btn.isChecked()
+        self.viewer.canvas.clear()
+
     def inverted_checkbox_clicked(self) -> None:
         """
         Callback when joystick inverted checkbox is clicked

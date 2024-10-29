@@ -228,11 +228,11 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.topic_status_map["avr/thermal"] = therm_status
         module_status_layout.addWidget(therm_status)
 
-        at_status = StatusLabel("AT")
+        at_status = StatusLabel("APRILTAG")
         self.topic_status_map["avr/apriltag"] = at_status
         module_status_layout.addWidget(at_status)
 
-        fus_status = StatusLabel("FUS")
+        fus_status = StatusLabel("FUSION")
         self.topic_status_map["avr/fusion"] = fus_status
         module_status_layout.addWidget(fus_status)
 
