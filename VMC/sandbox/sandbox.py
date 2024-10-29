@@ -232,14 +232,7 @@ class Sandbox(MQTTModule):
             # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
                 self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=self.normal_color))  # Turn on the lights
-                """
-                FROM LAST YEAR
-                for i in range (5, 8): # Opening the sphero holders
-                    self.send_message(
-                    "avr/pcm/set_servo_open_close",
-                    AvrPcmSetServoOpenClosePayload(servo= i, action= "open")
-                    )
-                """
+                self.set_magnet(False)  # Make sure the magnet is off
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000)  # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
 
@@ -451,7 +444,12 @@ class Sandbox(MQTTModule):
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay < 0:
-            self.wait_for_state("flightEvent", "MISSION_UPLOAD_GOOD")
+            if not self.wait_for_state("flightEvent", "MISSION_UPLOAD_GOOD"):
+                # If the mission upload fails flash LEDs orange, if the upload is never confirmed then flash LEDs yellow
+                if self.states["flightEvent"] == "MISSION_UPLOAD_BAD":
+                    self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 128, 0), time=0.5))
+                else:
+                    self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 255, 0), time=0.5))
         else:
             time.sleep(delay)
 
