@@ -175,6 +175,7 @@ class Sandbox(MQTTModule):
     def Thermal(self) -> None:
         logger.debug("Thermal Thread: Online")
         turret_angles = [1450, 1450]
+        last_therm_flash = time.time()
         while True:
             if self.thermal_state == 0:  # If you aren't scanning or targeting, then don't scan or target
                 continue
@@ -189,9 +190,11 @@ class Sandbox(MQTTModule):
 
             if np.all(mask == 0):  # If no pixels are within the thermal threshold, continue
                 continue
-            elif self.flash_leds_on_detection:  # If we're flashing LEDs on hotspot detection, flash the LEDs
+            elif self.flash_leds_on_detection and time.time() > last_therm_flash + 1:
+                # If we're flashing LEDs on hotspot detection and it's been one second since the last flash, flash the LEDs
                 logger.debug("Thermal hotspot(s) detected, flashing LEDs")
                 self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=self.hotspot_color, time=0.5))
+                last_therm_flash = time.time()
 
             blobs = mask > 100  # Identify blobs in the mask
             labels, nlabels = ndimage.label(blobs)  # Label the blobs
@@ -227,7 +230,7 @@ class Sandbox(MQTTModule):
         status_thread.daemon = True
         status_thread.start()
         light_init = False
-        last_flash: dict = {"time": 0, "iter": 0}  # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
+        last_at_flash: dict = {"time": 0, "iter": 0}  # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
             # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
@@ -237,15 +240,15 @@ class Sandbox(MQTTModule):
                 light_init = True
 
             # Flashing the LEDs when a new apriltag ID is detected
-            if self.flash_queue and time.time() > last_flash["time"] + 1:  # Make sure it's been at least one second since the last LED flash
+            if self.flash_queue and time.time() > last_at_flash["time"] + 1:  # Make sure it's been at least one second since the last LED flash
                 self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=self.flash_color, time=0.5))
-                last_flash["time"] = time.time()
+                last_at_flash["time"] = time.time()
                 logger.debug(f"Flashing LEDs for ID: {self.flash_queue[0]}")
-                if last_flash["iter"] >= 2:
-                    last_flash["iter"] = 0
+                if last_at_flash["iter"] >= 2:
+                    last_at_flash["iter"] = 0
                     del self.flash_queue[0]
                 else:
-                    last_flash["iter"] += 1
+                    last_at_flash["iter"] += 1
 
     # endregion
 
