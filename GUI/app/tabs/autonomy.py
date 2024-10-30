@@ -48,12 +48,12 @@ class AutonomyWidget(BaseTabWidget):
         sandbox_layout.addLayout(autonomous_layout)
 
         autonomous_enable_button = QtWidgets.QPushButton("Enable Auton [E]")
-        autonomous_enable_button.clicked.connect(lambda: self.set_autonomous(state=True))
+        autonomous_enable_button.clicked.connect(lambda: self.set_autonomous_state(state=True))
         autonomous_enable_button.setShortcut(QtGui.QKeySequence("E"))
         autonomous_layout.addWidget(autonomous_enable_button)
 
         autonomous_disable_button = QtWidgets.QPushButton("Disable Auton [D]")
-        autonomous_disable_button.clicked.connect(lambda: self.set_autonomous(state=False))
+        autonomous_disable_button.clicked.connect(lambda: self.set_autonomous_state(state=False))
         autonomous_disable_button.setShortcut(QtGui.QKeySequence("D"))
         autonomous_layout.addWidget(autonomous_disable_button)
 
@@ -260,7 +260,7 @@ class AutonomyWidget(BaseTabWidget):
             self.mission_states.append(mission_state)
 
             mission_exec_btn = QtWidgets.QPushButton("Execute Mission Command")
-            mission_exec_btn.clicked.connect(functools.partial(self.set_autonomous, mission_id=i + 1))
+            mission_exec_btn.clicked.connect(functools.partial(self.set_autonomous_mission, mission_id=i + 1))
             missions_layout.addWidget(mission_exec_btn, row, col + 2)
         # endregion
 
@@ -268,18 +268,23 @@ class AutonomyWidget(BaseTabWidget):
     """NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
     the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server."""
 
-    def set_autonomous(self, state: bool | None = None, mission_id: int | None = None) -> None:
-        """Set autonomous mode on or off and/or set auton mission id
+    def set_autonomous_state(self, state: bool) -> None:
+        """Set autonomous mode on or off
 
         Args:
-            state (bool | None, optional): Whether or not autonomous mode is enabled. Defaults to None.
-            mission_id (int | None, optional): The ID of the autonomous mission. Defaults to None.
+            state (bool): Whether or not autonomous mode is enabled.
         """
-        if state is not None:
-            self.auton_enabled = state
-        if mission_id is not None:
-            self.auton_mission = mission_id
-        self.send_message("avr/sandbox/autonomous", {"enabled": self.auton_enabled, "mission_id": self.auton_mission})
+        self.auton_enabled = state
+        self.send_message("avr/sandbox/autonomous", {"enabled": self.auton_enabled})
+
+    def set_autonomous_mission(self, mission_id: int) -> None:
+        """Set the autonomous mission id
+
+        Args:
+            mission_id (int): The ID of the autonomous mission.
+        """
+        self.auton_mission = mission_id
+        self.send_message("avr/sandbox/autonomous", {"mission_id": self.auton_mission})
 
     def run_test(self, test_name: str) -> None:
         """Activate a test"""
@@ -330,7 +335,7 @@ class AutonomyWidget(BaseTabWidget):
 
         if topic == "avr/sandbox/autonomous":
             # Handle auton enable/disable
-            self.auton_enabled = payload["enabled"]
+            self.auton_enabled = payload.get("enabled", self.auton_enabled)
             self.missions_groupbox.setEnabled(self.auton_enabled)
             if self.auton_enabled:
                 text = "Autonomous Enabled"
@@ -340,7 +345,7 @@ class AutonomyWidget(BaseTabWidget):
                 color = "red"
             self.autonomous_label.setText(wrap_text(text, color))
             # Handle mission execution
-            mission_id = payload["mission_id"]
+            mission_id = payload.get("mission_id", 0)
             if mission_id == 0:
                 for state in self.mission_states:
                     state.setText("")

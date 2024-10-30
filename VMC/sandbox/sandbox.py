@@ -136,8 +136,8 @@ class Sandbox(MQTTModule):
         self.position = [payload["n"], payload["e"], payload["d"] * -1]
 
     def handle_autonomous(self, payload: dict) -> None:
-        self.autonomous = payload["enabled"]
-        self.auton_mission_id = payload["mission_id"]
+        self.autonomous = payload.get("enabled", self.autonomous)
+        self.auton_mission_id = payload.get("mission_id", self.auton_mission_id)
 
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         # Set the flight controller's mode and armed status
