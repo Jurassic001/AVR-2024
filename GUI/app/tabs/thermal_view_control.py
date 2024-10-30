@@ -51,10 +51,10 @@ class ThermalView(QtWidgets.QWidget):
         self.pixel_height = self.height_ / self.pixels_y
 
         # low range of the sensor (this will be blue on the screen)
-        self.MINTEMP = 20.0
+        self.MINTEMP = config.temp_range[0]
 
         # high range of the sensor (this will be red on the screen)
-        self.MAXTEMP = 32.0
+        self.MAXTEMP = config.temp_range[1]
 
         # last lowest temp from camera
         self.last_lowest_temp = 999.0

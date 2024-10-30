@@ -5,7 +5,7 @@
     "serial_port": "",
     "serial_baud_rate": 115200,
     "joystick_inverted": false,
-    "log_file_directory": "GUI\\MQTT Logs",
+    "log_file_directory": "GUI/MQTT Logs",
     "num_servos": 12,
     "network_name": "Varsity Bells"
 }

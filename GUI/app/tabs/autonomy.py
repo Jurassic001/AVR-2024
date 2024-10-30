@@ -304,6 +304,8 @@ class AutonomyWidget(BaseTabWidget):
         upper = self.temp_max_line_edit.text_float()
         step = self.temp_step_edit.text_float()
 
+        config.temp_range = (lower, upper, step)
+
         self.send_message("avr/sandbox/thermal_config", {"state": self.thermal_state, "hotspot flash": hotspot_flash, "logging": therm_log, "range": (lower, upper, step)})
 
     def set_laser(self, state: bool) -> None:
