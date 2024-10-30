@@ -127,20 +127,22 @@ class AutonomyWidget(BaseTabWidget):
         thermal_laser_layout.addLayout(temp_range_layout)
 
         self.temp_min_line_edit = FloatLineEdit()
-        temp_range_layout.addRow(QtWidgets.QLabel("Min:"), self.temp_min_line_edit)
         self.temp_min_line_edit.setText(str(config.temp_range[0]))
+        self.temp_min_line_edit.editingFinished.connect(lambda: self.set_thermal_config())
+        self.temp_min_line_edit.editingFinished.connect(lambda: self.setFocus())
+        temp_range_layout.addRow(QtWidgets.QLabel("Min:"), self.temp_min_line_edit)
 
         self.temp_max_line_edit = FloatLineEdit()
-        temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
         self.temp_max_line_edit.setText(str(config.temp_range[1]))
+        self.temp_max_line_edit.editingFinished.connect(lambda: self.set_thermal_config())
+        self.temp_max_line_edit.editingFinished.connect(lambda: self.setFocus())
+        temp_range_layout.addRow(QtWidgets.QLabel("Max:"), self.temp_max_line_edit)
 
         self.temp_step_edit = FloatLineEdit()
-        temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_step_edit)
         self.temp_step_edit.setText(str(config.temp_range[2]))
-
-        set_temp_range_button = QtWidgets.QPushButton("Update Thermal Params")
-        set_temp_range_button.clicked.connect(lambda: self.set_thermal_config())
-        temp_range_layout.addWidget(set_temp_range_button)
+        self.temp_step_edit.editingFinished.connect(lambda: self.set_thermal_config())
+        self.temp_step_edit.editingFinished.connect(lambda: self.setFocus())
+        temp_range_layout.addRow(QtWidgets.QLabel("Step:"), self.temp_step_edit)
 
         # thermal status label
         self.thermal_label = QtWidgets.QLabel()
