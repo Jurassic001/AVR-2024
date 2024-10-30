@@ -22,9 +22,9 @@ class WIFIConnectionWidget(QtWidgets.QWidget):
         self.network_name_lnedit.setText(config.network_name)
         network_layout.addRow(QtWidgets.QLabel("Network Name:"), self.network_name_lnedit)
 
-        connect_btn = QtWidgets.QPushButton(text="Attempt to connect to WiFi Network [Backspace]")
+        connect_btn = QtWidgets.QPushButton(text="Attempt to connect to WiFi Network [Backslash]")
         connect_btn.clicked.connect(lambda: self.network_connect())
-        connect_btn.setShortcut("Backspace")
+        connect_btn.setShortcut("\\")
         network_layout.addWidget(connect_btn)
 
         self.connection_label = QtWidgets.QLabel("")
