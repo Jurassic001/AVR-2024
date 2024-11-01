@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import contextlib
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 from bell.avr.mqtt.constants import MQTTTopicPayload, MQTTTopics
 from PySide6 import QtCore, QtGui, QtWidgets
 
 from .base import BaseTabWidget
+
+
+class AvrFcmActions(TypedDict):
+    action: str
+    payload: Dict
 
 
 def _get_or_create_child(parent: QtWidgets.QTreeWidgetItem, name: str) -> QtWidgets.QTreeWidgetItem:
@@ -131,6 +136,9 @@ class MQTTDebugWidget(BaseTabWidget):
         self.clipboard = QtWidgets.QApplication.clipboard()
 
         self.setWindowTitle("MQTT Debugger")
+
+        MQTTTopics.append("avr/fcm/actions")
+        MQTTTopicPayload["avr/fcm/actions"] = AvrFcmActions  # type: ignore
 
         # secondary data store to maintain dict of topics and the last message recieved
         self.topic_payloads: Dict[str, Any] = {}
