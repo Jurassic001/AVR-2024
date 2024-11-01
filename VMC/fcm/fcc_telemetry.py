@@ -90,6 +90,7 @@ class TelemetryManager(FCMMQTTModule):
             self.attitude_euler_telemetry(),
             self.velocity_ned_telemetry(),
             self.gps_info_telemetry(),
+            self.monitor_channel_9(),
         )
 
     @async_try_except()
@@ -360,6 +361,16 @@ class TelemetryManager(FCMMQTTModule):
             )
 
             self.send_message("avr/fcm/gps_info", update)  # type: ignore
+
+    @async_try_except()
+    async def monitor_channel_9(self) -> None:
+        """
+        Monitors channel 9 and sends an MQTT message based on its value
+        """
+        async for rc_channels in self.drone.telemetry.rc_status():
+            channel_9_value = rc_channels.channels[8]  # Channel 9 is at index 8
+            logger.debug(f"Channel 9 value: {channel_9_value}")
+            self.send_message("avr/pcm/set_magnet", {"enabled": True if channel_9_value > 1500 else False})  # type: ignore
 
     # endregion ###############################################################
 
