@@ -430,7 +430,10 @@ class Sandbox(MQTTModule):
         MAVLink mission syntax docs:
         https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
         """
-        # Add the waypoint to the list of waypoints
+        if waypointType == "land" and coords[2] == 0.0:
+            # PX4 doesn't like landing waypoints at 0.0, so we have to set the altitude to 0.1
+            # Trust me, this doesn't effect landing at all, your drone will not drop from the sky, I've tested it
+            coords = (coords[0], coords[1], 0.1)
         self.mission_waypoints.append({"type": waypointType, "n": coords[0], "e": coords[1], "d": coords[2] * -1, "yaw": yaw_angle, "holdTime": goto_hold_time, "acceptRadius": acceptanceRad})
 
     def clear_mission_waypoints(self) -> None:
