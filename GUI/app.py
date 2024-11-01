@@ -187,9 +187,9 @@ class MainWindow(QtWidgets.QWidget):
         self.thermal_view_control_widget.pop_in.connect(self.tabs.pop_in)
         thermal_index = self.tabs.addTab(
             self.thermal_view_control_widget,
-            self.thermal_view_control_widget.windowTitle() + " [Ctrl+T]",
+            self.thermal_view_control_widget.windowTitle() + " [S]",
         )
-        thermal_keybind = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+T"), self)
+        thermal_keybind = QtGui.QShortcut(QtGui.QKeySequence("S"), self)
         thermal_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(thermal_index))
 
         self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.thermal_view_control_widget.process_message)
@@ -226,8 +226,8 @@ class MainWindow(QtWidgets.QWidget):
         self.mqtt_logger_widget = MQTTLoggerWidget(self)
         self.mqtt_logger_widget.build()
         self.mqtt_logger_widget.pop_in.connect(self.tabs.pop_in)
-        mqtt_logger_index = self.tabs.addTab(self.mqtt_logger_widget, self.mqtt_logger_widget.windowTitle() + " [Ctrl+L]")
-        mqtt_logger_keybind = QtGui.QShortcut(QtGui.QKeySequence("Ctrl+L"), self)
+        mqtt_logger_index = self.tabs.addTab(self.mqtt_logger_widget, self.mqtt_logger_widget.windowTitle() + " [R]")
+        mqtt_logger_keybind = QtGui.QShortcut(QtGui.QKeySequence("R"), self)
         mqtt_logger_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(mqtt_logger_index))
 
         self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.mqtt_logger_widget.process_message)

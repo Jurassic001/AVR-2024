@@ -87,10 +87,11 @@ class MQTTLoggerWidget(BaseTabWidget):
         self.file_tree = LogFileViewWidget(self)
         layout.addWidget(self.file_tree)
 
-        self.recording_button = QtWidgets.QPushButton("Start Recording")
+        self.recording_button = QtWidgets.QPushButton("Start Recording [Forward Slash]")
         layout.addWidget(self.recording_button)
 
         self.recording_button.clicked.connect(self.toggle_recording)  # type: ignore
+        QtGui.QShortcut(QtGui.QKeySequence("/"), self).activated.connect(self.toggle_recording)
 
     def clear(self) -> None:
         """
@@ -98,7 +99,7 @@ class MQTTLoggerWidget(BaseTabWidget):
         """
         # reset recording state
         self.recording = False
-        self.recording_button.setText("Record")
+        self.recording_button.setText("Record [Forward Slash]")
 
         # close file handle
         if self.file_handle is not None:
@@ -125,7 +126,7 @@ class MQTTLoggerWidget(BaseTabWidget):
             self.csv_writer.writerow(["Timestamp", "Topic", "Payload"])
 
             # set button text
-            self.recording_button.setText("Stop Recording")
+            self.recording_button.setText("Stop Recording [Forward Slash]")
 
         else:
             # close file handle
@@ -133,7 +134,7 @@ class MQTTLoggerWidget(BaseTabWidget):
                 self.file_handle.close()
 
             # set button text
-            self.recording_button.setText("Record")
+            self.recording_button.setText("Record [Forward Slash]")
 
     def process_message(self, topic: str, payload: str) -> None:
         """
