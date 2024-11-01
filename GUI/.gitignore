@@ -9,3 +9,6 @@ lib/mqtt_library.py
 
 # MQTT logs
 MQTT Logs/*.csv
+
+# settings
+settings.json

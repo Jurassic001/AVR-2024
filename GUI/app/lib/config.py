@@ -20,9 +20,16 @@ IMG_DIR = os.path.join(DATA_DIR, "assets", "img")
 
 class _Config:
     config_file = os.path.join(ROOT_DIR, "settings.json")
+    default_config_file = os.path.join(ROOT_DIR, "default-settings.json")
 
     def __read(self) -> dict:
         if not os.path.isfile(self.config_file):
+            if os.path.isfile(self.default_config_file):
+                print("settings.json not found, creating one from default-settings.json")
+                with open(self.default_config_file) as fp:
+                    default_data = json.load(fp)
+                self.__write(default_data)
+                return default_data
             return {}
 
         try:
