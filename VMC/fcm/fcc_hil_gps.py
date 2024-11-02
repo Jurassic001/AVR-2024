@@ -38,7 +38,7 @@ class HILGPSManager(FCMMQTTModule):
         """
 
         # this NEEDS to be using UDP, TCP proved extremely unreliable
-        self.mavcon = mavutil.mavlink_connection(
+        self.mavcon: mavutil.mavudp = mavutil.mavlink_connection(
             "udpout:127.0.0.1:14541",
             source_system=143,
             source_component=190,
@@ -96,11 +96,39 @@ class HILGPSManager(FCMMQTTModule):
         )
 
     def monitor_channel_8(self):
+        """
+        Monitors RC channel 8 (currently bound to VrB, or the right knob)
+        for significant changes and performs actions based on the channel value.
+
+        This method continuously listens for RC_CHANNELS messages and monitors the value of channel 8.
+        If the value changes significantly from the last logged value, it logs the new value.
+        Additionally, it enables or disables a magnet based on the channel value relative to a default value.
+        """
+        DEFAULT_VAL = 1514  # value that the channel broadcasts when the knob is not being actuated (estimated)
+        last_val = 0
+        log_val_thres = 30
+        action_val_thres = 100
+        logger.info("Monitoring RC channel 8 in fcc_hil_gps.py")
         while True:
+            # wait for a message
             msg = self.mavcon.recv_match(type="RC_CHANNELS", blocking=True)
+
+            # if the message is not None, then we have a value for channel 8
             if msg:
-                chan8_value = msg.chan8_raw
-                logger.debug(f"Channel 8 value: {chan8_value}")
+                cur_value = msg.chan8_raw
+            else:
+                continue
+
+            # log the value if it has changed significantly
+            if cur_value > last_val + log_val_thres or cur_value < last_val - log_val_thres:
+                logger.debug(f"Channel 8: {cur_value}")
+                last_val = cur_value
+
+            # if the value is above or below a certain threshold, then either enable or disable the magnet
+            if cur_value > DEFAULT_VAL + action_val_thres:
+                self.send_message("avr/pcm/set_magnet", {"enabled": True})
+            elif cur_value < DEFAULT_VAL - action_val_thres:
+                self.send_message("avr/pcm/set_magnet", {"enabled": False})
 
 
 if __name__ == "__main__":
