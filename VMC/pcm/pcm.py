@@ -92,8 +92,10 @@ class PeripheralControlModule(MQTTModule):
     def set_magnet(self, payload: dict[str, bool]) -> None:
         if payload["enabled"]:
             self.pcc.set_magnet_on()
+            self.set_temp_color(AvrPcmSetTempColorPayload(wrgb=[255, 0, 128, 0], time=0.25))  # flash LED's green on magnet enable
         else:
             self.pcc.set_magnet_off()
+            self.set_temp_color(AvrPcmSetTempColorPayload(wrgb=[255, 255, 222, 33], time=0.25))  # flash LED's yellow on magnet disable
 
 
 if __name__ == "__main__":
