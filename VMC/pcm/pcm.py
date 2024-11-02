@@ -95,7 +95,7 @@ class PeripheralControlModule(MQTTModule):
             self.set_temp_color(AvrPcmSetTempColorPayload(wrgb=[255, 0, 128, 0], time=0.25))  # flash LED's green on magnet enable
         else:
             self.pcc.set_magnet_off()
-            self.set_temp_color(AvrPcmSetTempColorPayload(wrgb=[255, 255, 222, 33], time=0.25))  # flash LED's yellow on magnet disable
+            self.set_temp_color(AvrPcmSetTempColorPayload(wrgb=[255, 157, 0, 255], time=0.25))  # flash LED's purple on magnet disable
 
 
 if __name__ == "__main__":
