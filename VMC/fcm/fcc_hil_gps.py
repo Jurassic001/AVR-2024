@@ -55,9 +55,9 @@ class HILGPSManager(FCMMQTTModule):
 
         logger.success("HIL_GPS: Mavlink heartbeat received")
 
-        channel_8_thread = threading.Thread(target=self.monitor_channel_8)
-        channel_8_thread.daemon = True
-        channel_8_thread.start()
+        rc_control_thread = threading.Thread(target=self.RC_magnet_control)
+        rc_control_thread.daemon = True
+        rc_control_thread.start()
 
         super().run_non_blocking()
 
@@ -95,12 +95,11 @@ class HILGPSManager(FCMMQTTModule):
             frequency=1,
         )
 
-    def monitor_channel_8(self):
-        """
-        Monitors RC channel 8 (currently bound to VrB, or the right knob)
+    def RC_magnet_control(self):
+        """Monitors RC channel 6 (currently bound to VrB, or the right knob)
         for significant changes and performs actions based on the channel value.
 
-        This method continuously listens for RC_CHANNELS messages and monitors the value of channel 8.
+        This method continuously listens for RC_CHANNELS messages and monitors the value of channel 6.
         If the value changes significantly from the last logged value, it logs the new value.
         Additionally, it enables or disables a magnet based on the channel value relative to a default value.
         """
@@ -108,20 +107,20 @@ class HILGPSManager(FCMMQTTModule):
         last_val = 0
         log_val_thres = 30
         action_val_thres = 100
-        logger.info("Monitoring RC channel 8 in fcc_hil_gps.py")
+        logger.info("Monitoring RC input in fcc_hil_gps.py")
         while True:
             # wait for a message
             msg = self.mavcon.recv_match(type="RC_CHANNELS", blocking=True)
 
-            # if the message is not None, then we have a value for channel 8
+            # if the message is not None, then we have a value for channel 6
             if msg:
-                cur_value = msg.chan8_raw
+                cur_value = msg.chan6_raw
             else:
                 continue
 
             # log the value if it has changed significantly
             if cur_value > last_val + log_val_thres or cur_value < last_val - log_val_thres:
-                logger.debug(f"Channel 8: {cur_value}")
+                logger.debug(f"Channel 6: {cur_value}")
                 last_val = cur_value
 
             # if the value is above or below a certain threshold, then either enable or disable the magnet
