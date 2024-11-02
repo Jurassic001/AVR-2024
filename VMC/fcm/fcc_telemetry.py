@@ -17,7 +17,6 @@ from bell.avr.utils.decorators import async_try_except
 from bell.avr.utils.timing import rate_limit
 from fcc_mqtt import FCMMQTTModule
 from loguru import logger
-from pymavlink import mavutil
 
 
 class TelemetryManager(FCMMQTTModule):
@@ -35,9 +34,6 @@ class TelemetryManager(FCMMQTTModule):
         self.is_armed: bool = False
         self.fcc_mode = "UNKNOWN"
         self.heading = 0.0
-
-        # Initialize mavutil connection
-        self.mav = mavutil.mavlink_connection("tcp://127.0.0.1:5761")
 
     async def connect(self) -> None:
         """
@@ -94,7 +90,6 @@ class TelemetryManager(FCMMQTTModule):
             self.attitude_euler_telemetry(),
             self.velocity_ned_telemetry(),
             self.gps_info_telemetry(),
-            self.rc_channels_telemetry(),
         )
 
     @async_try_except()
@@ -365,19 +360,6 @@ class TelemetryManager(FCMMQTTModule):
             )
 
             self.send_message("avr/fcm/gps_info", update)  # type: ignore
-
-    @async_try_except()
-    async def rc_channels_telemetry(self) -> None:
-        """
-        Reads channel 8 input from the RC controller and broadcasts it
-        """
-        logger.debug("rc_channels_telemetry loop started")
-        while True:
-            rc_channels = await self.loop.run_in_executor(None, self.mav.recv_match, type="RC_CHANNELS", blocking=True, timeout=1)
-            if rc_channels:
-                ch8_value = rc_channels.chan8_raw
-                logger.debug(f"Channel 8: {ch8_value}")
-            await asyncio.sleep(0.1)
 
     # endregion ###############################################################
 

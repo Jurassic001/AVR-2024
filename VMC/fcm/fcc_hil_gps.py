@@ -55,6 +55,10 @@ class HILGPSManager(FCMMQTTModule):
 
         logger.success("HIL_GPS: Mavlink heartbeat received")
 
+        channel_8_thread = threading.Thread(target=self.monitor_channel_8)
+        channel_8_thread.daemon = True
+        channel_8_thread.start()
+
         super().run_non_blocking()
 
     @try_except(reraise=True)
@@ -90,6 +94,13 @@ class HILGPSManager(FCMMQTTModule):
             ),  # type: ignore
             frequency=1,
         )
+
+    def monitor_channel_8(self):
+        msg = self.mavcon.recv_match(type="RC_CHANNELS", blocking=True)
+        if msg:
+            chan8_value = msg.chan8_raw
+            if chan8_value > threshold_value:
+                self.send_message()
 
 
 if __name__ == "__main__":
