@@ -96,10 +96,11 @@ class HILGPSManager(FCMMQTTModule):
         )
 
     def monitor_channel_8(self):
-        msg = self.mavcon.recv_match(type="RC_CHANNELS", blocking=True)
-        if msg:
-            chan8_value = msg.chan8_raw
-            logger.debug(f"Channel 8 value: {chan8_value}")
+        while True:
+            msg = self.mavcon.recv_match(type="RC_CHANNELS", blocking=True)
+            if msg:
+                chan8_value = msg.chan8_raw
+                logger.debug(f"Channel 8 value: {chan8_value}")
 
 
 if __name__ == "__main__":
