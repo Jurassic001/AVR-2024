@@ -389,11 +389,19 @@ class AutonomyWidget(BaseTabWidget):
         elif topic == "avr/sandbox/status":
             for key in payload.keys():
                 self.topic_status_map[key].set_health(payload[key])
+        elif topic == "avr/fcm/battery":
+            soc = payload["soc"]
+            # prevent it from dropping below 0
+            soc = max(soc, 0)
+            # prevent it from going above 100
+            soc = min(soc, 100)
+
+            if int(soc) < 25:
+                self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
         elif topic == "avr/autonomous/sound":
-            file_name = payload["fileName"]
-            ext = payload["ext"]
-            if "max_vol" in payload.keys():
-                max_volume: bool = payload["max_vol"]
+            file_name: str = payload["file_name"]
+            ext: str = payload["ext"]
+            max_volume: bool = payload.get("max_vol", False)
 
             playsound.playsound(f"./GUI/assets/sounds/{file_name}{ext}", False)
 
