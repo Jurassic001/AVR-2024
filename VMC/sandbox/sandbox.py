@@ -308,6 +308,7 @@ class Sandbox(MQTTModule):
             # Land @ Start
             if self.auton_mission_id == 1:
                 self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1))
+                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1), acceptanceRad=0.05)
                 self.add_mission_waypoint("land", LZ["start"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
@@ -315,28 +316,31 @@ class Sandbox(MQTTModule):
             # Land @ Loading Zone
             if self.auton_mission_id == 2:
                 self.add_mission_waypoint("goto", (LZ["loading"][0], LZ["loading"][1], 1))
-                self.add_mission_waypoint("land", LZ["loading"])
+                self.add_mission_waypoint("goto", (LZ["loading"][0], LZ["loading"][1], 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["loading"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
 
             # Land @ Train One
             if self.auton_mission_id == 3:
                 self.add_mission_waypoint("goto", (LZ["train one"][0], LZ["train one"][1], 1))
-                self.add_mission_waypoint("land", LZ["train one"])
+                self.add_mission_waypoint("goto", (LZ["train one"][0], LZ["train one"][1], 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["train one"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Train Two
             if self.auton_mission_id == 4:
                 self.add_mission_waypoint("goto", (LZ["train two"][0], LZ["train two"][1], 1))
-                self.add_mission_waypoint("land", LZ["train two"])
+                self.add_mission_waypoint("goto", (LZ["train two"][0], LZ["train two"][1], 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["train two"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Bridge One
             if self.auton_mission_id == 5:
                 self.add_mission_waypoint("goto", (0, LZ["bridge one"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge one"][0], LZ["bridge one"][1], 2))
-                self.add_mission_waypoint("land", LZ["bridge one"])
+                self.add_mission_waypoint("goto", (LZ["bridge one"][0], LZ["bridge one"][1], 2), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["bridge one"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -346,8 +350,8 @@ class Sandbox(MQTTModule):
             # Land @ Bridge Two
             if self.auton_mission_id == 6:
                 self.add_mission_waypoint("goto", (0, LZ["bridge two"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge two"][0], LZ["bridge two"][1], 2))
-                self.add_mission_waypoint("land", LZ["bridge two"])
+                self.add_mission_waypoint("goto", (LZ["bridge two"][0], LZ["bridge two"][1], 2), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["bridge two"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -357,8 +361,8 @@ class Sandbox(MQTTModule):
             # Land @ Bridge Three
             if self.auton_mission_id == 7:
                 self.add_mission_waypoint("goto", (0, LZ["bridge three"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge three"][0], LZ["bridge three"][1], 2))
-                self.add_mission_waypoint("land", LZ["bridge three"])
+                self.add_mission_waypoint("goto", (LZ["bridge three"][0], LZ["bridge three"][1], 2), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["bridge three"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -368,8 +372,8 @@ class Sandbox(MQTTModule):
             # Land @ Bridge Four
             if self.auton_mission_id == 8:
                 self.add_mission_waypoint("goto", (0, LZ["bridge four"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge four"][0], LZ["bridge four"][1], 2))
-                self.add_mission_waypoint("land", LZ["bridge four"])
+                self.add_mission_waypoint("goto", (LZ["bridge four"][0], LZ["bridge four"][1], 2), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["bridge four"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -379,14 +383,16 @@ class Sandbox(MQTTModule):
             # Land @ Container Yard One
             if self.auton_mission_id == 9:
                 self.add_mission_waypoint("goto", (LZ["yard one"][0], LZ["yard one"][1], 1))
-                self.add_mission_waypoint("land", LZ["yard one"])
+                self.add_mission_waypoint("goto", (LZ["yard one"][0], LZ["yard one"][1], 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["yard one"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Container Yard Two
             if self.auton_mission_id == 10:
                 self.add_mission_waypoint("goto", (LZ["yard two"][0], LZ["yard two"][1], 1))
-                self.add_mission_waypoint("land", LZ["yard two"])
+                self.add_mission_waypoint("goto", (LZ["yard two"][0], LZ["yard two"][1], 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("land", LZ["yard two"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -408,6 +414,7 @@ class Sandbox(MQTTModule):
             # Land @ (1, -1.5)
             if self.auton_mission_id == 12:
                 self.add_mission_waypoint("goto", (1, -1.5, 1))
+                self.add_mission_waypoint("goto", (1, -1.5, 1), acceptanceRad=0.05)
                 self.add_mission_waypoint("land", (1, -1.5, 0), acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
@@ -415,20 +422,13 @@ class Sandbox(MQTTModule):
             # Land @ (0, -3)
             if self.auton_mission_id == 13:
                 self.add_mission_waypoint("goto", (0, -3, 1))
-                self.add_mission_waypoint("land", (0, -3, 0), acceptanceRad=0.05)
-                self.upload_and_engage_mission()
-                self.set_mission_id()
-
-            # Lineup & Land @ (0, -3)
-            if self.auton_mission_id == 14:
-                self.add_mission_waypoint("goto", (0, -3, 1))
                 self.add_mission_waypoint("goto", (0, -3, 1), acceptanceRad=0.05)
                 self.add_mission_waypoint("land", (0, -3, 0), acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Thermal Check @ (0, -3) & Land @ Start
-            if self.auton_mission_id == 15:
+            if self.auton_mission_id == 14:
                 self.add_mission_waypoint("goto", (0, -3, 1), goto_hold_time=3)
                 self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1))
                 self.add_mission_waypoint("land", LZ["start"])

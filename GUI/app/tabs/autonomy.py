@@ -248,7 +248,6 @@ class AutonomyWidget(BaseTabWidget):
             "Scan Transformers & Land @ Start",
             "Land @ (1, -1.5)",
             "Land @ (0, -3)",
-            "Lineup & Land @ (0, -3)",
             "Thermal Check @ (0, -3) & Land @ Start",
         ]
         self.mission_states: List[QtWidgets.QLabel] = []
