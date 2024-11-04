@@ -168,6 +168,14 @@ class Sandbox(MQTTModule):
             self.set_armed(False)
         elif name == "zero ned":
             self.send_message("avr/fcm/capture_home", {})
+        elif name == "bump fwd":
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0.1, "e": 0, "d": 0, "heading": 0, "rel": True}})
+        elif name == "bump back":
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": -0.1, "e": 0, "d": 0, "heading": 0, "rel": True}})
+        elif name == "bump right":
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": 0.1, "d": 0, "heading": 0, "rel": True}})
+        elif name == "bump left":
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": -0.1, "d": 0, "heading": 0, "rel": True}})
 
     # endregion
 

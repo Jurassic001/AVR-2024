@@ -201,7 +201,16 @@ class AutonomyWidget(BaseTabWidget):
         testing_groupbox.setLayout(testing_layout)
         layout.addWidget(testing_groupbox, 1, 2, 1, 1)
 
-        self.testing_items: list[str] = ["kill", "arm", "disarm", "zero ned"]  # List of tests. If you want to add a test just add the name to this list
+        self.testing_items: list[str] = [
+            "kill",
+            "arm",
+            "disarm",
+            "zero ned",
+            "bump fwd",
+            "bump back",
+            "bump right",
+            "bump left",
+        ]  # List of tests. If you want to add a test just add the name to this list
 
         # Create a name label, state label, and on/off buttons for each test
         for item in self.testing_items:
