@@ -197,7 +197,7 @@ class AutonomyWidget(BaseTabWidget):
 
         # region Testing
         testing_groupbox = QtWidgets.QGroupBox("Test Commands")
-        testing_layout = QtWidgets.QVBoxLayout()
+        testing_layout = QtWidgets.QGridLayout()
         testing_groupbox.setLayout(testing_layout)
         layout.addWidget(testing_groupbox, 1, 2, 1, 1)
 
@@ -210,20 +210,20 @@ class AutonomyWidget(BaseTabWidget):
             "bump back",
             "bump right",
             "bump left",
-        ]  # List of tests. If you want to add a test just add the name to this list
+        ]  # List of tests
 
-        # Create a name label, state label, and on/off buttons for each test
-        for item in self.testing_items:
-            test_layout = QtWidgets.QHBoxLayout()
-            testing_layout.addLayout(test_layout)
+        # Arrange test commands in a grid
+        for index, item in enumerate(self.testing_items):
+            row = index // 2
+            col = (index % 2) * 2
 
             test_name = QtWidgets.QLabel(f"{item.title()} test")
-            test_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            test_layout.addWidget(test_name)
+            test_name.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+            testing_layout.addWidget(test_name, row, col)
 
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
             test_exec_btn.clicked.connect(functools.partial(self.run_test, item.lower()))
-            test_layout.addWidget(test_exec_btn)
+            testing_layout.addWidget(test_exec_btn, row, col + 1)
         # endregion
 
         # region Auton missions
@@ -253,7 +253,7 @@ class AutonomyWidget(BaseTabWidget):
         self.mission_states: List[QtWidgets.QLabel] = []
 
         # Make each line of mission buttons
-        for i in range(len(missions)):
+        for i, mission in enumerate(missions):
             # If there are more than 10 missions, split them into 2 columns
             if i > (len(missions) - 1) / 2 and len(missions) > 10:
                 col = 3
@@ -262,7 +262,7 @@ class AutonomyWidget(BaseTabWidget):
                 col = 0
                 row = i
 
-            mission_name = QtWidgets.QLabel(missions[i])
+            mission_name = QtWidgets.QLabel(mission)
             mission_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             missions_layout.addWidget(mission_name, row, col)
 
