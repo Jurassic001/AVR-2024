@@ -390,6 +390,7 @@ class AutonomyWidget(BaseTabWidget):
             for key in payload.keys():
                 self.topic_status_map[key].set_health(payload[key])
         elif topic == "avr/fcm/battery":
+            # get percentage of battery remaining (state of charge)
             soc = payload["soc"]
             # prevent it from dropping below 0
             soc = max(soc, 0)
