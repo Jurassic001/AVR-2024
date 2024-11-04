@@ -307,7 +307,7 @@ class Sandbox(MQTTModule):
 
             # Land @ Start
             if self.auton_mission_id == 1:
-                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1))
                 self.add_mission_waypoint("land", LZ["start"], acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
@@ -407,20 +407,28 @@ class Sandbox(MQTTModule):
 
             # Land @ (1, -1.5)
             if self.auton_mission_id == 12:
-                self.add_mission_waypoint("goto", (1, -1.5, 1), acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (1, -1.5, 1))
                 self.add_mission_waypoint("land", (1, -1.5, 0), acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ (0, -3)
             if self.auton_mission_id == 13:
+                self.add_mission_waypoint("goto", (0, -3, 1))
+                self.add_mission_waypoint("land", (0, -3, 0), acceptanceRad=0.05)
+                self.upload_and_engage_mission()
+                self.set_mission_id()
+
+            # Lineup & Land @ (0, -3)
+            if self.auton_mission_id == 14:
+                self.add_mission_waypoint("goto", (0, -3, 1))
                 self.add_mission_waypoint("goto", (0, -3, 1), acceptanceRad=0.05)
                 self.add_mission_waypoint("land", (0, -3, 0), acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Thermal Check @ (0, -3) & Land @ Start
-            if self.auton_mission_id == 14:
+            if self.auton_mission_id == 15:
                 self.add_mission_waypoint("goto", (0, -3, 1), goto_hold_time=3)
                 self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1))
                 self.add_mission_waypoint("land", LZ["start"])
