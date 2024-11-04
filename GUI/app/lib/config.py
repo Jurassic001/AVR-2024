@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from typing import Any
 
@@ -27,18 +28,22 @@ class _Config:
             if os.path.isfile(self.default_config_file):
                 print("settings.json not found, creating one from default-settings.json")
                 with open(self.default_config_file) as fp:
-                    default_data = json.load(fp)
+                    default_data = json.loads(self.__remove_comments(fp.read()))
                 self.__write(default_data)
                 return default_data
             return {}
 
         try:
             with open(self.config_file) as fp:
-                return json.load(fp)
+                return json.loads(self.__remove_comments(fp.read()))
         except json.JSONDecodeError:
             # on invalid files, just delete it
             os.remove(self.config_file)
             return {}
+
+    def __remove_comments(self, json_str: str) -> str:
+        pattern = re.compile(r"//.*?$|/\*.*?\*/", re.DOTALL | re.MULTILINE)
+        return re.sub(pattern, "", json_str)
 
     def __write(self, data: dict) -> None:
         with open(self.config_file, "w") as fp:

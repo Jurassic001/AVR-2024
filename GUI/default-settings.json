@@ -1,3 +1,4 @@
+/* DO NOT MODIFY THIS FILE, modify settings.json instead */
 {
     "temp_range": "(30.0, 40.0, 1.0)",
     "mqtt_host": "10.42.0.1",
