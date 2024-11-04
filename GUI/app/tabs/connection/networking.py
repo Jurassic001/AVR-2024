@@ -5,6 +5,7 @@ from PySide6 import QtWidgets
 
 from ...lib.color import wrap_text
 from ...lib.config import config
+from ...lib.enums import ConnectionState  # Add this import if not already present
 
 
 class WIFIConnectionWidget(QtWidgets.QWidget):
@@ -20,6 +21,7 @@ class WIFIConnectionWidget(QtWidgets.QWidget):
 
         self.network_name_lnedit = QtWidgets.QLineEdit()
         self.network_name_lnedit.setText(config.network_name)
+        self.network_name_lnedit.editingFinished.connect(lambda: self.setFocus())
         network_layout.addRow(QtWidgets.QLabel("Network Name:"), self.network_name_lnedit)
 
         connect_btn = QtWidgets.QPushButton(text="Attempt to connect to WiFi Network [Backslash]")
@@ -63,10 +65,16 @@ class WIFIConnectionWidget(QtWidgets.QWidget):
         self.connection_label.setText(wrap_text(f'Failed to connect to "{network_name}" after {round(time.time() - start_time, 2)} seconds', "Red"))
 
     def single_network_check(self) -> None:
-        """Check the connection to the network (which is named in the line edit) once. Does not set the value of the network_name in the config. Only intended to be used for initial connection check"""
+        """Check the connection to the network (which is named in the line edit) once.
+        Does not set the value of the network_name in the config.
+        Only intended to be used for initial connection check & subsequent disconnection checks"""
         network_name = self.network_name_lnedit.text()
         check_network = subprocess.run(["netsh", "wlan", "show", "interfaces"], capture_output=True, text=True)
         if network_name in check_network.stdout:
             self.connection_label.setText(wrap_text(f'Connected to "{network_name}"', "Green"))
         else:
             self.connection_label.setText(wrap_text(f'Not connected to "{network_name}"', "Red"))
+
+    def on_mqtt_disconnect(self, connection_state: ConnectionState) -> None:
+        if connection_state == ConnectionState.disconnected:
+            self.single_network_check()

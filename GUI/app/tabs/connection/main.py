@@ -45,6 +45,9 @@ class MainConnectionWidget(BaseTabWidget):
         self.mqtt_connection_widget.build(app)
         mqtt_layout.addWidget(self.mqtt_connection_widget)
 
+        # Connect MQTT connection state signal to WiFi disconnect handler
+        self.mqtt_connection_widget.connection_state.connect(self.wifi_connection_widget.on_mqtt_disconnect)
+
         mqtt_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Fixed)
         layout.addWidget(mqtt_groupbox)
 
