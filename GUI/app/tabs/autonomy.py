@@ -29,6 +29,9 @@ class AutonomyWidget(BaseTabWidget):
         # default values (immutable)
         self.HOTSPOT_LED_FLASH_DEFAULT: bool = True
 
+        self.topic_status_map: Dict[str, StatusLabel] = {}
+        self.topic_timers: Dict[str, QtCore.QTimer] = {}
+
     def build(self) -> None:
         """
         Build the GUI layout
@@ -67,17 +70,21 @@ class AutonomyWidget(BaseTabWidget):
         sandbox_layout.addLayout(module_status_layout)
 
         self.topic_status_map: Dict[str, StatusLabel] = {}  # data structure to hold the topic prefixes and the corresponding widget
+        self.topic_timers: Dict[str, QtCore.QTimer] = {}
 
         auto_status = StatusLabel("Autonomous Thread")
         self.topic_status_map["Autonomous"] = auto_status
+        self.create_status_timer("Autonomous")
         module_status_layout.addWidget(auto_status)
 
         cic_status = StatusLabel("Command, Information, & Control Thread")
         self.topic_status_map["CIC"] = cic_status
+        self.create_status_timer("CIC")
         module_status_layout.addWidget(cic_status)
 
         thermal_status = StatusLabel("Thermal Thread")
         self.topic_status_map["Thermal"] = thermal_status
+        self.create_status_timer("Thermal")
         module_status_layout.addWidget(thermal_status)
         # endregion
 
@@ -276,6 +283,15 @@ class AutonomyWidget(BaseTabWidget):
             missions_layout.addWidget(mission_exec_btn, row, col + 2)
         # endregion
 
+    def create_status_timer(self, key: str) -> None:
+        timer = QtCore.QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(lambda k=key: self.handle_status_timeout(k))
+        self.topic_timers[key] = timer
+
+    def handle_status_timeout(self, key: str) -> None:
+        self.topic_status_map[key].set_health(False)
+
     # region Messengers
     """NOTE: The reason that label change operations (like when auton is enabled & goes from "Disabled" to "Enabled") are processed in
     the message handler and not the messaging functions is so we can confirm that the drone gets the command, since the Jetson runs the MQTT server."""
@@ -343,7 +359,7 @@ class AutonomyWidget(BaseTabWidget):
     # region MQTT Handler
     def process_message(self, topic: str, payload: dict) -> None:
         """Processes incoming messages based on the specified topic and updates the UI accordingly.
-        This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating missions, and handling thermal and object scanner data.
+        This function handles various topics related to autonomous operations, including enabling/disabling autonomy, updating missions, and handling thermal data.
         """
         payload = json.loads(payload)
 
@@ -398,6 +414,8 @@ class AutonomyWidget(BaseTabWidget):
         elif topic == "avr/sandbox/status":
             for key in payload.keys():
                 self.topic_status_map[key].set_health(payload[key])
+                if payload[key]:
+                    self.topic_timers[key].start(5000)  # Start/reset timer for 5 seconds
         elif topic == "avr/fcm/battery":
             # get percentage of battery remaining (state of charge)
             soc = payload["soc"]
