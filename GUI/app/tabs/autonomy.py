@@ -44,7 +44,7 @@ class AutonomyWidget(BaseTabWidget):
         sandbox_layout = QtWidgets.QVBoxLayout()
         sandbox_groupbox.setLayout(sandbox_layout)
         sandbox_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        layout.addWidget(sandbox_groupbox, 0, 0, 1, 4)
+        layout.addWidget(sandbox_groupbox, 0, 0, 1, 5)
 
         # Autonomous control layout
         autonomous_layout = QtWidgets.QHBoxLayout()
@@ -234,31 +234,51 @@ class AutonomyWidget(BaseTabWidget):
         testing_groupbox = QtWidgets.QGroupBox("Test Commands")
         testing_layout = QtWidgets.QGridLayout()
         testing_groupbox.setLayout(testing_layout)
-        layout.addWidget(testing_groupbox, 1, 3, 1, 1)
+        layout.addWidget(testing_groupbox, 1, 4, 1, 1)
 
         self.testing_items: list[str] = [
             "kill",
             "arm",
             "disarm",
             "zero ned",
-            "bump fwd",
-            "bump back",
-            "bump right",
-            "bump left",
         ]  # List of tests
 
         # Arrange test commands in a grid
         for index, item in enumerate(self.testing_items):
-            row = index // 2
-            col = (index % 2) * 2
-
             test_name = QtWidgets.QLabel(f"{item.title()} test")
             test_name.setSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-            testing_layout.addWidget(test_name, row, col)
+            testing_layout.addWidget(test_name, index, 0)
 
             test_exec_btn = QtWidgets.QPushButton("Execute Test")
             test_exec_btn.clicked.connect(functools.partial(self.run_test, item.lower()))
-            testing_layout.addWidget(test_exec_btn, row, col + 1)
+            testing_layout.addWidget(test_exec_btn, index, 1)
+        # endregion
+
+        # region Manual Control
+        manual_groupbox = QtWidgets.QGroupBox("Manual Control")
+        manual_layout = QtWidgets.QGridLayout()
+        manual_groupbox.setLayout(manual_layout)
+        layout.addWidget(manual_groupbox, 1, 3, 1, 1)
+
+        up_button = QtWidgets.QPushButton("Up")
+        up_button.clicked.connect(lambda: self.run_test("bump fwd"))
+        up_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Up))
+        manual_layout.addWidget(up_button, 0, 1)
+
+        left_button = QtWidgets.QPushButton("Left")
+        left_button.clicked.connect(lambda: self.run_test("bump left"))
+        left_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Left))
+        manual_layout.addWidget(left_button, 1, 0)
+
+        down_button = QtWidgets.QPushButton("Down")
+        down_button.clicked.connect(lambda: self.run_test("bump down"))
+        down_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Down))
+        manual_layout.addWidget(down_button, 1, 1)
+
+        right_button = QtWidgets.QPushButton("Right")
+        right_button.clicked.connect(lambda: self.run_test("bump right"))
+        right_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Right))
+        manual_layout.addWidget(right_button, 1, 2)
         # endregion
 
         # region Auton missions
@@ -266,7 +286,7 @@ class AutonomyWidget(BaseTabWidget):
         missions_layout = QtWidgets.QGridLayout()
         self.missions_groupbox.setLayout(missions_layout)
         self.missions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
-        layout.addWidget(self.missions_groupbox, 2, 0, 1, 4)
+        layout.addWidget(self.missions_groupbox, 2, 0, 1, 5)
         self.missions_groupbox.setEnabled(self.auton_enabled)
 
         missions: List[str] = [  # List of names for each mission
@@ -461,7 +481,7 @@ class AutonomyWidget(BaseTabWidget):
             # prevent it from going above 100
             soc = min(soc, 100)
 
-            self.battery_label.setText(f"{soc}%")
+            self.battery_label.setText(f"{int(soc)}%")
 
             if int(soc) < 25:
                 self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
