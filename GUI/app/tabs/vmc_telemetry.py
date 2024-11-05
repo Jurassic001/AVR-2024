@@ -69,23 +69,6 @@ class VMCTelemetryWidget(BaseTabWidget):
         self.armed_label = QtWidgets.QLabel("")
         armed_layout.addWidget(self.armed_label)
 
-        """
-        NOTE: None of these buttons work, this specific tab hates send_message commands for some reason
-
-        arm_button = QtWidgets.QPushButton("Arm")
-        arm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "arm", 'payload': {}}))
-        armed_layout.addWidget(arm_button)
-
-        disarm_button = QtWidgets.QPushButton("Disarm")
-        disarm_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "disarm", 'payload': {}}))
-        armed_layout.addWidget(disarm_button)
-
-        kill_button = QtWidgets.QPushButton("Kill")
-        # kill_button.setStyleSheet("font: bold")
-        kill_button.clicked.connect(lambda: self.send_message('avr/fcm/actions', {'action': "kill", 'payload': {}}))
-        armed_layout.addWidget(kill_button)
-        """
-
         top_layout.addRow(QtWidgets.QLabel("Armed Status:"), armed_layout)
 
         # flight mode row

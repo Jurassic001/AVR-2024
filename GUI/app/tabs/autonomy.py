@@ -44,7 +44,7 @@ class AutonomyWidget(BaseTabWidget):
         sandbox_layout = QtWidgets.QVBoxLayout()
         sandbox_groupbox.setLayout(sandbox_layout)
         sandbox_groupbox.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        layout.addWidget(sandbox_groupbox, 0, 0, 1, 3)
+        layout.addWidget(sandbox_groupbox, 0, 0, 1, 4)
 
         # Autonomous control layout
         autonomous_layout = QtWidgets.QHBoxLayout()
@@ -202,11 +202,39 @@ class AutonomyWidget(BaseTabWidget):
         magnet_layout.addWidget(self.magnet_label)
         # endregion
 
+        # region FCM Telemetry
+        telemetry_groupbox = QtWidgets.QGroupBox("FCM Telemetry")
+        telemetry_layout = QtWidgets.QGridLayout()
+        telemetry_groupbox.setLayout(telemetry_layout)
+        layout.addWidget(telemetry_groupbox, 1, 2, 1, 1)
+
+        # Armed status
+        arm_name = QtWidgets.QLabel("Armed Status:")
+        telemetry_layout.addWidget(arm_name, 0, 0, 1, 1)
+
+        self.armed_label = QtWidgets.QLabel(wrap_text("Disarmed", "green"))
+        telemetry_layout.addWidget(self.armed_label, 0, 1, 1, 1)
+
+        # Flight mode
+        flight_mode_name = QtWidgets.QLabel("Flight Mode:")
+        telemetry_layout.addWidget(flight_mode_name, 1, 0, 1, 1)
+
+        self.flight_mode_label = QtWidgets.QLabel("N/A")
+        telemetry_layout.addWidget(self.flight_mode_label, 1, 1, 1, 1)
+
+        # Battery status
+        battery_status_name = QtWidgets.QLabel("Battery Status:")
+        telemetry_layout.addWidget(battery_status_name, 2, 0, 1, 1)
+
+        self.battery_label = QtWidgets.QLabel("N/A")
+        telemetry_layout.addWidget(self.battery_label, 2, 1, 1, 1)
+        # endregion
+
         # region Testing
         testing_groupbox = QtWidgets.QGroupBox("Test Commands")
         testing_layout = QtWidgets.QGridLayout()
         testing_groupbox.setLayout(testing_layout)
-        layout.addWidget(testing_groupbox, 1, 2, 1, 1)
+        layout.addWidget(testing_groupbox, 1, 3, 1, 1)
 
         self.testing_items: list[str] = [
             "kill",
@@ -238,7 +266,7 @@ class AutonomyWidget(BaseTabWidget):
         missions_layout = QtWidgets.QGridLayout()
         self.missions_groupbox.setLayout(missions_layout)
         self.missions_groupbox.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding))
-        layout.addWidget(self.missions_groupbox, 2, 0, 1, 3)
+        layout.addWidget(self.missions_groupbox, 2, 0, 1, 4)
         self.missions_groupbox.setEnabled(self.auton_enabled)
 
         missions: List[str] = [  # List of names for each mission
@@ -416,6 +444,15 @@ class AutonomyWidget(BaseTabWidget):
                 self.topic_status_map[key].set_health(payload[key])
                 if payload[key]:
                     self.topic_timers[key].start(5000)  # Start/reset timer for 5 seconds
+        elif topic == "avr/fcm/status":
+            if payload["armed"]:
+                color = "Red"
+                text = "Armed & Dangerous"
+            else:
+                color = "Green"
+                text = "Disarmed"
+            self.armed_label.setText(wrap_text(text, color))
+            self.flight_mode_label.setText(payload["mode"])
         elif topic == "avr/fcm/battery":
             # get percentage of battery remaining (state of charge)
             soc = payload["soc"]
@@ -423,6 +460,8 @@ class AutonomyWidget(BaseTabWidget):
             soc = max(soc, 0)
             # prevent it from going above 100
             soc = min(soc, 100)
+
+            self.battery_label.setText(f"{soc}%")
 
             if int(soc) < 25:
                 self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
