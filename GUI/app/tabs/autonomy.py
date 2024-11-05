@@ -260,11 +260,6 @@ class AutonomyWidget(BaseTabWidget):
         manual_groupbox.setLayout(manual_layout)
         layout.addWidget(manual_groupbox, 1, 3, 1, 1)
 
-        takeoff_button = QtWidgets.QPushButton("Takeoff (O)")
-        takeoff_button.clicked.connect(lambda: self.run_test("takeoff"))
-        takeoff_button.setShortcut(QtGui.QKeySequence("O"))
-        manual_layout.addWidget(takeoff_button, 0, 0)
-
         fwd_button = QtWidgets.QPushButton("Forward (UpArrow)")
         fwd_button.clicked.connect(lambda: self.run_test("bump fwd"))
         fwd_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Up))
@@ -280,8 +275,8 @@ class AutonomyWidget(BaseTabWidget):
         left_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Left))
         manual_layout.addWidget(left_button, 1, 0)
 
-        down_button = QtWidgets.QPushButton("Down (DownArrow)")
-        down_button.clicked.connect(lambda: self.run_test("bump down"))
+        down_button = QtWidgets.QPushButton("Back (DownArrow)")
+        down_button.clicked.connect(lambda: self.run_test("bump back"))
         down_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Down))
         manual_layout.addWidget(down_button, 1, 1)
 

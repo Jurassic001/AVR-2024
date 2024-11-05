@@ -169,17 +169,15 @@ class Sandbox(MQTTModule):
         elif name == "zero ned":
             self.send_message("avr/fcm/capture_home", {})
         elif name == "bump fwd":
-            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0.1, "e": 0, "d": 0, "heading": 0, "rel": True}})
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0.25, "e": 0, "d": 0, "heading": 0, "rel": True}})
         elif name == "bump back":
-            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": -0.1, "e": 0, "d": 0, "heading": 0, "rel": True}})
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": -0.25, "e": 0, "d": 0, "heading": 0, "rel": True}})
         elif name == "bump right":
-            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": 0.1, "d": 0, "heading": 0, "rel": True}})
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": 0.25, "d": 0, "heading": 0, "rel": True}})
         elif name == "bump left":
-            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": -0.1, "d": 0, "heading": 0, "rel": True}})
+            self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": -0.25, "d": 0, "heading": 0, "rel": True}})
         elif name == "land":
             self.send_action("land", {})
-        elif name == "takeoff":
-            self.send_action("takeoff", {})
 
     # endregion
 
@@ -425,8 +423,7 @@ class Sandbox(MQTTModule):
 
             # Hover @ (0, 3, 1.5)
             if self.auton_mission_id == 13:
-                self.add_mission_waypoint("goto", (0, 3, 1))
-                self.add_mission_waypoint("goto", (0, 3, 0.5), acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (0, 3, 0.5))
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
