@@ -214,8 +214,8 @@ class MainWindow(QtWidgets.QWidget):
         self.mqtt_debug_widget = MQTTDebugWidget(self)
         self.mqtt_debug_widget.build()
         self.mqtt_debug_widget.pop_in.connect(self.tabs.pop_in)
-        mqtt_debug_index = self.tabs.addTab(self.mqtt_debug_widget, self.mqtt_debug_widget.windowTitle() + " [L]")
-        mqtt_debug_keybind = QtGui.QShortcut(QtGui.QKeySequence("L"), self)
+        mqtt_debug_index = self.tabs.addTab(self.mqtt_debug_widget, self.mqtt_debug_widget.windowTitle() + " [;]")
+        mqtt_debug_keybind = QtGui.QShortcut(QtGui.QKeySequence(";"), self)
         mqtt_debug_keybind.activated.connect(lambda: self.tabs.setCurrentIndex(mqtt_debug_index))
 
         self.main_connection_widget.mqtt_connection_widget.mqtt_client.message.connect(self.mqtt_debug_widget.process_message)

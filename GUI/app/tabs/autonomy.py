@@ -260,25 +260,36 @@ class AutonomyWidget(BaseTabWidget):
         manual_groupbox.setLayout(manual_layout)
         layout.addWidget(manual_groupbox, 1, 3, 1, 1)
 
-        up_button = QtWidgets.QPushButton("Up")
-        up_button.clicked.connect(lambda: self.run_test("bump fwd"))
-        up_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Up))
-        manual_layout.addWidget(up_button, 0, 1)
+        takeoff_button = QtWidgets.QPushButton("Takeoff (O)")
+        takeoff_button.clicked.connect(lambda: self.run_test("takeoff"))
+        takeoff_button.setShortcut(QtGui.QKeySequence("O"))
+        manual_layout.addWidget(takeoff_button, 0, 0)
 
-        left_button = QtWidgets.QPushButton("Left")
+        fwd_button = QtWidgets.QPushButton("Forward (UpArrow)")
+        fwd_button.clicked.connect(lambda: self.run_test("bump fwd"))
+        fwd_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Up))
+        manual_layout.addWidget(fwd_button, 0, 1)
+
+        land_button = QtWidgets.QPushButton("Land (L)")
+        land_button.clicked.connect(lambda: self.run_test("land"))
+        land_button.setShortcut(QtGui.QKeySequence("L"))
+        manual_layout.addWidget(land_button, 0, 2)
+
+        left_button = QtWidgets.QPushButton("Left (LeftArrow)")
         left_button.clicked.connect(lambda: self.run_test("bump left"))
         left_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Left))
         manual_layout.addWidget(left_button, 1, 0)
 
-        down_button = QtWidgets.QPushButton("Down")
+        down_button = QtWidgets.QPushButton("Down (DownArrow)")
         down_button.clicked.connect(lambda: self.run_test("bump down"))
         down_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Down))
         manual_layout.addWidget(down_button, 1, 1)
 
-        right_button = QtWidgets.QPushButton("Right")
+        right_button = QtWidgets.QPushButton("Right (RightArrow)")
         right_button.clicked.connect(lambda: self.run_test("bump right"))
         right_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Right))
         manual_layout.addWidget(right_button, 1, 2)
+
         # endregion
 
         # region Auton missions
@@ -302,7 +313,7 @@ class AutonomyWidget(BaseTabWidget):
             "Land @ Container Yard Two",
             "Scan Transformers & Land @ Start",
             "Land @ (-1, 1.5)",
-            "Land @ (0, 3)",
+            "Hover @ (0, 3, 1.5)",
             "Thermal Check @ (0, 3) & Land @ Start",
         ]
         self.mission_states: List[QtWidgets.QLabel] = []

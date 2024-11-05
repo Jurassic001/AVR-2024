@@ -176,6 +176,10 @@ class Sandbox(MQTTModule):
             self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": 0.1, "d": 0, "heading": 0, "rel": True}})
         elif name == "bump left":
             self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": -0.1, "d": 0, "heading": 0, "rel": True}})
+        elif name == "land":
+            self.send_action("land", {})
+        elif name == "takeoff":
+            self.send_action("takeoff", {})
 
     # endregion
 
@@ -419,11 +423,10 @@ class Sandbox(MQTTModule):
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
-            # Land @ (0, 3)
+            # Hover @ (0, 3, 1.5)
             if self.auton_mission_id == 13:
                 self.add_mission_waypoint("goto", (0, 3, 1))
-                self.add_mission_waypoint("goto", (0, 3, 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", (0, 3, 0), acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (0, 3, 0.5), acceptanceRad=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
