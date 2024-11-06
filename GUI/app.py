@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QWidget):
         # Configure the positon, min and max sizes of AVR GUI based on screen width and height, and set current window size modifier
         self.mainMonitor = QApp.primaryScreen().size()
         self.move(0, 0)
-        self.setMaximumSize(self.mainMonitor.width(), self.mainMonitor.height())
+        self.setMaximumSize(self.mainMonitor.width(), self.mainMonitor.height() * 0.92)  # windows 11 toolbar is roughly 8% of the screen, so account for that
         self.setMinimumSize(self.mainMonitor.width() * 0.2, self.mainMonitor.width() * 0.2)
         self.curMod = 0.8
         self.resize(self.mainMonitor.width() * self.curMod, self.mainMonitor.height() * self.curMod)

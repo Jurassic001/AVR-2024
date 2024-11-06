@@ -2,6 +2,7 @@ import socket
 from typing import Any
 
 import paho.mqtt.client as mqtt
+import playsound
 from loguru import logger
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -40,6 +41,7 @@ class MQTTClient(QtCore.QObject):
         # subscribe to all topics
         logger.debug("Subscribing to all topics")
         client.subscribe("#")
+        playsound.playsound(f"./GUI/assets/sounds/winXP_start.mp3", False)
 
     def on_message(self, client: mqtt.Client, userdata: Any, msg: mqtt.MQTTMessage) -> None:
         """
@@ -58,6 +60,7 @@ class MQTTClient(QtCore.QObject):
         """
         logger.debug("Disconnected from MQTT server")
         self.connection_state.emit(ConnectionState.disconnected)
+        playsound.playsound(f"./GUI/assets/sounds/winXP_err.mp3", False)
 
     def login(self, localHost: bool, host: str, port: int) -> None:
         """
