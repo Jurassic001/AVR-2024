@@ -262,27 +262,27 @@ class AutonomyWidget(BaseTabWidget):
         layout.addWidget(self.manual_groupbox, 1, 3, 1, 1)
 
         fwd_button = QtWidgets.QPushButton("Forward (UpArrow)")
-        fwd_button.clicked.connect(lambda: self.run_test("bump fwd"))
+        fwd_button.clicked.connect(lambda: self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0.25, "e": 0, "d": 0, "heading": 0, "rel": True}}))
         fwd_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Up))
         manual_layout.addWidget(fwd_button, 0, 1)
 
         land_button = QtWidgets.QPushButton("Land (L)")
-        land_button.clicked.connect(lambda: self.run_test("land"))
+        land_button.clicked.connect(lambda: self.send_message("avr/fcm/actions", {"action": "land", "payload": {}}))
         land_button.setShortcut(QtGui.QKeySequence("L"))
         manual_layout.addWidget(land_button, 0, 2)
 
         left_button = QtWidgets.QPushButton("Left (LeftArrow)")
-        left_button.clicked.connect(lambda: self.run_test("bump left"))
+        left_button.clicked.connect(lambda: self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": -0.25, "d": 0, "heading": 0, "rel": True}}))
         left_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Left))
         manual_layout.addWidget(left_button, 1, 0)
 
         down_button = QtWidgets.QPushButton("Back (DownArrow)")
-        down_button.clicked.connect(lambda: self.run_test("bump back"))
+        down_button.clicked.connect(lambda: self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": -0.25, "e": 0, "d": 0, "heading": 0, "rel": True}}))
         down_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Down))
         manual_layout.addWidget(down_button, 1, 1)
 
         right_button = QtWidgets.QPushButton("Right (RightArrow)")
-        right_button.clicked.connect(lambda: self.run_test("bump right"))
+        right_button.clicked.connect(lambda: self.send_message("avr/fcm/actions", {"action": "goto_location_ned", "payload": {"n": 0, "e": 0.25, "d": 0, "heading": 0, "rel": True}}))
         right_button.setShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Right))
         manual_layout.addWidget(right_button, 1, 2)
 
@@ -475,7 +475,7 @@ class AutonomyWidget(BaseTabWidget):
         elif topic == "avr/fcm/status":
             if payload["armed"]:
                 color = "Red"
-                text = "Armed & Dangerous"
+                text = "Armed"
             else:
                 color = "Green"
                 text = "Disarmed"
