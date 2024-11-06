@@ -11,7 +11,7 @@ from comtypes import CLSCTX_ALL
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from ..lib.color import wrap_text
+from ..lib.color import smear_color, wrap_text
 from ..lib.config import config
 from ..lib.widgets import FloatLineEdit, StatusLabel
 from .base import BaseTabWidget
@@ -483,15 +483,20 @@ class AutonomyWidget(BaseTabWidget):
             self.flight_mode_label.setText(payload["mode"])
         elif topic == "avr/fcm/battery":
             # get percentage of battery remaining (state of charge)
-            soc = payload["soc"]
+            soc = int(payload["soc"])
             # prevent it from dropping below 0
             soc = max(soc, 0)
             # prevent it from going above 100
             soc = min(soc, 100)
 
-            self.battery_label.setText(f"{int(soc)}%")
+            # get an RGB value between red and green based on battery %, then convert it to a hexidecimal color code
+            color = smear_color((255, 0, 0), (0, 255, 0), value=soc, min_value=0, max_value=100)
+            color = "#{:02x}{:02x}{:02x}".format(*color)
 
-            if int(soc) < 25:
+            self.battery_label.setText(wrap_text(f"{soc}%", color))
+
+            # if battery % is below 25, play the low battery alarm
+            if soc < 25:
                 self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
         elif topic == "avr/autonomous/sound":
             file_name: str = payload["file_name"]
