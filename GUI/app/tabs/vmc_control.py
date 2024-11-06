@@ -119,7 +119,7 @@ class VMCControlWidget(BaseTabWidget):
             servo_layout = QtWidgets.QHBoxLayout()
 
             # Servo name label
-            servo_name = QtWidgets.QLabel(f"Servo {i+1}")
+            servo_name = QtWidgets.QLabel(f"Servo {i}")
             servo_name.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             servo_layout.addWidget(servo_name)
 

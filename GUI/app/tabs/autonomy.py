@@ -255,10 +255,11 @@ class AutonomyWidget(BaseTabWidget):
         # endregion
 
         # region Manual Control
-        manual_groupbox = QtWidgets.QGroupBox("Manual Control")
+        self.manual_groupbox = QtWidgets.QGroupBox("Manual Control")
         manual_layout = QtWidgets.QGridLayout()
-        manual_groupbox.setLayout(manual_layout)
-        layout.addWidget(manual_groupbox, 1, 3, 1, 1)
+        self.manual_groupbox.setLayout(manual_layout)
+        self.manual_groupbox.setEnabled(self.auton_enabled)
+        layout.addWidget(self.manual_groupbox, 1, 3, 1, 1)
 
         fwd_button = QtWidgets.QPushButton("Forward (UpArrow)")
         fwd_button.clicked.connect(lambda: self.run_test("bump fwd"))
@@ -421,6 +422,7 @@ class AutonomyWidget(BaseTabWidget):
             # Handle auton enable/disable
             self.auton_enabled = payload.get("enabled", self.auton_enabled)
             self.missions_groupbox.setEnabled(self.auton_enabled)
+            self.manual_groupbox.setEnabled(self.auton_enabled)
             if self.auton_enabled:
                 text = "Autonomous Enabled"
                 color = "green"
