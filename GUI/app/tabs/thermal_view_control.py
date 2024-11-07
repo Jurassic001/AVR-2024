@@ -56,8 +56,9 @@ class ThermalView(QtWidgets.QWidget):
         # high range of the sensor (this will be red on the screen)
         self.MAXTEMP = config.temp_range[1]
 
-        # last lowest temp from camera
-        self.last_lowest_temp = 999.0
+        # last lowest temp from camera (by default, the min value in settings)
+        self.last_lowest_temp = config.temp_range[0]
+        # self.last_lowest_temp = 999.0
 
         # how many color values we can have
         self.COLORDEPTH = 1024
@@ -95,7 +96,7 @@ class ThermalView(QtWidgets.QWidget):
         self.MINTEMP = mintemp
         self.MAXTEMP = maxtemp
 
-    def set_calibrted_temp_range(self) -> None:
+    def set_calibrated_temp_range(self) -> None:
         self.MINTEMP = self.last_lowest_temp + 0.0
         self.MAXTEMP = self.last_lowest_temp + 15.0
 
@@ -368,6 +369,7 @@ class ThermalViewControlWidget(BaseTabWidget):
                 self.temp_max_line_edit.text_float(),
             )
         )
+        set_temp_range_button.clicked.connect(self.update_temp_range)
 
         set_temp_range_calibrate_button = QtWidgets.QPushButton("Auto Calibrate Temp Range")
         temp_range_layout.addWidget(set_temp_range_calibrate_button)
@@ -453,6 +455,10 @@ class ThermalViewControlWidget(BaseTabWidget):
         self.setMinimumSize(self.sizeHint())
 
     # region Helper methods
+    def update_temp_range(self) -> None:
+        config.temp_range = (self.viewer.MINTEMP, self.viewer.MAXTEMP, config.temp_range[2])
+        self.send_message("avr/sandbox/thermal_config", {"range": config.temp_range})
+
     def set_thermal_update(self) -> None:
         self.viewer.update = self.toggle_thermal_updates_btn.isChecked()
         self.viewer.canvas.clear()
@@ -479,9 +485,10 @@ class ThermalViewControlWidget(BaseTabWidget):
         self.laser_toggle_label.setText(wrap_text(text, color))
 
     def calibrate_temp(self) -> None:
-        self.viewer.set_calibrted_temp_range()
+        self.viewer.set_calibrated_temp_range()
         self.temp_min_line_edit.setText(str(self.viewer.MINTEMP))
         self.temp_max_line_edit.setText(str(self.viewer.MAXTEMP))
+        self.update_temp_range()
 
     def process_message(self, topic: str, payload: str) -> None:
         """

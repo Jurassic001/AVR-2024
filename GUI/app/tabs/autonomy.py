@@ -212,7 +212,7 @@ class AutonomyWidget(BaseTabWidget):
         arm_name = QtWidgets.QLabel("Armed Status:")
         telemetry_layout.addWidget(arm_name, 0, 0, 1, 1)
 
-        self.armed_label = QtWidgets.QLabel(wrap_text("Disarmed", "green"))
+        self.armed_label = QtWidgets.QLabel("N/A")
         telemetry_layout.addWidget(self.armed_label, 0, 1, 1, 1)
 
         # Flight mode
@@ -441,6 +441,7 @@ class AutonomyWidget(BaseTabWidget):
         elif topic == "avr/sandbox/thermal_config":
             # Update the thermal state and thermal label
             self.thermal_state = payload.get("state", self.thermal_state)
+            config_range = payload.get("range", config.temp_range)
             match self.thermal_state:
                 case 2:
                     text = "Thermal Tracking Enabled"
@@ -452,9 +453,14 @@ class AutonomyWidget(BaseTabWidget):
                     text = "Thermal Operations Disabled"
                     color = "red"
                 case _:
-                    return
+                    print(f"Unrecognized thermal state: {self.thermal_state}")
 
             self.thermal_label.setText(wrap_text(text, color))
+            self.temp_min_line_edit.setText(str(config_range[0]))
+            self.temp_max_line_edit.setText(str(config_range[1]))
+            self.temp_step_edit.setText(str(config_range[2]))
+            self.hotspot_flash_togglebtn.setChecked(payload.get("hotspot flash", self.hotspot_flash_togglebtn.isChecked()))
+            self.thermal_log_togglebtn.setChecked(payload.get("logging", self.thermal_log_togglebtn.isChecked()))
         elif topic in {"avr/pcm/set_laser_on", "avr/pcm/set_laser_off"}:
             text = "Laser On" if topic == "avr/pcm/set_laser_on" else "Laser Off"
             color = "green" if topic == "avr/pcm/set_laser_on" else "red"
@@ -490,13 +496,13 @@ class AutonomyWidget(BaseTabWidget):
             soc = min(soc, 100)
 
             # get an RGB value between red and green based on battery %, then convert it to a hexidecimal color code
-            color = smear_color((255, 0, 0), (0, 255, 0), value=soc, min_value=0, max_value=100)
+            color = smear_color((135, 0, 16), (11, 135, 0), value=soc, min_value=0, max_value=100)
             color = "#{:02x}{:02x}{:02x}".format(*color)
 
             self.battery_label.setText(wrap_text(f"{soc}%", color))
 
-            # if battery % is below 25, play the low battery alarm
-            if soc < 25:
+            # if battery % is below 10, play the low battery alarm
+            if soc < 10:
                 self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
         elif topic == "avr/autonomous/sound":
             file_name: str = payload["file_name"]
