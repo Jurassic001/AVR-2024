@@ -70,9 +70,6 @@ class VMCControlWidget(BaseTabWidget):
         # region _Custom colors
         custom_colors_layout = QtWidgets.QFormLayout()
 
-        white_int_lnedit = IntLineEdit(0, 255)
-        custom_colors_layout.addRow(QtWidgets.QLabel("White:"), white_int_lnedit)
-
         red_int_lnedit = IntLineEdit(0, 255)
         custom_colors_layout.addRow(QtWidgets.QLabel("Red:"), red_int_lnedit)
 
@@ -82,9 +79,9 @@ class VMCControlWidget(BaseTabWidget):
         blue_int_lnedit = IntLineEdit(0, 255)
         custom_colors_layout.addRow(QtWidgets.QLabel("Blue:"), blue_int_lnedit)
 
-        set_custom_colors_btn = QtWidgets.QPushButton("Set WRGB of LED strip")
+        set_custom_colors_btn = QtWidgets.QPushButton("Set RGB of LED strip")
         custom_colors_layout.addWidget(set_custom_colors_btn)
-        set_custom_colors_btn.clicked.connect(lambda: self.set_led((white_int_lnedit.text_int(), red_int_lnedit.text_int(), green_int_lnedit.text_int(), blue_int_lnedit.text_int())))
+        set_custom_colors_btn.clicked.connect(lambda: self.set_led((255, red_int_lnedit.text_int(), green_int_lnedit.text_int(), blue_int_lnedit.text_int())))
 
         led_layout.addLayout(custom_colors_layout)
 

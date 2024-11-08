@@ -83,7 +83,8 @@ class Sandbox(MQTTModule):
         self.apriltag_ids: list = []  # List containing every apriltag ID that has been detected
         self.flash_queue: list = []  # List containing all the IDs that are queued for LED flashing
 
-        # LED color presets in wrgb format (white, red, green, blue)
+        # LED color presets in "WRGB" format (white, red, green, blue)
+        # AFAIK the "white" doesn't do anything, there is no difference between white of zero and white of 255
         self.normal_color: tuple[int, int, int, int] = (255, 78, 205, 196)  # Cyan
         self.flash_color: tuple[int, int, int, int] = (255, 255, 0, 0)  # Red
         self.hotspot_color: tuple[int, int, int, int] = (255, 255, 255, 255)  # White
