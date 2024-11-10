@@ -90,20 +90,34 @@ class MQTTLoggerWidget(BaseTabWidget):
         self.recording_button = QtWidgets.QPushButton("Start Recording [Forward Slash]")
         layout.addWidget(self.recording_button)
 
+        self.auto_start_checkbox = QtWidgets.QCheckBox("Auto-start Recording")
+        self.auto_start_checkbox.setChecked(config.mqtt_logger_auto_start)
+        self.auto_start_checkbox.stateChanged.connect(self.on_auto_start_changed)
+        layout.addWidget(self.auto_start_checkbox)
+
         self.recording_button.clicked.connect(self.toggle_recording)  # type: ignore
         QtGui.QShortcut(QtGui.QKeySequence("/"), self).activated.connect(self.toggle_recording)
+
+        if config.mqtt_logger_auto_start:
+            self.toggle_recording()
+
+    def on_auto_start_changed(self) -> None:
+        config.mqtt_logger_auto_start = self.auto_start_checkbox.isChecked()
+        if self.auto_start_checkbox.isChecked() != self.recording:
+            self.toggle_recording()
 
     def clear(self) -> None:
         """
         Clear data out of the widget.
         """
-        # reset recording state
-        self.recording = False
-        self.recording_button.setText("Record [Forward Slash]")
+        if not config.mqtt_logger_auto_start:
+            # reset recording state
+            self.recording = False
+            self.recording_button.setText("Record [Forward Slash]")
 
-        # close file handle
-        if self.file_handle is not None:
-            self.file_handle.close()
+            # close file handle
+            if self.file_handle is not None:
+                self.file_handle.close()
 
     def toggle_recording(self) -> None:
         """
@@ -115,7 +129,7 @@ class MQTTLoggerWidget(BaseTabWidget):
             # generate new file name
             filename = os.path.join(
                 config.log_file_directory,
-                f"MQTTLog_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv",
+                f"MQTTLog_{datetime.datetime.now().strftime('%m-%d_%H-%M-%S')}.csv",
             )
 
             # open file

@@ -8,5 +8,6 @@
     "joystick_inverted": false,
     "log_file_directory": "GUI/MQTT Logs",
     "num_servos": 12,
-    "network_name": "Varsity Bells"
+    "network_name": "Varsity Bells",
+    "mqtt_logger_auto_start": false
 }

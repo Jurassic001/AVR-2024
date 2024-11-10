@@ -153,5 +153,13 @@ class _Config:
     def network_name(self, value: str) -> None:
         return self.__set("network_name", value)
 
+    @property
+    def mqtt_logger_auto_start(self) -> bool:
+        return self.__get("mqtt_logger_auto_start", False)
+
+    @mqtt_logger_auto_start.setter
+    def mqtt_logger_auto_start(self, value: bool) -> None:
+        self.__set("mqtt_logger_auto_start", value)
+
 
 config = _Config()
