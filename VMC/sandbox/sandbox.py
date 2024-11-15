@@ -38,7 +38,7 @@ class Sandbox(MQTTModule):
 
         # Thermal tracking vars
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
-        self.target_range: tuple[float, float] = (30.0, 40.0)
+        self.target_range: tuple[float, float] = (25.0, 40.0)
         self.targeting_step: float = 1.0
         self.flash_leds_on_detection: bool = False
         self.log_thermal_data: bool = False
