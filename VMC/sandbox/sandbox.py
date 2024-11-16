@@ -42,7 +42,7 @@ class Sandbox(MQTTModule):
         self.targeting_step: float = 1.0
         self.flash_leds_on_detection: bool = False
         self.log_thermal_data: bool = False
-        self.thermal_state: int = 0  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
+        self.thermal_state: int = 1  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
 
         # Flight Controller vars
         self.states: dict[str, str] = {"flightEvent": "UNKNOWN", "flightMode": "UNKNOWN"}  # Dict of current events/modes that pertain to drone operation

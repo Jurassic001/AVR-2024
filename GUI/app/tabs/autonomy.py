@@ -22,7 +22,7 @@ class AutonomyWidget(BaseTabWidget):
         super().__init__(parent)
         self.setWindowTitle("Autonomy")
         # default variables (mutable)
-        self.thermal_state: int = 0
+        self.thermal_state: int = 1
         self.auton_enabled: bool = False
         self.auton_mission: int = 0
 
@@ -153,7 +153,13 @@ class AutonomyWidget(BaseTabWidget):
 
         # thermal status label
         self.thermal_label = QtWidgets.QLabel()
-        self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
+        match self.thermal_state:
+            case 2:
+                self.thermal_label.setText(wrap_text("Thermal Tracking Enabled", "green"))
+            case 1:
+                self.thermal_label.setText(wrap_text("Thermal Scanning Enabled", "blue"))
+            case _:
+                self.thermal_label.setText(wrap_text("Thermal Tracking Disabled", "red"))
         self.thermal_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         thermal_laser_layout.addWidget(self.thermal_label)
 
