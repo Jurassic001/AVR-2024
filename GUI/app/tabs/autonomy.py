@@ -494,18 +494,18 @@ class AutonomyWidget(BaseTabWidget):
             self.armed_label.setText(wrap_text(text, color))
             self.flight_mode_label.setText(payload["mode"])
         elif topic == "avr/fcm/battery":
-            # get percentage of battery remaining (state of charge)
+            # get percentage of battery remaining (state of charge) & voltage
             soc = int(payload["soc"])
-            # prevent it from dropping below 0
+            voltage = round(payload["voltage"], 2)
+            # prevent percentage from dropping below 0 or going above 100
             soc = max(soc, 0)
-            # prevent it from going above 100
             soc = min(soc, 100)
 
             # get an RGB value between red and green based on battery %, then convert it to a hexidecimal color code
             color = smear_color((135, 0, 16), (11, 135, 0), value=soc, min_value=0, max_value=100)
             color = "#{:02x}{:02x}{:02x}".format(*color)
 
-            self.battery_label.setText(wrap_text(f"{soc}%", color))
+            self.battery_label.setText(wrap_text(f"{soc}% ({voltage} volts)", color))
 
             # if battery % is below 10, play the low battery alarm
             if soc < 10:
