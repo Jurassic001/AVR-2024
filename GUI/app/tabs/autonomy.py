@@ -234,6 +234,13 @@ class AutonomyWidget(BaseTabWidget):
 
         self.battery_label = QtWidgets.QLabel("N/A")
         telemetry_layout.addWidget(self.battery_label, 2, 1, 1, 1)
+
+        # ZED confidence
+        zed_conf_name = QtWidgets.QLabel("ZED Confidence:")
+        telemetry_layout.addWidget(zed_conf_name, 3, 0, 1, 1)
+
+        self.zed_conf_label = QtWidgets.QLabel("N/A")
+        telemetry_layout.addWidget(self.zed_conf_label, 3, 1, 1, 1)
         # endregion
 
         # region Testing
@@ -510,6 +517,12 @@ class AutonomyWidget(BaseTabWidget):
             # if battery % is below 10, play the low battery alarm
             if soc < 10:
                 self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
+        elif topic == "avr/vio/confidence":
+            confidence = payload["tracker"]
+            color = smear_color((255, 0, 0), (0, 255, 0), value=confidence, min_value=0, max_value=100)
+            color = "#{:02x}{:02x}{:02x}".format(*color)
+
+            self.zed_conf_label.setText(wrap_text(f"{confidence}%", color))
         elif topic == "avr/autonomous/sound":
             file_name: str = payload["file_name"]
             ext: str = payload["ext"]
