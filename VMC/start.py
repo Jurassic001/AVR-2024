@@ -346,7 +346,7 @@ if __name__ == "__main__":
     norm_modules = min_modules + ["apriltag", "pcm", "status", "thermal"]
     all_modules = norm_modules + ["sandbox"]
 
-    zephyrus_modules = all_modules
+    zephyrus_modules = all_modules.copy()
     zephyrus_modules.remove("apriltag")
     zephyrus_modules.remove("status")
 
