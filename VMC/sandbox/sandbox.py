@@ -22,12 +22,15 @@ class Sandbox(MQTTModule):
             "avr/sandbox/autonomous": self.handle_autonomous,
             "avr/fcm/status": self.handle_status,
             "avr/fcm/events": self.handle_events,
+            "avr/fcm/battery": self.handle_battery,
             "avr/sandbox/test": self.handle_testing,
         }
 
         # Assorted booleans
         self.autonomous: bool = False  # For enabling/disabling autonomous actions via the GUI
         self.fcm_connected: bool = False  # Used to determine if the FCM is broadcasting messages
+        self.light_init: bool = False  # Used to determine if the lights have been initialized by the CIC thread
+        self.batt_check: bool = False  # Used to determine if the battery check has been executed
 
         # Position vars
         self.position: list = [0, 0, 0]  # Current position in centimeters, as (forward, right, up)
@@ -159,6 +162,28 @@ class Sandbox(MQTTModule):
             logger.debug(f"New Flight Event: {newState}")
             self.states["flightEvent"] = newState
 
+    def handle_battery(self, payload: AvrFcmBatteryPayload):
+        if self.batt_check:
+            return
+        elif self.light_init:
+            # get percentage of battery remaining (state of charge)
+            soc = int(payload["soc"])
+            # prevent percentage from dropping below 0 or going above 100
+            soc = max(soc, 0)
+            soc = min(soc, 100)
+
+            if soc < 60:
+                # if battery is below 60%, flash red
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 0, 0), time=2))
+            elif soc < 70:
+                # if battery is between 60% and 70%, flash orange
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 128, 0), time=2))
+            elif soc < 80:
+                # if battery is between 70% and 80%, flash yellow
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 255, 0), time=2))
+
+            self.batt_check = True
+
     def handle_testing(self, payload: dict):
         name = payload["testName"]
         if name == "kill":
@@ -230,14 +255,13 @@ class Sandbox(MQTTModule):
         status_thread = Thread(target=self.status)
         status_thread.daemon = True
         status_thread.start()
-        light_init = False
         last_at_flash: dict = {"time": 0, "iter": 0}  # Contains the data of the last LED flash, including the time that the flash happened and the number of flashes we've done for that ID
         while True:
             # Once the FCM is initialized, do some housekeeping
-            if self.fcm_connected and not light_init:
+            if self.fcm_connected and not self.light_init:
                 self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=self.normal_color))  # Turn on the lights
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000)  # Set the geofence from 20 N, 85 W to 40 N, 105 W
-                light_init = True
+                self.light_init = True
 
             # Flashing the LEDs when a new apriltag ID is detected
             if self.flash_queue and time.time() > last_at_flash["time"] + 1:  # Make sure it's been at least one second since the last LED flash
