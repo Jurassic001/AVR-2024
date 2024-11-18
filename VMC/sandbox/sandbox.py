@@ -40,7 +40,7 @@ class Sandbox(MQTTModule):
         self.thermal_grid: list[list[int]] = [[0 for _ in range(8)] for _ in range(8)]
         self.target_range: tuple[float, float] = (25.0, 40.0)
         self.targeting_step: float = 1.0
-        self.flash_leds_on_detection: bool = False
+        self.flash_leds_on_detection: bool = True
         self.log_thermal_data: bool = False
         self.thermal_state: int = 1  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
 
