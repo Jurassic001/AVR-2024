@@ -114,7 +114,7 @@ if __name__ == "__main__":
     check_sudo()
 
     parser = argparse.ArgumentParser(description="WiFi Setup Script")
-    parser.add_argument("action", choices=["connect", "disconnect", "create", "status"], help="Action to perform. Either connect to a wifi network, disconnect from the current network, create a hotspot, clear the current hotspot, or show the current network status.")
+    parser.add_argument("action", choices=["connect", "disconnect", "create", "clear", "status"], help="Action to perform. Either connect to a wifi network, disconnect from the current network, create a hotspot, clear the current hotspot, or show the current network status.")
 
     args = parser.parse_args()
 
