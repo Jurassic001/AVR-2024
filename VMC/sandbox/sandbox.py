@@ -236,7 +236,6 @@ class Sandbox(MQTTModule):
             # Once the FCM is initialized, do some housekeeping
             if self.fcm_connected and not light_init:
                 self.send_message("avr/pcm/set_base_color", AvrPcmSetBaseColorPayload(wrgb=self.normal_color))  # Turn on the lights
-                self.set_magnet(False)  # Make sure the magnet is off
                 self.set_geofence(200000000, 850000000, 400000000, 1050000000)  # Set the geofence from 20 N, 85 W to 40 N, 105 W
                 light_init = True
 

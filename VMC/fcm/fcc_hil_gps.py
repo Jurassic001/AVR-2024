@@ -108,6 +108,7 @@ class HILGPSManager(FCMMQTTModule):
         log_val_thres = 30
         action_val_thres = 100
         logger.info("Monitoring RC input in fcc_hil_gps.py")
+        self.send_message("avr/pcm/set_magnet", {"enabled": False})
         while True:
             # wait for a message
             msg = self.mavcon.recv_match(type="RC_CHANNELS", blocking=True)
