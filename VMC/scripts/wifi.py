@@ -92,6 +92,18 @@ def create():
     subprocess.check_call(["nmcli", "device", "wifi", "hotspot", "ifname", "wlan0", "ssid", ssid, "password", password])
     subprocess.check_call(["nmcli", "connection", "modify", "Hotspot", "connection.autoconnect", "yes"])
 
+def clear():
+    """
+    Clear the hotspot
+    """
+    print("===== Removing old connections =====")
+    # disconnect any existing connections
+    disconnect()
+
+    print("===== Clearing hotspot =====")
+    # delete old hotspot connection profile
+    subprocess.call(["nmcli", "connection", "delete", "Hotspot"], stderr=subprocess.DEVNULL)
+
 def status():
     """
     Show the currently connected wifi network
@@ -102,15 +114,17 @@ if __name__ == "__main__":
     check_sudo()
 
     parser = argparse.ArgumentParser(description="WiFi Setup Script")
-    parser.add_argument("action", choices=["connect", "create", "disconnect", "status"])
+    parser.add_argument("action", choices=["connect", "disconnect", "create", "status"], help="Action to perform. Either connect to a wifi network, disconnect from the current network, create a hotspot, clear the current hotspot, or show the current network status.")
 
     args = parser.parse_args()
 
     if args.action == "connect":
         connect()
-    elif args.action == "create":
-        create()
     elif args.action == "disconnect":
         disconnect()
+    elif args.action == "create":
+        create()
+    elif args.action == "clear":
+        clear()
     elif args.action == "status":
         status()
