@@ -85,7 +85,7 @@ class Sandbox(MQTTModule):
 
         # LED color presets in "WRGB" format (white, red, green, blue)
         # AFAIK the "white" doesn't do anything, there is no difference between white of zero and white of 255
-        self.normal_color: tuple[int, int, int, int] = (255, 78, 205, 196)  # Cyan
+        self.normal_color: tuple[int, int, int, int] = (255, 0, 128, 128)  # Cyan
         self.flash_color: tuple[int, int, int, int] = (255, 255, 0, 0)  # Red
         self.hotspot_color: tuple[int, int, int, int] = (255, 255, 255, 255)  # White
 

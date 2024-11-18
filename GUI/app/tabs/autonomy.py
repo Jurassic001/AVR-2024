@@ -519,7 +519,7 @@ class AutonomyWidget(BaseTabWidget):
                 self.send_message("avr/autonomous/sound", {"file_name": "low_battery", "ext": ".mp3"})
         elif topic == "avr/vio/confidence":
             confidence = payload["tracker"]
-            color = smear_color((255, 0, 0), (0, 255, 0), value=confidence, min_value=0, max_value=100)
+            color = smear_color((135, 0, 16), (11, 135, 0), value=confidence, min_value=0, max_value=100)
             color = "#{:02x}{:02x}{:02x}".format(*color)
 
             self.zed_conf_label.setText(wrap_text(f"{confidence}%", color))
