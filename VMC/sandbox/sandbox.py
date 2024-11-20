@@ -30,7 +30,8 @@ class Sandbox(MQTTModule):
         self.autonomous: bool = False  # For enabling/disabling autonomous actions via the GUI
         self.fcm_connected: bool = False  # Used to determine if the FCM is broadcasting messages
         self.light_init: bool = False  # Used to determine if the lights have been initialized by the CIC thread
-        self.batt_check: bool = False  # Used to determine if the battery check has been executed
+        self.init_batt_check: bool = False  # Used to determine if the battery check has been executed
+        self.low_batt_flash: bool = False  # Used to determine if the low battery flash has been executed
 
         # Position vars
         self.position: list = [0, 0, 0]  # Current position in centimeters, as (forward, right, up)
@@ -163,15 +164,21 @@ class Sandbox(MQTTModule):
             self.states["flightEvent"] = newState
 
     def handle_battery(self, payload: AvrFcmBatteryPayload):
-        if self.batt_check:
+        if self.low_batt_flash:
             return
-        elif self.light_init:
-            # get percentage of battery remaining (state of charge)
-            soc = int(payload["soc"])
-            # prevent percentage from dropping below 0 or going above 100
-            soc = max(soc, 0)
-            soc = min(soc, 100)
 
+        # get percentage of battery remaining (state of charge)
+        soc = int(payload["soc"])
+        # prevent percentage from dropping below 0 or going above 100
+        soc = max(soc, 0)
+        soc = min(soc, 100)
+
+        if self.init_batt_check:
+            # check if the battery is below 20%, and flash the LEDs orange
+            if soc < 20:
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 128, 0), time=2))
+                self.low_batt_flash = True
+        elif self.light_init:
             if soc < 60:
                 # if battery is below 60%, flash red
                 self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 0, 0), time=2))
@@ -182,7 +189,7 @@ class Sandbox(MQTTModule):
                 # if battery is between 70% and 80%, flash yellow
                 self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 255, 0), time=2))
 
-            self.batt_check = True
+            self.init_batt_check = True
 
     def handle_testing(self, payload: dict):
         name = payload["testName"]
