@@ -174,19 +174,13 @@ class Sandbox(MQTTModule):
         soc = min(soc, 100)
 
         if self.init_batt_check:
-            # check if the battery is below 20%, and flash the LEDs orange
+            # check if the battery is below 20%, and flash the LEDs red
             if soc < 20:
-                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 128, 0), time=2))
+                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 0, 0), time=2))
                 self.low_batt_flash = True
         elif self.light_init:
-            if soc < 60:
-                # if battery is below 60%, flash red
-                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 0, 0), time=2))
-            elif soc < 70:
-                # if battery is between 60% and 70%, flash orange
-                self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 128, 0), time=2))
-            elif soc < 80:
-                # if battery is between 70% and 80%, flash yellow
+            if soc < 70:
+                # if battery is below 70%, flash yellow
                 self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 255, 0), time=2))
 
             self.init_batt_check = True
