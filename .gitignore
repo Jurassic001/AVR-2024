@@ -26,8 +26,6 @@ PCC/.vscode/c_cpp_properties.json
 /VMC/apriltag/c/libraries/paho.mqtt.c/test/python/test1.py
 /VMC/apriltag/c/libraries/paho.mqtt.c/test/python/test2.py
 
-PCC/Firmware .bin files/magnet_control_firmware.*.bin
-
 # Phantom file with a nonsense name will sometimes appear
 # The Jetson is haunted
 @�@��J
