@@ -33,6 +33,7 @@ class ZEDCamera(object):
     def setup(self) -> None:
         # Create a Camera object
         self.zed = sl.Camera()
+        logger.info(f"ZED SDK version: {self.zed.get_sdk_version()}")
 
         # Create a InitParameters object and set configuration parameters
         init_params = sl.InitParameters()
