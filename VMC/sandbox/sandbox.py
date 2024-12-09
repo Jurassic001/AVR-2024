@@ -27,7 +27,7 @@ class Sandbox(MQTTModule):
         }
 
         # Assorted booleans
-        self.autonomous: bool = False  # For enabling/disabling autonomous actions via the GUI
+        self.autonomous_enabled: bool = False  # For enabling/disabling autonomous actions via the GUI
         self.fcm_connected: bool = False  # Used to determine if the FCM is broadcasting messages
         self.light_init: bool = False  # Used to determine if the lights have been initialized by the CIC thread
         self.init_batt_check: bool = False  # Used to determine if the battery check has been executed
@@ -49,7 +49,7 @@ class Sandbox(MQTTModule):
         self.thermal_state: int = 1  # Value determines the state of the thermal process. 0 for no thermal processing, 1 for thermal hotspot scanning but not targeting, 2 for hotspot targeting
 
         # Flight Controller vars
-        self.states: dict[str, str] = {"flightEvent": "UNKNOWN", "flightMode": "UNKNOWN"}  # Dict of current events/modes that pertain to drone operation
+        self.states: dict[str, str] = {"flight_event": "UNKNOWN", "flight_mode": "UNKNOWN"}  # Dict of current events/modes that pertain to drone operation
         self.possibleEvents: dict[str, str] = {
             "landed_state_in_air_event": "IN_AIR",
             "landed_state_landing_event": "LANDING",
@@ -77,8 +77,8 @@ class Sandbox(MQTTModule):
             "STABILIZED",
             "RATTITUDE",
         ]
-        self.possibleStates: dict[str, list[str]] = {"flightEvent": self.possibleEvents.values(), "flightMode": possibleModes}
-        self.isArmed: bool = False
+        self.possible_states: dict[str, list[str]] = {"flight_event": self.possibleEvents.values(), "flight_mode": possibleModes}
+        self.is_armed: bool = False
 
         # Apriltag vars
         self.cur_apriltag: dict = (
@@ -100,16 +100,15 @@ class Sandbox(MQTTModule):
     # region Topic Handlers
     def handle_thermal(self, payload: AvrThermalReadingPayload) -> None:
         # Handle the raw data from the thermal camera
-        data = payload["data"]
+        thermal_data = payload["data"]
         # decode the payload
-        base64Decoded = data.encode("utf-8")
-        asbytes = base64.b64decode(base64Decoded)
-        pixel_ints = list(bytearray(asbytes))
-        k = 0
-        for i in range(len(self.thermal_grid)):
-            for j in range(len(self.thermal_grid[0])):
-                self.thermal_grid[j][i] = pixel_ints[k]
-                k += 1
+        b64_thermal_data = thermal_data.encode("utf-8")
+        decoded_thermal_data = base64.b64decode(b64_thermal_data)
+        # get the pixel values from the decoded data
+        thermal_pixel_vals = list(bytearray(decoded_thermal_data))
+        # reshape the pixel values into an 8x8 grid
+        thermal_array = np.array(thermal_pixel_vals).reshape(8, 8).T
+        self.thermal_grid = thermal_array.tolist()
 
     def handle_thermal_config(self, payload: dict) -> None:
         old_thermal_range: tuple[float, float, float] = (self.target_range[0], self.target_range[1], self.targeting_step)
@@ -141,27 +140,25 @@ class Sandbox(MQTTModule):
         self.position = [payload["n"], payload["e"], payload["d"] * -1]
 
     def handle_autonomous(self, payload: dict) -> None:
-        self.autonomous = payload.get("enabled", self.autonomous)
+        self.autonomous_enabled = payload.get("enabled", self.autonomous_enabled)
         self.auton_mission_id = payload.get("mission_id", self.auton_mission_id)
 
     def handle_status(self, payload: AvrFcmStatusPayload) -> None:
         # Set the flight controller's mode and armed status
-        self.isArmed = payload["armed"]
+        self.is_armed = payload["armed"]
         mode = payload["mode"]
-        if self.states["flightMode"] != mode:
+        if self.states["flight_mode"] != mode:
             logger.debug(f"Flight Mode Update || Flight Mode: {mode}")
-            self.states["flightMode"] = mode
+            self.states["flight_mode"] = mode
         self.fcm_connected = True
 
     def handle_events(self, payload: AvrFcmEventsPayload):
         # Handle flight events
-        eventName = payload["name"]
+        new_event = self.possibleEvents.get(payload["name"], "UNKNOWN")
 
-        newState = self.possibleEvents.get(eventName, "UNKNOWN")
-
-        if newState not in [self.states["flightEvent"], "UNKNOWN"]:
-            logger.debug(f"New Flight Event: {newState}")
-            self.states["flightEvent"] = newState
+        if new_event not in [self.states["flight_event"], "UNKNOWN"]:
+            logger.debug(f"New Flight Event: {new_event}")
+            self.states["flight_event"] = new_event
 
     def handle_battery(self, payload: AvrFcmBatteryPayload):
         if self.low_batt_flash:
@@ -311,7 +308,7 @@ class Sandbox(MQTTModule):
         }  # coordinates of landing zones (LZ's, yes I am a nerd) in meters
         auton_init: bool = False
         while True:
-            if not self.autonomous:
+            if not self.autonomous_enabled:
                 continue
 
             # Auton initialization process
@@ -325,39 +322,39 @@ class Sandbox(MQTTModule):
             # Land @ Start
             if self.auton_mission_id == 1:
                 self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1))
-                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["start"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["start"][0], LZ["start"][1], 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["start"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Loading Zone
             if self.auton_mission_id == 2:
                 self.add_mission_waypoint("goto", (LZ["loading"][0], LZ["loading"][1], 1))
-                self.add_mission_waypoint("goto", (LZ["loading"][0], LZ["loading"][1], 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["loading"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["loading"][0], LZ["loading"][1], 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["loading"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
 
             # Land @ Train One
             if self.auton_mission_id == 3:
                 self.add_mission_waypoint("goto", (LZ["train one"][0], LZ["train one"][1], 1))
-                self.add_mission_waypoint("goto", (LZ["train one"][0], LZ["train one"][1], 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["train one"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["train one"][0], LZ["train one"][1], 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["train one"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Train Two
             if self.auton_mission_id == 4:
                 self.add_mission_waypoint("goto", (LZ["train two"][0], LZ["train two"][1], 1))
-                self.add_mission_waypoint("goto", (LZ["train two"][0], LZ["train two"][1], 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["train two"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["train two"][0], LZ["train two"][1], 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["train two"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Bridge One
             if self.auton_mission_id == 5:
                 self.add_mission_waypoint("goto", (0, LZ["bridge one"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge one"][0], LZ["bridge one"][1], 2), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["bridge one"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["bridge one"][0], LZ["bridge one"][1], 2), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["bridge one"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -367,8 +364,8 @@ class Sandbox(MQTTModule):
             # Land @ Bridge Two
             if self.auton_mission_id == 6:
                 self.add_mission_waypoint("goto", (0, LZ["bridge two"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge two"][0], LZ["bridge two"][1], 2), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["bridge two"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["bridge two"][0], LZ["bridge two"][1], 2), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["bridge two"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -378,8 +375,8 @@ class Sandbox(MQTTModule):
             # Land @ Bridge Three
             if self.auton_mission_id == 7:
                 self.add_mission_waypoint("goto", (0, LZ["bridge three"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge three"][0], LZ["bridge three"][1], 2), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["bridge three"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["bridge three"][0], LZ["bridge three"][1], 2), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["bridge three"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -389,8 +386,8 @@ class Sandbox(MQTTModule):
             # Land @ Bridge Four
             if self.auton_mission_id == 8:
                 self.add_mission_waypoint("goto", (0, LZ["bridge four"][1], 2))
-                self.add_mission_waypoint("goto", (LZ["bridge four"][0], LZ["bridge four"][1], 2), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["bridge four"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["bridge four"][0], LZ["bridge four"][1], 2), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["bridge four"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -400,16 +397,16 @@ class Sandbox(MQTTModule):
             # Land @ Container Yard One
             if self.auton_mission_id == 9:
                 self.add_mission_waypoint("goto", (LZ["yard one"][0], LZ["yard one"][1], 1))
-                self.add_mission_waypoint("goto", (LZ["yard one"][0], LZ["yard one"][1], 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["yard one"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["yard one"][0], LZ["yard one"][1], 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["yard one"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ Container Yard Two
             if self.auton_mission_id == 10:
                 self.add_mission_waypoint("goto", (LZ["yard two"][0], LZ["yard two"][1], 1))
-                self.add_mission_waypoint("goto", (LZ["yard two"][0], LZ["yard two"][1], 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", LZ["yard two"], acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (LZ["yard two"][0], LZ["yard two"][1], 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", LZ["yard two"], goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -431,16 +428,16 @@ class Sandbox(MQTTModule):
             # Land @ (0, 6)
             if self.auton_mission_id == 12:
                 self.add_mission_waypoint("goto", (0, 6, 1))
-                self.add_mission_waypoint("goto", (0, 6, 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", (0, 6, 0), acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (0, 6, 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", (0, 6, 0), goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
             # Land @ (0, 3)
             if self.auton_mission_id == 13:
                 self.add_mission_waypoint("goto", (0, 3, 1))
-                self.add_mission_waypoint("goto", (0, 3, 1), acceptanceRad=0.05)
-                self.add_mission_waypoint("land", (0, 3, 0), acceptanceRad=0.05)
+                self.add_mission_waypoint("goto", (0, 3, 1), goto_acceptance_radius=0.05)
+                self.add_mission_waypoint("land", (0, 3, 0), goto_acceptance_radius=0.05)
                 self.upload_and_engage_mission()
                 self.set_mission_id()
 
@@ -459,12 +456,12 @@ class Sandbox(MQTTModule):
     # region Mission and Waypoint methods
     # PX4 mission mode docs: https://docs.px4.io/main/en/flight_modes_mc/mission.html
     def add_mission_waypoint(
-        self, waypointType: Literal["goto", "land", "loiter"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, acceptanceRad: float = 0.10
+        self, waypoint_type: Literal["goto", "land", "loiter"], coords: tuple[float, float, float], yaw_angle: float = 0, goto_hold_time: float = 0, goto_acceptance_radius: float = 0.10
     ) -> None:
         """Add a waypoint to the mission_waypoints list.
 
         Args:
-            waypointType (Literal["goto", "land", "loiter"]): Either `goto` a set of coordinates, `land` at a set of coordinates, or `loiter` indefinitely around a set of coordinates. If the drone is landed, it will takeoff first before preceeding towards the waypoint
+            waypoint_type (Literal["goto", "land", "loiter"]): Either `goto` a set of coordinates, `land` at a set of coordinates, or `loiter` indefinitely around a set of coordinates. If the drone is landed, it will takeoff first before preceeding towards the waypoint
             coords (tuple[float, float, float]): Absolute waypoint destination coordinates, in meters, as (fwd, right, up)
             yaw_angle (float, optional): Heading that the drone will be facing when it reaches the waypoint. Defaults to 0, which is straight forward from start
             goto_hold_time (float, goto ONLY): How long the drone will hold its position at a waypoint, in seconds. Only matters for `goto` waypoints. Defaults to 0
@@ -473,11 +470,13 @@ class Sandbox(MQTTModule):
         MAVLink mission syntax docs:
         https://mavlink.io/en/messages/common.html#MAV_CMD_NAV_WAYPOINT
         """
-        if waypointType == "land" and coords[2] == 0.0:
+        if waypoint_type == "land" and coords[2] == 0.0:
             # PX4 doesn't like landing waypoints at 0.0, so we have to set the altitude to 0.1
             # Trust me, this doesn't effect landing at all, your drone will not drop from the sky, I've tested it
             coords = (coords[0], coords[1], 0.1)
-        self.mission_waypoints.append({"type": waypointType, "n": coords[0], "e": coords[1], "d": coords[2] * -1, "yaw": yaw_angle, "holdTime": goto_hold_time, "acceptRadius": acceptanceRad})
+        self.mission_waypoints.append(
+            {"type": waypoint_type, "n": coords[0], "e": coords[1], "d": coords[2] * -1, "yaw": yaw_angle, "holdTime": goto_hold_time, "acceptRadius": goto_acceptance_radius}
+        )
 
     def clear_mission_waypoints(self) -> None:
         """Clear the mission_waypoints list"""
@@ -493,9 +492,9 @@ class Sandbox(MQTTModule):
         self.clear_mission_waypoints()
         # If delay is left blank the mission should start as soon as the mission upload completes
         if delay < 0:
-            if not self.wait_for_state("flightEvent", "MISSION_UPLOAD_GOOD"):
+            if not self.wait_for_state("flight_event", "MISSION_UPLOAD_GOOD"):
                 # If the mission upload fails flash LEDs orange, if the upload is never confirmed then flash LEDs yellow
-                if self.states["flightEvent"] == "MISSION_UPLOAD_BAD":
+                if self.states["flight_event"] == "MISSION_UPLOAD_BAD":
                     self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 128, 0), time=0.5))
                 else:
                     self.send_message("avr/pcm/set_temp_color", AvrPcmSetTempColorPayload(wrgb=(255, 255, 255, 0), time=0.5))
@@ -540,13 +539,8 @@ class Sandbox(MQTTModule):
         self.send_message("avr/fcm/actions", {"action": action, "payload": payload})
 
     def set_laser(self, state: bool) -> None:
-        if state:
-            topic = "avr/pcm/set_laser_on"
-            payload = AvrPcmSetLaserOnPayload()
-        else:
-            topic = "avr/pcm/set_laser_off"
-            payload = AvrPcmSetLaserOffPayload()
-
+        topic = "avr/pcm/set_laser_on" if state else "avr/pcm/set_laser_off"
+        payload = AvrPcmSetLaserOnPayload() if state else AvrPcmSetLaserOffPayload()
         self.send_message(topic, payload)
 
     def set_magnet(self, enabled: bool) -> None:
@@ -554,13 +548,13 @@ class Sandbox(MQTTModule):
         self.send_message("avr/pcm/set_magnet", {"enabled": enabled})
 
     def set_mission_id(self, mission_id: int = 0) -> None:
-        """Set autonomous mode on or off and/or set auton mission id
+        """set auton mission id and update autonomous enabled state
 
         Args:
             mission_id (int, optional): The ID of the autonomous mission. Defaults to 0.
         """
         self.auton_mission_id = mission_id
-        self.send_message("avr/sandbox/autonomous", {"enabled": self.autonomous, "mission_id": self.auton_mission_id})
+        self.send_message("avr/sandbox/autonomous", {"enabled": self.autonomous_enabled, "mission_id": self.auton_mission_id})
 
     def set_thermal_state(self, state: int) -> None:
         """Set the state of thermal operations
@@ -594,20 +588,20 @@ class Sandbox(MQTTModule):
         logger.debug(f"Timeout reached while waiting to detect Apriltag {id}")
         return False
 
-    def wait_for_state(self, stateKey: Literal["flightEvent", "flightMode"], desiredVal: str, timeout: float = 5) -> bool:
+    def wait_for_state(self, state_key: Literal["flight_event", "flight_mode"], desired_val: str, timeout: float = 5) -> bool:
         """Wait until a desired value is present for a specific key in the states dict
 
         Args:
-            stateKey (Literal["flightEvent", "flightMode"]): The key of the value in the self.states dict that we're waiting for
-            desiredVal (str): The desired value that we're waiting for
+            state_key (Literal["flight_event", "flight_mode"]): The key of the value in the self.states dict that we're waiting for
+            desired_val (str): The desired value that we're waiting for
             timeout (float, optional): The time in seconds that we wait for. Defaults to 5.
 
         Returns:
             bool: True if desired value is found, False if timeout is reached
         """
         try:
-            if desiredVal not in self.possibleStates[stateKey]:  # Check to make sure that we're waiting for a valid key that can contain the given value
-                logger.error(f"The given key {stateKey} cannot contain the value {desiredVal}")
+            if desired_val not in self.possible_states[state_key]:  # Check to make sure that we're waiting for a valid key that can contain the given value
+                logger.error(f"The given key {state_key} cannot contain the value {desired_val}")
                 return False
         except KeyError as e:  # If you get this error it means the key you're looking for doesn't exist
             logger.error(e)
@@ -615,14 +609,14 @@ class Sandbox(MQTTModule):
 
         start_time = time.time()
         while start_time + timeout > time.time():
-            if self.states[stateKey] == desiredVal:
+            if self.states[state_key] == desired_val:
                 return True
             time.sleep(0.005)
-        logger.debug(f"Timeout reached while waiting for {stateKey} value {desiredVal}")
+        logger.debug(f"Timeout reached while waiting for {state_key} value {desired_val}")
         return False
 
     # From Quentin: Bell gives us field dimensions in inches then programs the drone to use meters because fuck you
-    def inchesToMeters(self, inches: float) -> float:
+    def inches_to_meters(self, inches: float) -> float:
         """Converts inches to meters
 
         Args:
