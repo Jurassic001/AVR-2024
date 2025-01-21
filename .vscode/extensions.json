@@ -9,7 +9,6 @@
         // for Python
         "ms-python.python",
         "njqdev.vscode-python-typehint",
-        "sourcery.sourcery",
         // for Docker/bash
         "ms-azuretools.vscode-docker",
         "foxundermoon.shell-format",
