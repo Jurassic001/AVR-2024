@@ -247,8 +247,13 @@ def vio_service(compose_services: dict, local: bool = False) -> None:
         "restart": "unless-stopped",
         "privileged": True,
         "volumes": [f"{os.path.join(THIS_DIR, 'vio', 'settings')}:/usr/local/zed/settings/"],
-        "build": os.path.join(THIS_DIR, "vio"),
     }
+
+    if local:
+        # VIO can be quite problematic when built locally, fair warning
+        vio_data["build"] = os.path.join(THIS_DIR, "vio")
+    else:
+        vio_data["image"] = f"{IMAGE_BASE}vio:latest"
 
     compose_services["vio"] = vio_data
 
@@ -353,7 +358,7 @@ if __name__ == "__main__":
         "-l",
         "--local",
         action="store_true",
-        help="Build containers locally rather than using pre-built ones from GitHub. The apriltag, sandbox, pcm, fcm, and vio modules will be built locally at all times.",
+        help="Build containers locally rather than using pre-built ones from GitHub. The apriltag, sandbox, pcm, and fcm modules will be built locally at all times.",
     )
 
     action_group = parser.add_argument_group(
